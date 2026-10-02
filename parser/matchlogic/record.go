@@ -71,6 +71,9 @@ func (r *Recorder) Event(e events.Event) {
 		en.OldSide = side(e, "oldteam")
 	case PlayerSpawn, PlayerDisconnect, BombPlanted, BombDefused:
 		en.Player = r.player(e, "userid")
+	case BombBeginDefuse:
+		en.Player = r.player(e, "userid")
+		en.Kit, _ = e.Bool("haskit")
 	case PlayerDeath:
 		en.Player = r.player(e, "userid")
 		en.Attacker = r.player(e, "attacker")
@@ -83,6 +86,7 @@ func (r *Recorder) Event(e events.Event) {
 		en.Attacker = r.player(e, "attacker")
 		en.Health, _ = e.Int("health")
 		en.Damage, _ = e.Int("dmg_health")
+		en.Weapon, _ = e.String("weapon")
 	case RoundEnd:
 		en.Side = side(e, "winner")
 		en.Reason, _ = e.Int("reason")
@@ -108,6 +112,7 @@ var eventKinds = map[string]Kind{
 	"player_death":           PlayerDeath,
 	"player_hurt":            PlayerHurt,
 	"bomb_planted":           BombPlanted,
+	"bomb_begindefuse":       BombBeginDefuse,
 	"bomb_defused":           BombDefused,
 	"bomb_exploded":          BombExploded,
 }

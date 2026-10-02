@@ -3,6 +3,7 @@ package matchlogic
 import (
 	"slices"
 
+	"github.com/ChiemekaKalu/demoview/parser/eventlog"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 )
 
@@ -13,6 +14,11 @@ type Options struct {
 	// FirstTick is the demo's first frame tick past the signon. No round
 	// starts before it.
 	FirstTick int32
+
+	// Log, if set, gets the match's narrative log (see story). BombSites
+	// are the sites the entity stage saw bombs planted at, if it ran.
+	Log       eventlog.Emitter
+	BombSites []BombSite
 }
 
 // Result is the part of match.json that match logic fills in.
@@ -47,6 +53,9 @@ func Build(log *Log, opt Options) Result {
 	ro := listPlayers(log, s)
 	rounds := listRounds(spans, outs, s, &n)
 	checkFinish(rounds, readSchedule(log, w.end), &n)
+	if opt.Log != nil {
+		tell(opt.Log, log, t, rounds, outs, ro, opt)
+	}
 	return Result{
 		Players:    ro.players,
 		Rounds:     rounds,

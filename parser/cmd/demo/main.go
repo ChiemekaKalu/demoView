@@ -2,12 +2,13 @@
 //
 // Usage:
 //
-//	demo parse <file.dem> --out <dir> [--events-only]
+//	demo parse <file.dem> --out <dir> [--events-only] [--log off|full]
 //	demo diff <file.dem> --against <reference.json>
 //	demo inspect <file.dem> [--events]
 //
 // parse writes <dir>/match.json and, unless --events-only, one
-// <dir>/rounds/NN.json per round. If the entity stage fails, match.json is
+// <dir>/rounds/NN.json per round. Unless --log off, it also writes the
+// narrative log as <dir>/log/{facts,derived,notes}.ndjson.gz. If the entity stage fails, match.json is
 // still written and the error names why the round files aren't: code
 // unknown_entity for a class, field or decoder this parser doesn't know,
 // bad_demo otherwise. diff parses the demo and compares the result with a
@@ -35,13 +36,14 @@ import (
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/diff"
 	"github.com/ChiemekaKalu/demoview/parser/entities"
+	"github.com/ChiemekaKalu/demoview/parser/eventlog"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/parse"
 	"github.com/ChiemekaKalu/demoview/parser/roundfile"
 )
 
 const (
-	parseSynopsis   = "demo parse <file.dem> --out <dir> [--events-only]"
+	parseSynopsis   = "demo parse <file.dem> --out <dir> [--events-only] [--log off|full]"
 	diffSynopsis    = "demo diff <file.dem> --against <reference.json>"
 	inspectSynopsis = "demo inspect <file.dem> [--events]"
 )
@@ -117,6 +119,7 @@ func cmdParse(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("parse", flag.ContinueOnError)
 	out := fs.String("out", "", "write output files to `dir`, creating it if missing")
 	eventsOnly := fs.Bool("events-only", false, "write match.json only, no round files")
+	logLevel := fs.String("log", "full", "narrative log: `off` or full, written to <dir>/log/")
 	pos, err := parseArgs(fs, parseSynopsis, args, stdout)
 	if err != nil {
 		return err
@@ -126,8 +129,10 @@ func cmdParse(args []string, stdout io.Writer) error {
 		return usagef("parse: want one demo file, got %d; usage: %s", len(pos), parseSynopsis)
 	case *out == "":
 		return usagef("parse: --out is required; usage: %s", parseSynopsis)
+	case *logLevel != "off" && *logLevel != "full":
+		return usagef("parse: --log must be off or full; usage: %s", parseSynopsis)
 	}
-	return parseDemo(pos[0], *out, *eventsOnly)
+	return parseDemo(pos[0], *out, *eventsOnly, *logLevel == "full")
 }
 
 func cmdDiff(args []string, stdout io.Writer) error {
@@ -160,7 +165,7 @@ func diffDemo(path, refPath string, stdout io.Writer) error {
 	refRounds := filepath.Join(filepath.Dir(refPath), roundfile.Dir)
 	fi, err := os.Stat(refRounds)
 	withRounds := err == nil && fi.IsDir()
-	out, err := parseFile(path, withRounds)
+	out, err := parseFile(path, parse.Options{Rounds: withRounds})
 	if err != nil {
 		return err
 	}
@@ -227,11 +232,12 @@ func diffRounds(r *diff.Report, ourMatch, refMatch []byte, rounds []roundfile.Fi
 	return nil
 }
 
-// parseDemo parses the demo at path and writes match.json and, unless
-// eventsOnly, the round files to outDir. match.json is written even when
-// the round files fail, and the error says why they did.
-func parseDemo(path, outDir string, eventsOnly bool) error {
-	out, err := parseFile(path, !eventsOnly)
+// parseDemo parses the demo at path and writes match.json, unless
+// eventsOnly the round files, and with withLog the narrative log to outDir.
+// match.json and the log are written even when the round files fail, and
+// the error says why they did.
+func parseDemo(path, outDir string, eventsOnly, withLog bool) error {
+	out, err := parseFile(path, parse.Options{Rounds: !eventsOnly, Log: withLog})
 	if err != nil {
 		return err
 	}
@@ -243,16 +249,37 @@ func parseDemo(path, outDir string, eventsOnly bool) error {
 			return err
 		}
 	}
+	if out.Log != nil {
+		if err := writeLog(filepath.Join(outDir, "log"), out.Log); err != nil {
+			return err
+		}
+	}
 	return out.RoundsErr
 }
 
-func parseFile(path string, rounds bool) (parse.Output, error) {
+// writeLog writes each layer of lg, gzipped, to dir.
+func writeLog(dir string, lg *eventlog.Log) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	for _, f := range []struct {
+		name string
+		data []byte
+	}{{"facts", lg.Facts}, {"derived", lg.Derived}, {"notes", lg.Notes}} {
+		if err := os.WriteFile(filepath.Join(dir, f.name+".ndjson.gz"), eventlog.Gzip(f.data), 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func parseFile(path string, opt parse.Options) (parse.Output, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return parse.Output{}, err
 	}
 	defer f.Close()
-	out, _, err := parse.Parse(context.Background(), f, parse.Options{Rounds: rounds})
+	out, _, err := parse.Parse(context.Background(), f, opt)
 	return out, err
 }
 

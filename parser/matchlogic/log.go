@@ -88,6 +88,7 @@ const (
 	PlayerDeath                          // player_death: Player killed by Attacker
 	PlayerHurt                           // player_hurt: Player hurt by Attacker
 	BombPlanted                          // bomb_planted by Player
+	BombBeginDefuse                      // bomb_begindefuse by Player, with Kit
 	BombDefused                          // bomb_defused by Player
 	BombExploded                         // bomb_exploded
 	Surrender                            // a passed surrender vote (CS_UM_VotePass): Side gave up
@@ -111,6 +112,7 @@ var kindNames = [...]string{
 	PlayerDeath:          "player_death",
 	PlayerHurt:           "player_hurt",
 	BombPlanted:          "bomb_planted",
+	BombBeginDefuse:      "bomb_begindefuse",
 	BombDefused:          "bomb_defused",
 	BombExploded:         "bomb_exploded",
 	Surrender:            "surrender",
@@ -154,7 +156,8 @@ type Entry struct {
 
 	Headshot    bool   // PlayerDeath
 	FlashAssist bool   // PlayerDeath: the assister flashed the victim
-	Weapon      string // PlayerDeath: as the event names it, e.g. "ak47" or "world"
+	Weapon      string // PlayerDeath and PlayerHurt: as the event names it, e.g. "ak47" or "world"
+	Kit         bool   // BombBeginDefuse: the defuser has a kit
 
 	Name, Value string // ConVar
 }

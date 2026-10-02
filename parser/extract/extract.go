@@ -22,6 +22,7 @@ import (
 const (
 	controllerClass = "CCSPlayerController"
 	pawnClass       = "CCSPlayerPawn"
+	plantedC4Class  = "CPlantedC4"
 	origin          = "CBodyComponent.m_skeletonInstance.m_vecOrigin."
 )
 
@@ -47,13 +48,24 @@ type Recorder struct {
 	n     int    // samples taken
 	stamp uint32 // the current sample, counting from 1
 
+	site   entities.Ref   // CPlantedC4.m_nBombSite
+	c4     map[int]uint32 // each planted bomb's entity index: the last sample it was in
+	plants []Plant
+
 	players
 	grenades
+}
+
+// Plant is a bomb planted at a site: A or B.
+type Plant struct {
+	Tick int32
+	Site string
 }
 
 // role is what the Recorder does with an entity of a class.
 type role struct {
 	controller bool
+	plantedC4  bool
 	projectile *projectileRefs // nil if not a grenade projectile
 }
 
@@ -88,9 +100,15 @@ func New(classes *entities.Classes) (*Recorder, error) {
 		}
 		r.byClass[c.ID].projectile = p
 	}
+	// A build that lacks the planted bomb's class has no sites.
+	if c := classes.ByName(plantedC4Class); c != nil {
+		r.site = b.ref(c, "m_nBombSite")
+		r.byClass[c.ID].plantedC4 = true
+	}
 	if b.err != nil {
 		return nil, b.err
 	}
+	r.c4 = map[int]uint32{}
 	r.byClass[ctl.ID].controller = true
 	r.players.init()
 	r.grenades.init()
@@ -110,12 +128,33 @@ func (r *Recorder) Sample(tick int32, s *entities.State) {
 			r.sampleController(e, s)
 		case role.projectile != nil:
 			r.sampleProjectile(e, role.projectile, s, tick)
+		case role.plantedC4:
+			r.samplePlantedC4(e, tick)
 		}
 	}
 	r.endPlayerSample()
 	r.endGrenadeSample(tick)
 	r.n++
 }
+
+// samplePlantedC4 takes planted bomb e, recording its site when it is new:
+// not in the last sample.
+func (r *Recorder) samplePlantedC4(e *entities.Entity, tick int32) {
+	if last, ok := r.c4[e.Index]; !ok || last != r.stamp-1 {
+		site := ""
+		switch get(e, r.site).Int() {
+		case 0:
+			site = "A"
+		case 1:
+			site = "B"
+		}
+		r.plants = append(r.plants, Plant{Tick: tick, Site: site})
+	}
+	r.c4[e.Index] = r.stamp
+}
+
+// Plants returns the bombs planted, in tick order.
+func (r *Recorder) Plants() []Plant { return r.plants }
 
 // Next returns the tick the next Sample is for, or ok = false before the
 // first.

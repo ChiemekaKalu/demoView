@@ -5,6 +5,16 @@ type outcome struct {
 	endTick int32
 	winner  Side
 	reason  string // a match.json reason
+	method  string // what decided it: "event", "bomb", "elimination", "timer", "surrender" or "guess"
+}
+
+// inferredBy is the method of an inferred outcome with each reason.
+var inferredBy = map[string]string{
+	reasonBombExploded: "bomb",
+	reasonBombDefused:  "bomb",
+	reasonElimination:  "elimination",
+	reasonTimeExpired:  "timer",
+	reasonSurrender:    "surrender",
 }
 
 // Round end reasons in match.json.
@@ -49,10 +59,13 @@ func decideRounds(log *Log, spans []span, s sides, opt Options, n *notes) []outc
 		switch {
 		case sp.roundEnd >= 0:
 			out[r] = fromRoundEnd(log.Entries[sp.roundEnd], inferred, ok, r, n)
+			out[r].method = "event"
 		case ok:
 			out[r] = inferred
+			out[r].method = inferredBy[inferred.reason]
 		default:
 			out[r] = guessOutcome(log, sp, opt.TickRate)
+			out[r].method = "guess"
 			n.add("round %d: nothing decided it; guessed %v %s at tick %d", r+1, out[r].winner, out[r].reason, out[r].endTick)
 		}
 	}
@@ -122,7 +135,7 @@ func inferOutcome(log *Log, sp span, side []Side, roundTicks int32) (o outcome, 
 	for i := sp.play; i < sp.end; i++ {
 		e := log.Entries[i]
 		if expiry >= 0 && !planted && e.Tick > expiry {
-			return outcome{expiry, CT, reasonTimeExpired}, true
+			return outcome{endTick: expiry, winner: CT, reason: reasonTimeExpired}, true
 		}
 		switch e.Kind {
 		case PlayerSpawn:
@@ -136,24 +149,24 @@ func inferOutcome(log *Log, sp span, side []Side, roundTicks int32) (o outcome, 
 			living[side[p]]--
 			switch {
 			case spawned[CT] > 0 && living[CT] == 0:
-				return outcome{e.Tick, T, reasonElimination}, true
+				return outcome{endTick: e.Tick, winner: T, reason: reasonElimination}, true
 			case spawned[T] > 0 && living[T] == 0 && !planted:
-				return outcome{e.Tick, CT, reasonElimination}, true
+				return outcome{endTick: e.Tick, winner: CT, reason: reasonElimination}, true
 			}
 		case BombPlanted:
 			planted = true
 		case BombDefused:
-			return outcome{e.Tick, CT, reasonBombDefused}, true
+			return outcome{endTick: e.Tick, winner: CT, reason: reasonBombDefused}, true
 		case BombExploded:
-			return outcome{e.Tick, T, reasonBombExploded}, true
+			return outcome{endTick: e.Tick, winner: T, reason: reasonBombExploded}, true
 		case Surrender:
 			if e.Side.Playing() {
-				return outcome{e.Tick, e.Side.Other(), reasonSurrender}, true
+				return outcome{endTick: e.Tick, winner: e.Side.Other(), reason: reasonSurrender}, true
 			}
 		}
 	}
 	if expiry >= 0 && !planted && expiry < sp.endTick {
-		return outcome{expiry, CT, reasonTimeExpired}, true
+		return outcome{endTick: expiry, winner: CT, reason: reasonTimeExpired}, true
 	}
 	return outcome{}, false
 }

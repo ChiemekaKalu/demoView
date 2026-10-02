@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
+	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -104,6 +107,53 @@ func TestParseWritesMatchJSON(t *testing.T) {
 	}
 }
 
+// By default parse writes the narrative log beside match.json, the same
+// bytes every time; --log off writes none.
+func TestParseWritesLog(t *testing.T) {
+	file := writeTemp(t, "x.dem", matchDemo)
+	read := func(dir string) map[string][]byte {
+		files := map[string][]byte{}
+		for _, name := range []string{"facts", "derived", "notes"} {
+			b, err := os.ReadFile(filepath.Join(dir, "log", name+".ndjson.gz"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			files[name] = b
+		}
+		return files
+	}
+	var runs []map[string][]byte
+	for range 2 {
+		dir := filepath.Join(t.TempDir(), "out")
+		if code, _, stderr := runCLI("parse", file, "--out", dir, "--events-only"); code != 0 {
+			t.Fatalf("exit %d, stderr %s", code, stderr)
+		}
+		runs = append(runs, read(dir))
+	}
+	if !maps.EqualFunc(runs[0], runs[1], bytes.Equal) {
+		t.Error("two parses wrote different logs")
+	}
+	zr, err := gzip.NewReader(bytes.NewReader(runs[0]["facts"]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	facts, err := io.ReadAll(zr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(facts, []byte(`"type":"combat.death"`)) {
+		t.Errorf("facts lack the kill:\n%s", facts)
+	}
+
+	dir := filepath.Join(t.TempDir(), "out")
+	if code, _, stderr := runCLI("parse", file, "--out", dir, "--events-only", "--log", "off"); code != 0 {
+		t.Fatalf("--log off: exit %d, stderr %s", code, stderr)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "log")); !os.IsNotExist(err) {
+		t.Errorf("--log off wrote a log: %v", err)
+	}
+}
+
 // Without --events-only, a demo with no entities still gets its
 // match.json, and the error says why it has no round files.
 func TestParseWithoutEntities(t *testing.T) {
@@ -192,6 +242,7 @@ func TestRunErrors(t *testing.T) {
 		{[]string{"parse", good, good, "--out", out}, 2, "usage"},
 		{[]string{"parse", good, "--bogus", "--out", out}, 2, "usage"},
 		{[]string{"parse", good, "--out"}, 2, "usage"},
+		{[]string{"parse", good, "--log", "some", "--out", out}, 2, "usage"},
 		{[]string{"inspect"}, 2, "usage"},
 		{[]string{"parse", badMagic, "--out", out}, 1, "bad_demo"},
 		{[]string{"parse", truncated, "--out", out}, 1, "bad_demo"},

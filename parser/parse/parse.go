@@ -14,6 +14,7 @@ import (
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/entities"
+	"github.com/ChiemekaKalu/demoview/parser/eventlog"
 	"github.com/ChiemekaKalu/demoview/parser/events"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/matchlogic"
@@ -55,6 +56,9 @@ type Options struct {
 	// files. Without it a parse reads game events only, which is much
 	// cheaper.
 	Rounds bool
+	// Log keeps the parse's narrative log (package eventlog). Bomb sites
+	// are in it only with Rounds, since they come from entities.
+	Log bool
 }
 
 // Output is what a parse produced.
@@ -69,6 +73,8 @@ type Output struct {
 	// demo.ErrBadDemo. Match is good either way, since it comes from game
 	// events, so a caller can ship it and take round files from elsewhere.
 	RoundsErr error
+	// Log is the narrative log when Options.Log is set.
+	Log *eventlog.Log
 }
 
 // Run reads the demo from r to the end and returns its match.json. It
@@ -105,10 +111,29 @@ func Parse(ctx context.Context, r io.Reader, opt Options) (Output, Stats, error)
 	}
 
 	start = time.Now()
-	res := matchlogic.Build(p.rec.Log(), matchlogic.Options{Map: p.mapName, TickRate: p.tickRate, FirstTick: p.firstTick})
+	mo := matchlogic.Options{Map: p.mapName, TickRate: p.tickRate, FirstTick: p.firstTick}
+	var spool *eventlog.Spool
+	if opt.Log {
+		spool = eventlog.NewSpool(eventlog.DefaultLimit)
+		mo.Log = spool
+		if p.ent != nil && p.ent.rec != nil && p.entErr == nil {
+			for _, pl := range p.ent.rec.Plants() {
+				mo.BombSites = append(mo.BombSites, matchlogic.BombSite{Tick: pl.Tick, Site: pl.Site})
+			}
+		}
+	}
+	res := matchlogic.Build(p.rec.Log(), mo)
 	st.Build, st.Notes = time.Since(start), res.Notes
 	if len(res.Rounds) == 0 {
 		return Output{}, st, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
+	}
+	var lg *eventlog.Log
+	if spool != nil {
+		l, err := spool.Finalize(eventlog.Resolver{})
+		if err != nil {
+			return Output{}, st, fmt.Errorf("narrative log: %w", err)
+		}
+		lg = &l
 	}
 	out := Output{Match: match.File{
 		SchemaVersion: match.SchemaVersion,
@@ -122,7 +147,7 @@ func Parse(ctx context.Context, r io.Reader, opt Options) (Output, Stats, error)
 		Rounds:     res.Rounds,
 		Kills:      res.Kills,
 		Scoreboard: res.Scoreboard,
-	}}
+	}, Log: lg}
 	switch {
 	case !opt.Rounds:
 	case p.entErr != nil:
