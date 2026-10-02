@@ -53,7 +53,7 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 ## M3 groundwork (pulled forward)
 
 - [x] `web/`: upload, match and replay pages, built against `schema/samples` (fixtures mode: `VITE_FIXTURES=1` or id `sample`). Every spec replay bullet is in. Bundle 45.7 KB raw / 17.7 KB gzip. 50 vitest tests.
-- [ ] Mirage radar image at `web/public/radar/de_mirage.png`, supplied by the user. A placeholder grid draws until then.
+- [x] Mirage radar image at `web/public/radar/de_mirage.png`, from MurkyYT/cs2-map-icons @ ae7ed6a (1024×1024, extracted from the CS2 depot; the repo has no license, so these are Valve assets). Alignment verified by plotting real Mirage positions from the oracle export: trails follow the corridors, and spawns and bombsites match the overview file.
 
 ## Decisions
 
