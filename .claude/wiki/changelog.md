@@ -2,6 +2,12 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, afternoon: the sweep narrows, and the fault drill passes
+
+- **Full sweep of 132 tournament demos** after the first round fix: 46 still collapse, 37 have a boundary or reason difference, 21 fail in the entity stage, 14 have a clean `match.json`, and parsing stays fast (p50 3.5 s, max 7.4 s). Fixes since: unknown enum-like types decode as varints, covering 13 of the 21 failures (`76e0708`), and sides are read at each round's freeze end (`4a3d389`). `demo inspect --events` prints a round-structure timeline (`ca49811`), and the shadow compare writes `shadow.json` (`ad0f9d3`). The 2 "no live rounds" demos fail in the reference too. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-first-fix-landed-the-rest-is-narrowing), [parser](parser.md).
+- **M6's fault-flag drill passed on dev** (`44716a7`): 20 uploads under a forced failure all went through 3 attempts and the dead letter queue and ended `failed` with a coded error, none waiting more than 0.5 minutes. The flag and the test matches were then removed. Wiki: [stuck-match runbook](runbook-stuck-matches.md), [testing](testing.md).
+- **CI can require the fixture diff before a deploy** (`71baa69`, `95abc5c`), once its secrets exist and a repo variable is set. Wiki: [infra](infra.md).
+
 ## 2026-10-02, midday: the swap-in is built and M5 is closed
 
 - **Swap-in built** (`1587e55`, `de2ff27`, `e439244`): `PARSER_ROUNDS=parser` ships our own round files with an oracle fallback on an entity error or an implausible match, and dev runs a shadow compare against the oracle (a full Mirage match: 10 rounds, 0 mismatches). Prod stays on the oracle, set explicitly. Wiki: [parser](parser.md), [worker](worker.md), [testing](testing.md), [decisions](decisions.md).
@@ -11,13 +17,13 @@ What moved, newest first. This is a digest, so `git log` has the full detail. Ea
 
 ## 2026-10-02, morning: the round-collapse bug is fixed
 
-- **Tournament demos no longer collapse to one round, in the parser's own logic** (`68a02cf`). The cause was not a misplaced knife round: those demos fire no restart event during play, so the boundary fell back to nothing. The boundary is now chosen from the live window itself, using whichever candidate occurs once for every round after the first, and `round_officially_ended` ends the round before it. The 10 local demos still diff clean and the user's matches still match the game's counters. A re-run of all 132 is the next check. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-found-root-cause-fixed-re-run-pending), [README](README.md).
+- **Tournament demos no longer collapse to one round, in the parser's own logic** (`68a02cf`). The cause was not a misplaced knife round: those demos fire no restart event during play, so the boundary fell back to nothing. The boundary is now chosen from the live window itself, using whichever candidate occurs once for every round after the first, and `round_officially_ended` ends the round before it. The 10 local demos still diff clean and the user's matches still match the game's counters. A re-run of all 132 is the next check. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-first-fix-landed-the-rest-is-narrowing), [README](README.md).
 - `30b01fd`: more round findings added under `ideas/` (clutches, plant timing, opening-duel spots). Nothing for the wiki yet.
 
 ## 2026-10-02, small hours: crons go live, and a gap is found
 
 - **The crons are on in prod** (`6e305d0`): the dev exit checks passed. The hourly batch moved all three dev matches (one from the v1 layout) onto new parses unattended, while a poller made 9,228 requests over 75 minutes and saw 0 404s and 0 mismatches. With the fault flag, two reparses failed and both matches stayed `ready` on their live parse (`263ffdc`). Wiki: [worker](worker.md), [reparse runbook](runbook-reparse.md), [stuck-match runbook](runbook-stuck-matches.md).
-- **Match logic collapses rounds on most tournament demos** (`ecb46b5`, `d996720`): a bulk run of 132 public pro demos had no crashes and p95 1.6 s, but 113 collapsed to one round, 2 were "no live rounds", and 9 had teams swapped. The guard keeps prod right by shipping the oracle's `match.json`. The swap-in default stays on the oracle until this passes, and external demos stay off the user's machine. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-found-root-cause-fixed-re-run-pending), [testing](testing.md), [decisions](decisions.md), [parser](parser.md).
+- **Match logic collapses rounds on most tournament demos** (`ecb46b5`, `d996720`): a bulk run of 132 public pro demos had no crashes and p95 1.6 s, but 113 collapsed to one round, 2 were "no live rounds", and 9 had teams swapped. The guard keeps prod right by shipping the oracle's `match.json`. The swap-in default stays on the oracle until this passes, and external demos stay off the user's machine. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-first-fix-landed-the-rest-is-narrowing), [testing](testing.md), [decisions](decisions.md), [parser](parser.md).
 - The server swap-in is written as an uncommitted patch (opt-in `PARSER_ROUNDS=parser`, with an oracle fallback), paused for the night (`cd3054e`, `55d2b17`).
 
 ## 2026-10-02, afternoon: our own round files exist

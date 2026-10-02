@@ -52,13 +52,13 @@ flowchart LR
 | --- | ------ |
 | parser | `gofmt`, `go vet`, `go test` |
 | oracle | the same, for `tools/oracle` |
-| parser diff (fixtures) | pulls the public demos from `demoview-fixtures`, exports with the oracle, runs `demo diff`. Skips while the read-only fixtures secrets are unset, which is optional to fix. |
+| parser diff (fixtures) | pulls the public demos from `demoview-fixtures`, exports with the oracle, runs `demo diff`. Pull requests and branch pushes skip it without the read-only fixtures secrets. A deploy can require it: setting the repo variable `REQUIRE_FIXTURE_DIFF` to true makes a deploy fail without the secrets (`71baa69`, `95abc5c`). Until then a deploy skips it with a notice. |
 | schema | validate the samples, `--strict` |
 | worker | typecheck, lint (oxlint), tests |
 | web | build, lint, tests |
 | image | Docker build, no push |
 
-Every job is pinned to `ubuntu-24.04` (`68070ae`).
+Every job is pinned to `ubuntu-24.04` (`68070ae`). The checks are skipped on research branches (`6a0d344`).
 
 ## Deploy
 

@@ -59,7 +59,7 @@ In dev, after each response is flushed, the server reruns the oracle and diffs i
 
 ## The pro-demo sample
 
-A bulk run over 132 public tournament demos is the only test so far that stresses match logic beyond matchmaking. It found no crashes and fast parses, but segmentation problems on most. See [match-logic](match-logic.md#tournament-gotv-demos-found-root-cause-fixed-re-run-pending). A pinned subset is planned for CI, fetched at test time from its public source and never rehosted. The swap-in's default stays on the oracle until this sample passes.
+A bulk run over 132 public tournament demos is the only test so far that stresses match logic beyond matchmaking. It found no crashes and fast parses, but segmentation problems on most. See [match-logic](match-logic.md#tournament-gotv-demos-first-fix-landed-the-rest-is-narrowing). A pinned subset is planned for CI, fetched at test time from its public source and never rehosted. The swap-in's default stays on the oracle until this sample passes.
 
 ## Fixtures
 
@@ -88,6 +88,7 @@ The two public demos were an *interim* choice, and they are still the ones CI ca
 | Fuzzing | `bitread`, `FuzzFrames`, `FuzzApply`, `FuzzFieldPaths` | Corrupted input is rejected, never a crash. Corpora are generated at test time, so no demo bytes are committed. |
 | Round files | `demo diff` on `rounds/` | Our own round files against the oracle's on all 10 demos: players and kills have zero mismatches, and runs are byte-identical. |
 | Entity state | `parser/entities` tests | Decoded pawn position, view angle and health agree with the oracle on every frame of all 10 demos, and full-packet state equals state built from deltas. |
+| Fault drill | Dev, with the fault flag | 20 uploads under a forced transient failure all ended `failed` with a coded error after 3 attempts, none waiting longer than 0.5 minutes. |
 | Reparse | Worker tests | A reparse with fewer rounds hides the old extra rounds (`16c8041`). |
 
 Tests that need real demos skip when the files are absent, so CI stays green on forks. The CI `diff` job also skips with a notice when the fixture secrets are missing.

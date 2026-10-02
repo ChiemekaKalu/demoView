@@ -43,7 +43,7 @@ The Worker logs one JSON line for every change, every parse attempt, every dead 
 - **A sweeper** requeues or fails any match that has been in `queued` or `parsing` for more than **30 minutes since its last status change**, using a new `status_changed_at` column.
 - **It only touches matches that have never been `ready`.** A reparse of a ready match is the [reparse runbook](runbook-reparse.md)'s business.
 - **Coded errors (landed).** D1 keeps the parser's error code beside the text, and the match page shows a message for each code instead of raw text. The parser's own responses carry the code too (`1a02084`).
-- **A fault flag** for testing, dev only, which deploy config refuses in prod. With it on, 20 uploads must each end `ready` or `failed` with a coded error, and none may sit in `queued` or `parsing` for 30 minutes past its last change.
+- **A fault flag** for testing, dev only, which deploy config refuses in prod. **The drill passed on dev:** with the flag making every attempt fail transiently, 20 uploads each went through 3 attempts and the dead letter queue and ended `failed` with the coded message `parse_failed: failed after 3 attempts: fault injected`. The longest any match waited in `queued` or `parsing` was 0.5 minutes. The flag was then removed, and the 20 test matches, their demos and their history were deleted.
 - **Upload hygiene.** A per-token rate limit, and an R2 lifecycle rule that removes orphaned demos (uploaded but never confirmed).
 
 ## Rules of thumb

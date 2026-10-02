@@ -88,7 +88,7 @@ These make the diff line up. See [schema](schema.md#conventions) for the file-le
 - Names come from the end-of-match message when it lists the player, which is what the game's scoreboard shows.
 - An assister on the victim's own side is dropped from the kill list, as the oracle does.
 
-## Tournament (GOTV) demos: found, root cause fixed, re-run pending
+## Tournament (GOTV) demos: first fix landed, the rest is narrowing
 
 A bulk run of 132 public pro GOTV demos (builds 9842 to 10847) was run through the parser: no crashes, p95 1.6 s, the largest 61 MB. But match logic is not right on most of them:
 
@@ -103,7 +103,13 @@ A bulk run of 132 public pro GOTV demos (builds 9842 to 10847) was run through t
 
 **The cause, confirmed and fixed (`68a02cf`):** tournament GOTV demos fire none of `round_prestart`, `round_start` or `round_poststart` during play. Splitting on the first of those seen anywhere therefore left the whole live window as one round, which is what happened on 113 of 132. The boundary kind is now chosen from the live window itself: the first of `round_prestart`, `round_start`, `round_poststart` and `round_officially_ended` that occurs once for every round after the first (the freeze ends minus one). `round_officially_ended` fires as the next round restarts, so when it is the boundary it ends the round *before* it rather than starting its own. All 10 local demos still diff clean against the oracle, and the user's own matches still equal the game's counters exactly.
 
-**Fixed since, in the research branch's sweep:** round 1 keeps the spawns and team changes that come before `begin_new_match`, with its start clamped to the demo's first frame tick (`53df3af`). Unknown `E*` enum fields decode as varints, and a projectile class missing from an older build is skipped instead of failing the entity stage (`0108c53`, seen on the oldest build). The CLI diff still compares `match.json` when the round files fail (`1dd244c`). **Not ours:** the 2 "no live rounds" demos are rejected by the oracle too. **Now:** the sweep of the repros and then all 132 is running through a research workflow in CI, because no external demos go on the user's machine. The 10 local demos still match the reference, and the scoreboard check still matches the game's counters. The swap-in's prod flip waits for the sweep to pass.
+**Fixed since, in the research branch's sweeps:** round 1 keeps the spawns and team changes that come before `begin_new_match`, with its start clamped to the demo's first frame tick (`53df3af`). Unknown `E*` enum fields decode as varints, and a projectile class missing from an older build is skipped (`0108c53`). Unknown types named like enums, such as `DecalMode_t`, decode as varints too (`76e0708`), which covered 13 of the 21 entity-stage failures, all one world field. Sides are read at each round's freeze end, as the reference does, because on the oldest build the halftime swap fires before the event that ends round 12 (`4a3d389`). The CLI diff still compares `match.json` when round files fail (`1dd244c`), and `demo inspect --events` prints event counts and a round-structure timeline with event names and ticks only (`ca49811`).
+
+**Where the full sweep of 132 stood after the first fix** (`68a02cf`): 46 still collapse to one round, because none of the four boundary events qualifies on them, and the cause stays unknown until the timelines come back. 37 have a boundary or reason difference, 21 fail in the entity stage, and 14 have a clean `match.json`. Parsing is fast: p50 3.5 s, the slowest 7.4 s and 219 MB. A smaller repro sweep showed two round-1 cases where 9 or 10 of 10 players have no round-1 spawn and `begin_new_match` is at tick -1, so the recording probably starts after round 1's spawns. The fix waits on the timelines rather than a guess.
+
+**Not ours:** the 2 "no live rounds" demos fail in the reference parser too, so there is nothing to fall back to, and prod returns a 422 just as it would with the reference alone.
+
+**Now:** the timelines are being run on 11 demos (collapsed, round-1, no-live-rounds and controls), then the full 132 again. The 10 local demos still match the reference, and the scoreboard check still matches the game's counters. The swap-in's prod flip waits for the sweep to pass.
 
 ## Verified and unverified
 
