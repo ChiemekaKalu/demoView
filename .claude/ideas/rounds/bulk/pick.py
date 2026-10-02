@@ -66,7 +66,8 @@ def main():
         x["shard"] = i % shards
     json.dump({"dataset": ds, "revision": revision, "seed": cfg["seed"], "per_map": cfg["per_map"],
                "shards": shards, "mode": cfg["mode"], "parser_ref": cfg.get("parser_ref"),
-               "parser_events": bool(cfg.get("parser_events")), "items": items},
+               "parser_events": bool(cfg.get("parser_events")), "reference_side": cfg.get("reference_side") or {},
+               "items": items},
               sys.stdout, indent=1)
 
 

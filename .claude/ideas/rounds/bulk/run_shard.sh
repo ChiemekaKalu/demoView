@@ -48,9 +48,13 @@ while IFS=$'\t' read -r path map size; do
   timed oracle "$bin/oracle" export "$work/d.dem" --out "$work/ref" 2> "$work/oracle.err"
   timed parse "$bin/demo" parse "$work/d.dem" --out "$work/ours" 2> "$work/parse.err"
   if [ -n "$events" ]; then
-    # Round-structure timeline from the parser under test: ticks and event names only.
-    "$bin/demo" inspect --events "$work/d.dem" > "$out/events/$id.events.txt" 2> "$work/events.err" || true
-    grep -Eq '7656119[0-9]{10}' "$out/events/$id.events.txt" && rm -f "$out/events/$id.events.txt"
+    # Round-structure timeline from the parser under test. Only allow-listed
+    # line shapes leave the runner; a file with anything else is dropped.
+    "$bin/demo" inspect --events "$work/d.dem" > "$work/events.raw" 2> "$work/events.err" || true
+    if ! grep -Eq '7656119[0-9]{10}' "$work/events.raw"; then
+      python3 "$here/events_filter.py" "$work/events.raw" "$out/events/$id.events.txt" 2>> "$work/events.err" || rm -f "$out/events/$id.events.txt"
+    fi
+    rm -f "$work/events.raw"
   fi
   if [ -f "$work/ref/match.json" ]; then
     timed diff "$bin/demo" diff "$work/d.dem" --against "$work/ref/match.json" > "$work/diff.txt" 2> "$work/diff.err"

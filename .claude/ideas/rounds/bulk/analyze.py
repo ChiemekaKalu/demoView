@@ -431,6 +431,9 @@ def predictability(moms, folds=5):
 
 # ---------- parser robustness ----------
 
+REFERENCE_SIDE = {}  # demo file name -> why the difference is the reference's, filled from plan.json
+
+
 def robustness(recs):
     out = {"demos": len(recs), "download_failed": sum(1 for r in recs if r.get("download") == "failed")}
     for step in ("facts", "oracle", "parse", "diff"):
@@ -470,6 +473,8 @@ def category(r):
     parse, diff = r.get("parse") or {}, r.get("diff") or {}
     if r.get("download") == "failed":
         return "download failed"
+    if os.path.basename(r["path"]) in REFERENCE_SIDE and parse.get("rc") == 0:
+        return "reference-side difference (known)"
     if parse.get("rc") not in (0, None):
         try:
             code = json.loads(parse.get("err") or "{}").get("code")
@@ -551,6 +556,7 @@ def main():
     src, plan_path, out = sys.argv[1:4]
     parser_only = "--parser-only" in sys.argv[4:]
     plan = json.load(open(plan_path))
+    REFERENCE_SIDE.update(plan.get("reference_side") or {})
     os.makedirs(out, exist_ok=True)
     demos, recs = load(src, plan)
     rows = [] if parser_only else round_rows(demos)

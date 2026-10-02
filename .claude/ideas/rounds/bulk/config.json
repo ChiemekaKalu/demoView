@@ -1,25 +1,13 @@
 {
-  "mode": "models",
+  "mode": "parser",
   "source_run": "37003041437",
   "parser_ref": "ca49811d84658b830b3995e8f704d6b7d04c3e6c",
-  "parser_sample": "repro",
+  "parser_sample": "full",
   "dataset": "skkwowee/chimera-cs2",
   "seed": 2026,
   "per_map": 16,
   "shards": 12,
-  "paths": [
-    "demos/2372338/g2-vs-mouz-m2-nuke.dem",
-    "demos/2373288/mouz-vs-natus-vincere-m3-mirage.dem",
-    "demos/the-mongolz-vs-natus-vincere-m1-ancient.dem",
-    "demos/astralis-vs-pain-m2-overpass.dem",
-    "demos/2389666/furia-vs-vitality-m3-nuke.dem",
-    "demos/g2-vs-faze-m3-mirage.dem",
-    "demos/natus-vincere-vs-g2-m3-ancient.dem",
-    "demos/natus-vincere-vs-g2-m5-ancient.dem",
-    "demos/2368041/vitality-vs-faze-m2-nuke.dem",
-    "demos/2387395/mouz-vs-vitality-m1-train.dem",
-    "demos/2377047/g2-vs-spirit-m3-nuke.dem"
-  ],
+  "paths": null,
   "parser_shards": 6,
   "parser_paths": [
     "demos/2375775/vitality-vs-g2-m1-anubis.dem",
@@ -56,5 +44,9 @@
     "embed_model": "@cf/baai/bge-m3",
     "embed_batch": 50
   },
-  "parser_events": true
+  "parser_events": true,
+  "reference_side": {
+    "spirit-vs-the-mongolz-m3-ancient.dem": "the reference reports kills[].weapon as unknown",
+    "vitality-vs-faze-m3-inferno.dem": "partial recording: the reference's ADR is the game's counter over rounds the demo lacks"
+  }
 }
