@@ -174,7 +174,7 @@ jobs:
       - run: npm run lint
       - run: npm test
 
-  # Builds the Cloud Run image without pushing it. The context is the repo
+  # Builds the parser container image without pushing it. The context is the repo
   # root; BuildKit trims it with parser/Dockerfile.dockerignore.
   docker:
     name: parser image
