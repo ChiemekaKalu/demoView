@@ -37,7 +37,7 @@ flowchart TB
 
 **1. The live window.** From the last `begin_new_match` before the end, to the last `cs_win_panel_match`. This drops warmup, the knife round and the server's post-match deaths. Kills and damage count only inside it. Using the *last* of each means a server that starts a new match afterward doesn't hide the one that was played.
 
-**2. Rounds.** A round starts at `round_prestart`, which is the first event of a restart. Halftime swaps and spawns follow it, so splitting there keeps them in the right round. `round_start` and `round_poststart` stand in if it's missing. Round 1's `start_tick` is `begin_new_match`'s tick. A restart that never becomes a real round (no freeze end, round end or surrender) is folded into the previous round. The gap between a round's end and the next start belongs to the round that ended, so kills in it count there.
+**2. Rounds.** A round starts at `round_prestart`, which is the first event of a restart (tournament demos fire none of the restart events during play, so the boundary falls back to `round_officially_ended`; see the section on GOTV demos below). Halftime swaps and spawns follow it, so splitting there keeps them in the right round. `round_start` and `round_poststart` stand in if it's missing. Round 1's `start_tick` is `begin_new_match`'s tick. A restart that never becomes a real round (no freeze end, round end or surrender) is folded into the previous round. The gap between a round's end and the next start belongs to the round that ended, so kills in it count there.
 
 **3. Halftimes.** `announce_phase_end` marks one, and sides swap at the next restart. Without it, the cvar schedule decides: `mp_maxrounds` (default 24), `mp_overtime_maxrounds` (6) and `mp_halftime`. Overtime comes in blocks of `otRounds`, swapping at each block's half. If the event and the cvars disagree, the event wins and a note says so.
 
@@ -88,7 +88,7 @@ These make the diff line up. See [schema](schema.md#conventions) for the file-le
 - Names come from the end-of-match message when it lists the player, which is what the game's scoreboard shows.
 - An assister on the victim's own side is dropped from the kill list, as the oracle does.
 
-## Known gap: tournament (GOTV) demos
+## Tournament (GOTV) demos: found, root cause fixed, re-run pending
 
 A bulk run of 132 public pro GOTV demos (builds 9842 to 10847) was run through the parser: no crashes, p95 1.6 s, the largest 61 MB. But match logic is not right on most of them:
 
@@ -101,9 +101,9 @@ A bulk run of 132 public pro GOTV demos (builds 9842 to 10847) was run through t
 
 **Why prod stays correct today:** the consistency guard (see [parser](parser.md#the-server-and-the-consistency-guard)) ships the oracle's `match.json` whenever ours is implausible or disagrees, so the collapsed and swapped cases come out right. The two "no live rounds" demos still fail.
 
-**The hypothesis, unconfirmed:** the round boundary is the first of `round_prestart`, `round_start` and `round_poststart` seen anywhere in the demo, and rounds split only on that kind. If a tournament server fires it once, the live window collapses into one round. A second suspect is a misplaced `begin_new_match`, such as a knife round or a long gap before the first freeze end.
+**The cause, confirmed and fixed (`68a02cf`):** tournament GOTV demos fire none of `round_prestart`, `round_start` or `round_poststart` during play. Splitting on the first of those seen anywhere therefore left the whole live window as one round, which is what happened on 113 of 132. The boundary kind is now chosen from the live window itself: the first of `round_prestart`, `round_start`, `round_poststart` and `round_officially_ended` that occurs once for every round after the first (the freeze ends minus one). `round_officially_ended` fires as the next round restarts, so when it is the boundary it ends the round *before* it rather than starting its own. All 10 local demos still diff clean against the oracle, and the user's own matches still equal the game's counters exactly.
 
-**How it will be worked:** no external demos on the user's machine. The work runs through a research workflow in CI, in "parser" mode, against a pinned set of repro demos plus controls. The plan is to dump the round-boundary events with ticks on the repros, find a general boundary rule or live-window fix with synthetic tests, then handle the team swap, and finally re-run all 132 with the user's own demos as a guard. It paused for the night with no code changed, and match logic still matches the game's counters on the user's own matches.
+**Still open:** a re-run of all 132 to measure the fix, then the team swap (mostly the oldest build), the 2 "no live rounds" demos and the minor round-1 and ADR differences. No external demos go on the user's machine, so the re-run happens through a research workflow in CI against a pinned list, never rehosted. The server swap-in's default stays on the oracle until that sample passes.
 
 ## Verified and unverified
 

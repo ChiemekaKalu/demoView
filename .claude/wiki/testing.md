@@ -55,7 +55,7 @@ Mismatches name the field path: `kills[12].weapon: ours ak47, reference m4a1`. O
 
 ## The pro-demo sample
 
-A bulk run over 132 public tournament demos is the only test so far that stresses match logic beyond matchmaking. It found no crashes and fast parses, but segmentation problems on most. See [match-logic](match-logic.md#known-gap-tournament-gotv-demos). A pinned subset is planned for CI, fetched at test time from its public source and never rehosted. The swap-in's default stays on the oracle until this sample passes.
+A bulk run over 132 public tournament demos is the only test so far that stresses match logic beyond matchmaking. It found no crashes and fast parses, but segmentation problems on most. See [match-logic](match-logic.md#tournament-gotv-demos-found-root-cause-fixed-re-run-pending). A pinned subset is planned for CI, fetched at test time from its public source and never rehosted. The swap-in's default stays on the oracle until this sample passes.
 
 ## Fixtures
 
