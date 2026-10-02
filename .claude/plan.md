@@ -167,7 +167,7 @@ Things the spec leaves open that the code has to decide. Each one has a proposed
   - **`path`:** one `[x, y]` per frame from throw to detonation.
 - **`yaw`:** integer degrees in [0, 360), with 0 = +x and counterclockwise.
 - **Dead and absent players:** after death, x/y/yaw hold their death values with `hp` 0. A round file's `players` lists only those who spawned that round.
-- **Files:** `NN` is at least two digits (`01.json`); the API route `/rounds/:n` stays unpadded. `hz` is read from the file, never assumed; v1 writes 32 (decided by the user 2026-10-02). `demo_sha256` is lowercase hex.
+- **Files:** `NN` is at least two digits (`01.json`); the API route `/rounds/:n` stays unpadded. `hz` is read from the file, never assumed; v1 writes 64, one frame per tick (decided by the user 2026-10-02; demos carry entity updates every tick). `demo_sha256` is lowercase hex.
 - **Stripping Steam ids** (an open question) would make `steam_id` nullable, which is a schema change.
 
 ### Parser CLI
