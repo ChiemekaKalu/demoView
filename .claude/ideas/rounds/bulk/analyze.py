@@ -468,11 +468,21 @@ def robustness(recs):
     return out
 
 
+GATE_KINDS = {"rounds.count", "rounds[]", "rounds[].start_tick", "rounds[].freeze_end_tick", "rounds[].end_tick",
+              "rounds[].winner", "rounds[].reason", "rounds[].side_a", "players[].team", "kills.count"}
+
+
+def blocks(kind):
+    return kind in GATE_KINDS or kind.startswith("kills[]")
+
+
 def flip_check(recs):
-    """Per demo, the match.json differences that would block switching prod to
-    our parser's rounds: round count, boundaries, winner, reason, side, teams
-    and kills. ADR-only demos are listed apart; round files never block."""
-    res = {"clean": [], "blocking": [], "adr_only": [], "no_reference": [], "parse_failed": [], "reference_side": []}
+    """The gate for switching prod to our parser's rounds. A demo with a
+    reference blocks if its match.json differs in round count, boundaries,
+    winner, reason, side, team or kills, or if our parse fails. Allowed: known
+    reference-side cases, demos the oracle can't read, ADR-only differences.
+    Other match.json differences are listed as warnings; round files never count."""
+    res = {"clean": [], "blocking": [], "adr_only": [], "warnings": [], "no_reference": [], "parse_failed": [], "reference_side": []}
     for r in sorted(recs, key=lambda r: r["path"]):
         parse, diff = r.get("parse") or {}, r.get("diff") or {}
         name = os.path.basename(r["path"])
@@ -487,11 +497,19 @@ def flip_check(recs):
             res["reference_side"].append({"path": r["path"], "kinds": match, "why": REFERENCE_SIDE[name]})
         elif not match:
             res["clean"].append(r["path"])
+        elif any(blocks(k) for k in match):
+            res["blocking"].append({"path": r["path"], "kinds": [k for k in match if blocks(k)], "rounds": diff.get("rounds")})
         elif match == ["scoreboard[].adr"]:
             res["adr_only"].append(r["path"])
         else:
-            res["blocking"].append({"path": r["path"], "kinds": match, "rounds": diff.get("rounds")})
+            res["warnings"].append({"path": r["path"], "kinds": match})
     res["counts"] = {k: len(v) for k, v in res.items() if isinstance(v, list)}
+    failing = [b["path"] for b in res["blocking"]] + [x["path"] for x in res["parse_failed"]]
+    res["gate"] = "PASS" if not failing else "FAIL"
+    res["gate_line"] = (f"GATE {res['gate']}: {len(failing)} blocking of {len(recs)} demos"
+                        f" (clean {len(res['clean'])}, ADR-only {len(res['adr_only'])}, warnings {len(res['warnings'])},"
+                        f" reference-side {len(res['reference_side'])}, no reference {len(res['no_reference'])})"
+                        + (": " + ", ".join(failing) if failing else ""))
     return res
 
 
@@ -577,10 +595,11 @@ def markdown(rep):
               "| Outcome | Demos |", "| --- | --- |"] + [f"| {k} | {v} |" for k, v in rb.get("categories", {}).items()] + [""]
         fc = rb.get("flip_check")
         if fc:
-            L += ["## Flip check (match.json only; round files never block)", "",
+            L += ["## Flip check (match.json only; round files never block)", "", f"**{fc['gate_line']}**", "",
                   " · ".join(f"{k.replace('_', ' ')}: {v}" for k, v in fc["counts"].items()), ""]
             L += [f"- BLOCKING `{b['path']}`: {', '.join(b['kinds'])}" + (f" (rounds ours {b['rounds'][0]} vs ref {b['rounds'][1]})" if b.get("rounds") else "") for b in fc["blocking"]]
             L += [f"- ADR only `{p}`" for p in fc["adr_only"]]
+            L += [f"- warning `{w['path']}`: {', '.join(w['kinds'])}" for w in fc["warnings"]]
             L += [f"- reference-side `{x['path']}`: {', '.join(x['kinds']) or 'none'} ({x['why']})" for x in fc["reference_side"]]
             L += [f"- no reference `{p}`" for p in fc["no_reference"]]
             L += [f"- parse failed `{x['path']}`: {x['err']}" for x in fc["parse_failed"]] + [""]
