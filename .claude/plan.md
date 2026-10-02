@@ -140,9 +140,8 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
 ## M6: trusted and hardened (v1.1)
 
 - [x] **6.1 No Stop, bad demo** (parser, 27de943). The rule lives in `parse`. All 2,000 truncations of the public fixtures are `ErrBadDemo` with no panic, and all 10 local demos give identical output before and after.
-- [ ] **6.2 Fuzz targets** (parser).
-  - Done: `bitread`, `FuzzFrames` (frame loop, decoder, messages) and `FuzzApply` (string tables). 60 s runs crash-free; the 10-minute exit runs are documented in each target's doc comment.
-  - *Remaining:* field paths, which come with M4 stage 3.
+- [x] **6.2 Fuzz targets** (parser). `bitread`, `FuzzFrames`, `FuzzApply` (string tables), `FuzzFieldPaths` and `FuzzApply` (entities, 1a5a988). 60 s runs crash-free, with 10-minute run lines in the doc comments.
+  - Reading the code turned up two entity bugs: a dynamic-array write past its length, and an unbounded baseline cache, a memory-exhaustion risk from crafted demos. Both are being fixed in the M4 stage 4–5 work.
 - [x] **6.3 Run-twice identity** (parser). Byte-identical `match.json` on all 10 local demos, from separate processes.
 - [ ] **6.4 Budget** (parser). `TestBudget` passes events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB with `GOMAXPROCS=1`.
   - *Full path (2026-10-02), largest fixture with GOMAXPROCS=1:* the oracle's 64 Hz export first peaked at 640 MiB, over budget.
