@@ -46,8 +46,10 @@ const BARS = {
 };
 
 // How far a canary's two asks may differ: the answers themselves, not the
-// probability vectors behind them.
-const CANARY_TOLERANCE = { noul: 0.01, score: 0.05 };
+// probability vectors behind them. Jev jitters a little between asks (up to
+// 0.02 on a noul and 0.12 on a 0-3 score on 2026-10-02), so this is about
+// 2.5 times that: room for noise, not for a different model.
+const CANARY_TOLERANCE = { noul: 0.05, score: 0.3 };
 
 interface Golden {
   fixture: string;
