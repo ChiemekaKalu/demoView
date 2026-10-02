@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { ApiError, FIXTURES, isAbort, SAMPLE_ID, uploadDemo, type UploadStage } from '../api'
 import { Link } from '../Link'
 import { navigate, useTitle } from '../router'
@@ -18,6 +18,9 @@ export function Upload() {
   const [error, setError] = useState<string | null>(null)
   const ctrlRef = useRef<AbortController | null>(null)
   const busy = stage !== null
+  // Leaving the page cancels an upload in progress, so it can't finish later
+  // and navigate away from wherever the user went.
+  useEffect(() => () => ctrlRef.current?.abort(), [])
 
   const onFile = (e: Event) => {
     const f = (e.currentTarget as HTMLInputElement).files?.[0]
@@ -124,6 +127,7 @@ function uploadError(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 401) return 'The upload token was not accepted.'
     if (err.status === 413) return 'The demo is larger than 1 GB.'
+    if (err.status === 409) return 'The upload could not be confirmed: the file did not reach storage. Try again.'
     return err.message
   }
   return err instanceof Error ? err.message : String(err)
