@@ -56,6 +56,81 @@ v0 ships a local CLI and v1 ships the hosted product. Anything not listed here i
 - More than one map
 - POV demos and CS:GO-era demos (server-recorded CS2 demos only)
 
+### v1.1: every map you play, and a pipeline that runs itself
+
+v1.1 changes no `match.json` or round-file schema, so `schema_version` stays 1. It changes the R2 layout and adds D1 columns, which are spec changes, not schema-file changes.
+
+- **More maps:**
+  - Every single-level map with a radar under `maps/` in R2. The bar is the single-level maps in the local demos: Mirage, Ancient, Inferno and Overpass.
+  - The viewer reads `pos_x`, `pos_y` and `scale` from `maps/radar_info/*` through `GET /api/maps/:name`, which serves the private R2 objects with long-lived cache headers.
+  - A map without a radar still replays on a plain background, with a "no radar for this map" notice.
+  - A radar-alignment check in `tools/` reports the share of alive player frames that land on a non-transparent radar pixel.
+    - It runs locally and on dev, not in CI, because the radars are unlicensed private objects.
+    - The pass bar comes from a measured Mirage baseline, since jump spots and boosts can sit off the radar.
+- **Duplicate upload:**
+  - On confirm, the Worker streams the R2 object through `crypto.DigestStream` and stores `demo_sha256` on the row. D1 indexes that column.
+  - A hash that matches any match that hasn't failed returns that match's id, starts no parse, and deletes the duplicate object. Two quick uploads of the same demo never both parse.
+- **Reparse, as the Versioning section promises:**
+  - `POST /api/matches/:id/reparse`, behind the upload token.
+  - The Worker knows the deployed parser build, injected at deploy from the same source as the image tag.
+  - A cron requeues every match whose last *attempted* build (a D1 column) is older than the deployed one. So each match gets one try per build, and a failing match can't block the rest.
+    - It keys on the build, never on `match.json`'s `parser_version`, which can be an oracle version.
+    - It runs hourly, 5 matches a batch, and pauses at 80% of the monthly container allowance.
+    - One `basic` instance at about 30 s a parse makes a batch about 3 minutes, so a new upload waits behind at most one batch.
+  - A failed reparse never takes a match off `ready`. The match keeps its live parse and status. The failure goes into its own columns (`reparse_error`, `reparse_build`).
+  - The sweeper and the dead-letter handler only touch matches that have never been `ready`.
+- **Safe swap:**
+  - A parse writes under `parsed/{id}/{parse_id}/` and writes `manifest.json` (counts and sha256s) last.
+  - D1 moves its `live_parse_id` pointer only after that.
+    - The swap is conditional (`UPDATE … WHERE live_parse_id = <the parse this one started from>`), so a race can't swap an older parse over a newer one.
+    - All writes on success go in one D1 batch.
+  - URLs pick the parse:
+    - `/rounds/:n?v=<parse_id>`, and the same for `match.json`, serves that parse's prefix with an immutable cache header.
+    - Without `v`, the route serves the live pointer with a short cache.
+    - When a pruned version returns 404, the viewer refetches the summary once.
+  - Cleanup deletes parses D1 no longer points to once they are 7 days old.
+    - v1 files sit directly under `parsed/{id}/`, the parent of the new prefixes. Cleanup deletes those by exact key and never lists or deletes the whole `parsed/{id}/` prefix.
+  - This fixes the stale `rounds/NN.json` that a reparse with fewer rounds leaves behind.
+- **A pipeline that recovers by itself:**
+  - A sweeper requeues or fails matches that have sat in `queued` or `parsing` for more than 30 minutes since their last status change. It uses a new `status_changed_at` column.
+  - D1 `error` keeps the parser's error code, and the match page shows a message for each code.
+  - The viewer shows a clear message for an unknown `schema_version`.
+  - Uploads have a per-token rate limit, and an R2 lifecycle rule removes orphaned demos.
+- **Trust gates for our own round files:**
+  - The CI diff job runs and gates deploys.
+  - Fuzz targets cover `bitread`, the frame loop, field paths and string tables. Corpora are generated at test time, so no demo bytes are committed.
+  - Two parses in separate processes are byte-identical.
+  - A `GOMAXPROCS=1` budget check on the largest fixture: under 512 MB and under 60 s.
+  - A stream that ends without `DEM_Stop` is `bad_demo` ("truncated: no Stop frame").
+  - An unknown class, field or decoder is a coded error in the entity stage only.
+    - `match.json`, which comes from events, still ships.
+    - Round files fall back to the oracle while the oracle is in the image.
+    - So a CS2 update can degrade round files without taking parses down.
+  - A dev-only shadow compare checks our round files against the oracle.
+- **Narrative log:** v1.1 lands only the groundwork from M4, the `parser/eventlog` package and its tests. No v1.1 exit check depends on it. The log output, its schema and the story pane wait for v1.2.
+- **Steam ids** stay public through `match.json`. `GET /api/matches/:id` keeps its current shape.
+- The only input is still demo files. Nothing touches the game client, its memory or its processes.
+
+**Done when** all four hold:
+- A match you played on Ancient or Inferno replays on its own radar.
+- Re-uploading a demo returns the same link.
+- A parser build merged to `main` reparses every prod match with nothing run by hand and no link breaking.
+- Our own round files have passed the trust gates.
+
+### v1.2, decided
+
+- The Steam/Valve auto-fetch. The design is in `plan.md`.
+- Two-floor maps (Nuke, Vertigo), with a `z` or level column and a layer toggle. This is a `schema_version` bump.
+- The narrative log's output, schema, derived events (opening kills, trades, clutches, buy types) and story pane, built on the M4 groundwork.
+
+### Out of scope through v1.1
+
+- Any `match.json` or round-file schema change, or a `schema_version` bump
+- Accounts, private matches, a match list, search and filters
+- A custom rating, win probability, heatmaps, the lineup finder, and callout or zone labels
+- External alerting, FACEIT or other sources, live Game State Integration, and anything that runs beside or touches the game client
+- Mobile layout work (v1 is desktop-first)
+
 ## Architecture
 
 Cloudflare runs everything: the Worker is the front door, R2 and D1 hold the data, and a Cloudflare Container does the parsing. The parser cannot run in a Worker, because a Worker is capped at 128 MB of memory ([Workers limits](https://developers.cloudflare.com/workers/platform/limits/)).
@@ -208,6 +283,14 @@ parsed/{match_id}/match.json
 parsed/{match_id}/rounds/{NN}.json
 ```
 
+From v1.1, each parse writes under its own prefix and D1 points at the live one, so a reparse never overwrites what a viewer is reading:
+
+```text
+parsed/{match_id}/{parse_id}/manifest.json
+parsed/{match_id}/{parse_id}/match.json
+parsed/{match_id}/{parse_id}/rounds/{NN}.json
+```
+
 ### Versioning
 
 - `schema_version` goes up on any breaking change to either file.
@@ -345,8 +428,10 @@ Five milestones in one sequence. The schema and fixture files from M0 let the pi
 | **M2: cloud pipeline** | Create both cloud accounts and the dev environment. Deploy the full pipeline with a stub parser that returns fixture data. CI deploys on merge. | A fake upload flows end to end in dev, and a merge to `main` deploys it. |
 | **M3: viewer** | Upload flow, match page, and replay viewer, all built against fixtures. Swap the stub for real parsing: your v0 parser writes `match.json` and the reference parser writes round files. Polish and a desktop browser check. | v1 done-when is met, with round files from the reference parser. |
 | **M4: entity decoding** | Serializers, string tables, entity decoding, grenades, round files, position diff tests passing. Swap your parser in for round files. | The position diff passes on all fixtures, and prod round files come from your parser. |
+| **M5: every map and safe reparse** | The maps route, the viewer's map loader and its no-radar notice, and the alignment tool in `tools/`, run locally and on dev. Duplicate reuse, hashing on confirm. The reparse route and cron, keyed on the last attempted build. A versioned prefix with a manifest, a conditional D1 pointer swap and versioned URLs. Batch D1 writes, a failed reparse that keeps the match `ready`, cleanup by exact key, the stuck-match sweeper on `status_changed_at`, coded errors, and the unknown-`schema_version` message. Needs M3, not M4. | Every single-level local demo meets the Mirage-baseline bar on the alignment check. Re-uploading a demo returns its match id and starts no parse, even when both uploads land within seconds. On dev, a parser build merged to `main` ends every match at the new build with nothing run by hand. A poller reading the match and its round files throughout sees no 404 and no mix of versions. A reparse with fewer rounds leaves no old round file reachable. A deliberately failing build leaves every match `ready` on its old parse. The same reparse then runs on prod inside the monthly container allowance. |
+| **M6: trusted and hardened** | The CI diff required before deploy, fuzz targets, run-twice byte identity, and the `GOMAXPROCS=1` budget check. The no-`DEM_Stop` truncation rule, and an entity-stage unknown-field error with oracle fallback. A dev-only shadow compare once M4 swaps in our round files. The upload rate limit, the orphaned-demo lifecycle rule, and stuck-match recovery tested under a dev-only fault flag that deploy config refuses in prod. | Each fuzz target runs 10 minutes with no crash. Truncating each public fixture at 1,000 evenly spaced offsets always exits 1 with `bad_demo`, with no panic and no OOM. Two parses are byte-identical on all local demos. A synthetic unknown field gives a coded entity error, `match.json` still ships, and `round_source=oracle` is logged. The largest fixture stays under 512 MB and 60 s at `GOMAXPROCS=1`. The shadow compare reports zero round-file mismatches on dev. With the fault flag on, 20 uploads each end `ready` or `failed` with a coded error, and none sits in `queued` or `parsing` for 30 minutes past its last status change. |
 
-Rough sizing, for one person driving coding agents: M0 takes a day, M1 a weekend, M2 a weekend, and M3 one to two weekends. That is about 3 to 4 weekends to v1 on reference data. M4 adds 2 to 3 more.
+Rough sizing, for one person driving coding agents: M0 takes a day, M1 a weekend, M2 a weekend, and M3 one to two weekends. That is about 3 to 4 weekends to v1 on reference data. M4 adds 2 to 3 more. For v1.1, M5 takes about 1.5 weekends and M6 about 1. M5 doesn't wait for M4, but M6's shadow compare does.
 
 ### Fallback rule
 
