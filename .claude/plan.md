@@ -19,7 +19,11 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 - [x] **1.2 Frame loop** (stage 1). Both interim demos walk to EOF with no error, and the FileInfo frame sits at the header's offset. *Re-check on the third fixture.*
 - [x] **1.3 Decompress and decode** (stage 2). Snappy (klauspost/compress) plus `parser/pb` (game build 2000922). `inspect` prints the map, server, build and playback ticks, and these match both demos.
 - [x] **1.4 Packet messages** (stage 3). `parser/bitread` plus `demo.MessageReader`. Every packet on both demos is consumed with at most 6 trailing bits. Mirage: 58k packets in 0.37 s. Nuke: 140k packets, 1.75M messages.
-- [ ] **1.5 Game events** (stage 4). Exit: the `player_death` count matches the reference kill count before any filtering.
+- [x] **1.5 Game events** (stage 4). `parser/events`. `player_death` matches demoparser2 row for row: Nuke 157, Mirage 73.
+  - Nuke's 157 break down as 6 pre-match knife kills, 12 warmup, 138 live, and 1 post-match `world` suicide.
+  - Mirage's 73 are 64 live plus 9 post-match `world` self-deaths.
+  - Live window: after the last `begin_new_match`, up to `cs_win_panel_match`.
+  - *Not yet wired into `parse.Run`.*
 - [ ] **1.6 Player identity** (stage 5). Exit: every kill's attacker, victim and assister resolve to a name, Steam id and team.
 - [ ] **1.7 Match logic** (stage 6), and the full `match.json`. Exit: the scoreboard matches the in-game one for a match you played.
 - [ ] **1.8 `demo diff` and CI.** Exit: the diff passes on all 3 fixtures. This meets the v0 done-when and closes M1.
@@ -32,7 +36,7 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 
 ## Decisions
 
-- **v0 scope (decided 2026-10-02): infer from events.** Since about Feb 2024, demos never fire `round_start`, `round_end`, `round_mvp` or `cs_win_panel_round`, though their descriptors remain. Both reference parsers rebuild them from `CCSGameRulesProxy` entity props. v0 stays events-only:
+- **v0 scope (decided 2026-10-02): infer from events.** Newer patches never fire `round_start`, `round_end`, `round_mvp` or `cs_win_panel_round`, though their descriptors remain. Patch 13984 (early 2024) still fires them, so v0 uses them when present and infers when absent. Both reference parsers rebuild them from `CCSGameRulesProxy` entity props. v0 stays events-only:
   - **Round boundaries:** `round_freeze_end`, `round_officially_ended` (none for the last round; use `cs_win_panel_match`), match start from the last `begin_new_match`, halftime from `announce_phase_end`.
   - **Winner and reason:** inferred from bomb events, eliminations and the round timer. Surrenders and backup restores can break this.
   - **Teams:** from `player_team`, `CS_UM_EndOfMatchAllPlayersData` when present, and the halftime swap.
