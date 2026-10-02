@@ -134,8 +134,21 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
     - 53df3af: round 1 keeps the spawns and team changes before `begin_new_match`, and its start is clamped to the demo's first frame tick.
     - 0108c53: unknown `E*` enum fields decode as varints, and a projectile class missing from the build is skipped (build 9842: `EGrenadeThrowState`, `CFlashbangProjectile`).
     - 1dd244c: the CLI diff still compares match.json when the round files fail.
-  - *Not ours:* the 2 "no live rounds" demos are rejected by the oracle too. Grenade diffs at the research branch base come from the old oracle (fixed in 5d0c7fe).
-  - *Now:* aiguy is sweeping 1dd244c (the 10 repros, then all 132). Guards: the 10 local demos match the reference (`TestReferenceDiff`, `TestReferenceRounds`), and the scoreboard check gives "ALL MATCH".
+    - 76e0708: unknown types named like enums (`DecalMode_t`, any `…_t`) decode as varints. This covers 13 of the 21 `unknown_entity` failures, all `CWorld.m_nDecalMode`. A wrong guess between integer kinds still keeps the bitstream in step.
+    - 4a3d389: sides are read at each round's freeze end, as the reference does. On build 9842 the halftime swap fires before the event that ends round 12.
+    - ca49811: `demo inspect --events` prints game-event counts and a round-structure timeline (event names and ticks only, so it's safe to keep from any demo).
+  - *Full-132 on 68a02cf (run 37054367353):*
+    - 46 still collapse to 1 round: none of the four boundary events qualifies on them. The cause is unknown until the timelines come back.
+    - 37 have a boundary or reason difference.
+    - 21 fail with `unknown_entity`.
+    - 14 have a clean match.json.
+    - Parse p50 is 3.5 s, max 7.4 s and 219 MB.
+  - *Repro on 1dd244c (run 37055026405):* 4 of the 10 have a clean match.json; the 9842 halftime and round-1 cases are left.
+    - In the two round-1 cases, 9 or 10 of 10 players have no round-1 spawn. `begin_new_match` is at tick -1, so the recording probably starts after round 1's spawns.
+    - The fix waits on the timelines rather than a guess.
+  - *Not ours:* the 2 "no live rounds" demos also fail in the reference parser ("no live rounds in the demo"), so there's nothing to fall back to. Prod returns a 422, as it would with the reference parser alone.
+  - *Now:* aiguy is running the `inspect --events` timelines on 11 demos (collapsed, round-1, no-live-rounds, plus checks), then the full 132 on ca49811.
+  - `demo diff` shows only the first 40 mismatches, so sweep kind counts are from the truncated text.
 - [ ] **Swap-in** (1587e55, de2ff27). The code is done and tested: `PARSER_ROUNDS=parser` (opt-in) ships our round files, falling back to the oracle on `entity_error` (6.5, tested) or `implausible_match`. `PARSER_SHADOW=oracle` diffs after a flushed response (6.6); a Mirage smoke run was a full match, 10 rounds and 0 mismatches.
   - *Remaining:* pipeline sets dev envVars (`PARSER_ROUNDS=parser`, `PARSER_SHADOW=oracle`); dev shadow lines come back clean; the pro sweep passes (parser/pro-rounds); then prod flips to `parser`. Never pass an empty `PARSER_ROUNDS` in prod.
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
