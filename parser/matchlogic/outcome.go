@@ -97,11 +97,21 @@ func fromRoundEnd(e Entry, inferred outcome, ok bool, r int, n *notes) outcome {
 //   - the round timer, roundTicks after freeze end, runs out with the bomb
 //     not planted: CT win, time_expired.
 //
-// Living players are tracked from spawns, deaths and disconnects, with the
-// sides the round was played on. ok is false if nothing decided the round.
+// Living players are tracked from spawns, presumed or recorded, deaths and
+// disconnects, with the sides the round was played on. ok is false if nothing decided the round.
 func inferOutcome(log *Log, sp span, side []Side, roundTicks int32) (o outcome, ok bool) {
 	alive := make([]bool, len(side))
 	var living, spawned [CT + 1]int // by side
+	spawn := func(p int) {
+		if p != NoPlayer && side[p].Playing() && !alive[p] {
+			alive[p] = true
+			living[side[p]]++
+			spawned[side[p]]++
+		}
+	}
+	for _, p := range sp.presumed {
+		spawn(p)
+	}
 	planted := false
 	expiry := int32(-1) // tick the round timer runs out, once freeze time ends
 	for i := sp.start; i < sp.end; i++ {
@@ -115,11 +125,7 @@ func inferOutcome(log *Log, sp span, side []Side, roundTicks int32) (o outcome, 
 				expiry = e.Tick + roundTicks
 			}
 		case PlayerSpawn:
-			if p := e.Player; p != NoPlayer && side[p].Playing() && !alive[p] {
-				alive[p] = true
-				living[side[p]]++
-				spawned[side[p]]++
-			}
+			spawn(e.Player)
 		case PlayerDeath, PlayerDisconnect:
 			p := e.Player
 			if p == NoPlayer || !alive[p] {

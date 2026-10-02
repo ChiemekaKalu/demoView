@@ -100,6 +100,54 @@ func TestSegmentRounds(t *testing.T) {
 			kills: 4,
 		},
 		{
+			// A tournament recording that starts in round 1's freeze time:
+			// no begin_new_match, no spawns for round 1, and only
+			// cs_pre_restart, a few ticks before each restart. Round 1's
+			// players are round 2's, and a round starts at its spawns.
+			name: "recorded from round 1, cs_pre_restart only",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.ev(100, RoundFreezeEnd).kill(200, c, a).kill(300, d, b)
+				l.ev(729, PreRestart).spawn(748, a, b, c, d).ev(1000, RoundFreezeEnd)
+				l.kill(1100, a, c).kill(1200, a, d)
+				l.ev(1629, PreRestart).spawn(1648, a, b, c, d).ev(2000, RoundFreezeEnd)
+				l.kill(2100, a, c).kill(2200, b, d)
+				l.ev(2300, WinPanelMatch)
+				return l
+			},
+			rounds: []string{
+				"1:0-100-300 B CT elimination",
+				"2:748-1000-1200 A CT elimination",
+				"3:1648-2000-2200 A CT elimination",
+			},
+			kills: 6,
+			notes: []string{"no begin_new_match before a round: the match starts at tick 0"},
+		},
+		{
+			// A recording of a first half whose only begin_new_match comes
+			// at its end, as the match restarts, with no win panel. The
+			// rounds before it are still the match.
+			name: "begin_new_match at the end",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.ev(100, RoundFreezeEnd).kill(200, c, a).kill(300, d, b)
+				l.ev(748, RoundOfficiallyEnded).ev(748, RoundPrestart).spawn(748, a, b, c, d).ev(1000, RoundFreezeEnd)
+				l.kill(1100, a, c).kill(1200, a, d)
+				l.ev(1648, RoundOfficiallyEnded).ev(1648, RoundPrestart).spawn(1648, a, b, c, d).ev(1649, BeginNewMatch)
+				return l
+			},
+			rounds: []string{
+				"1:0-100-300 B CT elimination",
+				"2:748-1000-1200 A CT elimination",
+			},
+			kills: 4,
+			notes: []string{
+				"no cs_win_panel_match: the match runs to the end of the demo",
+				"no begin_new_match before a round: the match starts at tick 0",
+				"restart at tick 1648 has no freeze end or round end; folded into round 2",
+			},
+		},
+		{
 			// A restart with nothing in it joins the round before it.
 			name: "empty restart",
 			build: func() *testLog {
@@ -162,6 +210,10 @@ func TestLiveWindow(t *testing.T) {
 		{"restart after the end", []Kind{BeginNewMatch, PlayerDeath, WinPanelMatch, BeginNewMatch, PlayerDeath}, 0, 2, 0},
 		{"no win panel", []Kind{PlayerDeath, BeginNewMatch, PlayerDeath}, 1, 3, 1},
 		{"no begin_new_match", []Kind{PlayerDeath, WinPanelMatch}, 0, 1, 1},
+		{"no begin_new_match, a restart before the first round", []Kind{PlayerDeath, RoundPrestart, RoundFreezeEnd, PlayerDeath, WinPanelMatch}, 1, 4, 1},
+		// A match restarted at the end of the demo doesn't hide the one played.
+		{"begin_new_match after the last round", []Kind{RoundFreezeEnd, PlayerDeath, BeginNewMatch}, 0, 3, 2},
+		{"begin_new_match before and after the rounds", []Kind{BeginNewMatch, RoundFreezeEnd, PlayerDeath, BeginNewMatch, WinPanelMatch}, 0, 4, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

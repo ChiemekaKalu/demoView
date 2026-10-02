@@ -31,8 +31,8 @@ type sides struct {
 // assignSides works out every participant's side in every round they played,
 // their team, and the side team A played in each round.
 //
-//  1. A participant plays a round if they spawn in it, or kill, die, assist,
-//     hurt or get hurt in it.
+//  1. A participant plays a round if they spawn in it (or are presumed
+//     to), or kill, die, assist, hurt or get hurt in it.
 //  2. Their observed side in a round comes from their player_team events,
 //     read at its freeze end: a halftime swap can come before the event
 //     that ends the round. Without events, or if the events end on a
@@ -80,6 +80,9 @@ func participation(log *Log, spans []span) [][]bool {
 			if p != NoPlayer && !log.Players[p].Info.HLTV {
 				in[r][p] = true
 			}
+		}
+		for _, p := range sp.presumed {
+			mark(p)
 		}
 		for _, e := range log.Entries[sp.start:sp.end] {
 			switch e.Kind {

@@ -42,6 +42,9 @@ func Build(log *Log, opt Options) Result {
 		return Result{Notes: n}
 	}
 	spans[0].startTick = max(spans[0].startTick, opt.FirstTick)
+	if presumeSpawns(log, spans) {
+		spans[0].startTick = opt.FirstTick // the recording starts inside round 1
+	}
 	swap := halftimes(log, spans, w, &n)
 	s := assignSides(log, spans, swap, &n)
 	outs := decideRounds(log, spans, s, opt, &n)

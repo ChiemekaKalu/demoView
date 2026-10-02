@@ -13,6 +13,11 @@ type span struct {
 	freezeTick int32 // its tick
 	roundEnd   int   // the round_end entry, or -1 (newer demos)
 	restart    int   // the round_officially_ended entry, or -1 (the last round)
+
+	// presumed are participants taken to have spawned at the start, though
+	// the demo has no spawn for them: it was recorded from after their
+	// spawns (see presumeSpawns).
+	presumed []int
 }
 
 // boundaryKind returns the event that starts a round in the live window w.
@@ -21,7 +26,8 @@ type span struct {
 // keeps them in the round they belong to. round_start (older demos) and
 // round_poststart fire on the same tick and stand in for it. Tournament GOTV
 // demos fire none of these during play; there round_officially_ended, which
-// fires as the next round restarts, marks the boundary.
+// fires as the next round restarts, marks the boundary, and failing that
+// cs_pre_restart, which fires just before it.
 //
 // Every round has one freeze end, so a kind qualifies when w holds one for
 // every round after the first (round 1's may come before begin_new_match).
@@ -32,7 +38,7 @@ func boundaryKind(log *Log, w window) Kind {
 		count[e.Kind]++
 	}
 	need := count[RoundFreezeEnd] - 1
-	for _, k := range []Kind{RoundPrestart, RoundStart, RoundPoststart, RoundOfficiallyEnded} {
+	for _, k := range []Kind{RoundPrestart, RoundStart, RoundPoststart, RoundOfficiallyEnded, PreRestart} {
 		if count[k] >= need {
 			return k
 		}
@@ -75,7 +81,7 @@ backward:
 	starts := []int{first}
 	for i := w.start + 1; i < w.end; i++ {
 		if log.Entries[i].Kind == boundary {
-			starts = append(starts, i)
+			starts = append(starts, restartAfter(log, i, w.end))
 		}
 	}
 
@@ -107,6 +113,49 @@ backward:
 		spans[0].startTick = max(spans[0].startTick, log.Entries[w.start].Tick)
 	}
 	return spans
+}
+
+// restartAfter returns the restart that the boundary entry i announces. A
+// cs_pre_restart comes a few ticks before the restart; that is the first
+// spawn after it, unless a freeze end comes first. Any other boundary is its
+// own restart.
+func restartAfter(log *Log, i, end int) int {
+	if log.Entries[i].Kind != PreRestart {
+		return i
+	}
+	for j := i + 1; j < end; j++ {
+		switch log.Entries[j].Kind {
+		case PlayerSpawn:
+			return j
+		case RoundFreezeEnd:
+			return i
+		}
+	}
+	return i
+}
+
+// presumeSpawns gives round 1 the spawns a demo recorded from after them
+// lacks, as a tournament recording that starts in round 1's freeze time
+// does: when no restart comes before round 1's freeze end, everyone who
+// spawns in round 2 is presumed to have spawned at the start of round 1.
+// It reports whether it did.
+func presumeSpawns(log *Log, spans []span) bool {
+	if len(spans) < 2 || spans[0].freezeEnd < 0 {
+		return false
+	}
+	for _, e := range log.Entries[:spans[0].freezeEnd] {
+		if restartKinds[e.Kind] {
+			return false
+		}
+	}
+	seen := map[int]bool{}
+	for _, e := range log.Entries[spans[1].start:spans[1].end] {
+		if e.Kind == PlayerSpawn && e.Player != NoPlayer && !seen[e.Player] {
+			seen[e.Player] = true
+			spans[0].presumed = append(spans[0].presumed, e.Player)
+		}
+	}
+	return true
 }
 
 // newSpan describes the round in entries [start, end).

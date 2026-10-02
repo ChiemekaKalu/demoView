@@ -53,14 +53,22 @@ func listPlayers(log *Log, s sides) roster {
 }
 
 // spawned returns, for each round, the idx of every listed player with a
-// player_spawn in it, ascending.
+// player_spawn in it, or presumed to have spawned in it, ascending.
 func spawned(log *Log, spans []span, ro roster) [][]int {
 	out := make([][]int, len(spans))
 	for r, sp := range spans {
 		in := make([]bool, len(ro.players))
+		mark := func(p int) {
+			if p != NoPlayer && ro.idx[p] >= 0 {
+				in[ro.idx[p]] = true
+			}
+		}
+		for _, p := range sp.presumed {
+			mark(p)
+		}
 		for _, e := range log.Entries[sp.start:sp.end] {
-			if e.Kind == PlayerSpawn && e.Player != NoPlayer && ro.idx[e.Player] >= 0 {
-				in[ro.idx[e.Player]] = true
+			if e.Kind == PlayerSpawn {
+				mark(e.Player)
 			}
 		}
 		for i, ok := range in {

@@ -99,6 +99,7 @@ var eventKinds = map[string]Kind{
 	"round_freeze_end":       RoundFreezeEnd,
 	"round_end":              RoundEnd,
 	"round_officially_ended": RoundOfficiallyEnded,
+	"cs_pre_restart":         PreRestart,
 	"announce_phase_end":     AnnouncePhaseEnd,
 	"cs_win_panel_match":     WinPanelMatch,
 	"player_team":            PlayerTeam,

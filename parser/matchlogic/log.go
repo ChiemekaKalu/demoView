@@ -79,6 +79,7 @@ const (
 	RoundFreezeEnd                       // round_freeze_end
 	RoundEnd                             // round_end, older demos only: Side won for Reason
 	RoundOfficiallyEnded                 // round_officially_ended: fires as the next round restarts
+	PreRestart                           // cs_pre_restart: fires just before a round restart
 	AnnouncePhaseEnd                     // announce_phase_end: halftime
 	WinPanelMatch                        // cs_win_panel_match: the match is over
 	PlayerTeam                           // player_team: Player moves from OldSide to Side
@@ -101,6 +102,7 @@ var kindNames = [...]string{
 	RoundFreezeEnd:       "round_freeze_end",
 	RoundEnd:             "round_end",
 	RoundOfficiallyEnded: "round_officially_ended",
+	PreRestart:           "cs_pre_restart",
 	AnnouncePhaseEnd:     "announce_phase_end",
 	WinPanelMatch:        "cs_win_panel_match",
 	PlayerTeam:           "player_team",
