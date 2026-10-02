@@ -212,12 +212,113 @@ abbr[title] {
   color: var(--t);
 }
 
-/* Upload */
+/* Home */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar a {
+  color: var(--muted);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.wordmark::before,
+.wordmark::after {
+  content: '';
+  order: -1;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ct);
+}
+
+.wordmark::after {
+  background: var(--t);
+  margin-right: 0.4rem;
+}
+
+/* One column puts the gallery before the upload form. */
+.hero {
+  display: contents;
+}
+
+.hero-text {
+  order: 1;
+  margin-top: var(--space-8);
+}
+
+.hero h1 {
+  font-size: 1.9rem;
+  line-height: 1.2;
+  margin: 0 0 var(--space-3);
+}
+
+.lede {
+  color: var(--text-2);
+  margin: 0;
+  max-width: 36rem;
+}
+
+.gallery {
+  order: 2;
+  margin-top: var(--space-8);
+}
+
+.upload-card {
+  order: 3;
+  margin-top: var(--space-8);
+  padding: var(--space-6);
+}
+
+.upload-card h2 {
+  margin-top: 0;
+}
+
+@media (min-width: 56rem) {
+  .home {
+    display: block;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    gap: var(--space-8);
+    align-items: start;
+    margin-top: var(--space-8);
+  }
+
+  .hero-text,
+  .upload-card {
+    margin-top: 0;
+  }
+
+  .gallery {
+    margin-top: 3rem;
+  }
+}
 
 .upload {
   display: grid;
   gap: 0.4rem;
-  margin: var(--space-6) 0;
+  margin-top: var(--space-4);
 }
 
 .upload label {
@@ -225,10 +326,32 @@ abbr[title] {
   margin-top: 0.6rem;
 }
 
+.upload .check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 400;
+  margin-top: 0;
+}
+
+.check input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
 .upload .actions {
   display: flex;
   gap: var(--space-2);
   margin-top: 0.6rem;
+}
+
+.upload .actions .primary {
+  flex: 1;
+  justify-content: center;
+  min-height: 2.5rem;
 }
 
 .upload .progress {
@@ -238,6 +361,151 @@ abbr[title] {
 
 .upload .progress label {
   font-weight: 400;
+}
+
+.gallery-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.gallery-head h2 {
+  margin: 0;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.gallery-grid > li {
+  display: grid;
+}
+
+.skeleton {
+  overflow: hidden;
+  padding-bottom: 6.6rem;
+}
+
+.skeleton::before {
+  content: '';
+  display: block;
+  aspect-ratio: 16 / 10;
+  background: var(--stage);
+}
+
+.match-card {
+  display: block;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+}
+
+.match-card:hover,
+.match-card:focus-visible {
+  border-color: var(--accent-tint-line);
+}
+
+.card-thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--stage);
+}
+
+.card-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.85;
+}
+
+.match-card:hover img,
+.match-card:focus-visible img {
+  opacity: 1;
+}
+
+.no-radar {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 24px),
+    var(--stage);
+  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .match-card,
+  .card-thumb img {
+    transition:
+      transform 150ms,
+      opacity 150ms,
+      border-color 150ms;
+  }
+
+  .match-card:hover,
+  .match-card:focus-visible {
+    transform: translateY(-2px);
+  }
+
+  .match-card:hover img,
+  .match-card:focus-visible img {
+    transform: scale(1.03);
+  }
+}
+
+.card-body {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0.9rem 0.9rem;
+}
+
+.card-body h3,
+.card-body p {
+  margin: 0;
+}
+
+.card-map {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card-score {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-score b {
+  font-weight: 700;
+}
+
+.card-score .lose {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.card-score .lbl {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.pill {
+  background: var(--raised);
+  color: var(--text-2);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* Match */

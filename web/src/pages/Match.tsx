@@ -53,7 +53,7 @@ export function Match({ id }: { id: string }) {
     return (
       <main class="page">
         <Link href="/" class="back">
-          ← Upload
+          ← All matches
         </Link>
         <h1>Match not found</h1>
         <p class="error" role="alert">
@@ -68,7 +68,7 @@ export function Match({ id }: { id: string }) {
     return (
       <main class="page">
         <Link href="/" class="back">
-          ← Upload
+          ← All matches
         </Link>
         <h1>Preparing the match</h1>
         <div role="status" aria-live="polite">
@@ -89,7 +89,7 @@ export function Match({ id }: { id: string }) {
     return (
       <main class="page">
         <Link href="/" class="back">
-          ← Upload
+          ← All matches
         </Link>
         <h1>The parse failed</h1>
         <p class="error" role="alert">
@@ -106,7 +106,7 @@ export function Match({ id }: { id: string }) {
   return (
     <main class="page">
       <Link href="/" class="back">
-        ← Upload
+        ← All matches
       </Link>
       <header class="match-head">
         <h1>{mapTitle(summary.map)}</h1>

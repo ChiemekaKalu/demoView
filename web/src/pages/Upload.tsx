@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { ApiError, FIXTURES, isAbort, SAMPLE_ID, uploadDemo, type UploadStage } from '../api'
+import { ApiError, featureMatch, FIXTURES, isAbort, uploadDemo, type UploadStage } from '../api'
 import { Link } from '../Link'
-import { navigate, useTitle } from '../router'
+import { navigate } from '../router'
 
 const MAX_BYTES = 1024 ** 3
 
@@ -11,11 +11,12 @@ const STAGE_TEXT: Record<UploadStage, string> = {
   confirming: 'Confirming the upload…',
 }
 
-export function Upload() {
-  useTitle('')
+export function UploadCard() {
   const [stage, setStage] = useState<UploadStage | null>(null)
   const [progress, setProgress] = useState<{ loaded: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // A match that uploaded but could not be featured: the error links to it.
+  const [orphan, setOrphan] = useState<string | null>(null)
   const ctrlRef = useRef<AbortController | null>(null)
   const busy = stage !== null
   // Leaving the page cancels an upload in progress, so it can't finish later
@@ -24,6 +25,7 @@ export function Upload() {
 
   const onFile = (e: Event) => {
     const f = (e.currentTarget as HTMLInputElement).files?.[0]
+    setOrphan(null)
     setError(f && f.size > MAX_BYTES ? 'This file is larger than 1 GB, the upload limit.' : null)
   }
 
@@ -33,31 +35,41 @@ export function Upload() {
     const token = (form.elements.namedItem('token') as HTMLInputElement).value.trim()
     // Read from the input, not state, so a just-picked file is never missed.
     const file = (form.elements.namedItem('demo') as HTMLInputElement).files?.[0]
+    const feature = (form.elements.namedItem('feature') as HTMLInputElement).checked
     if (!file) return setError('Choose a .dem file first.')
     if (file.size > MAX_BYTES) return setError('This file is larger than 1 GB, the upload limit.')
     if (!token && !FIXTURES) return setError('Enter the upload token.')
     setError(null)
+    setOrphan(null)
     setProgress(null)
-    ctrlRef.current = new AbortController()
+    const { signal } = (ctrlRef.current = new AbortController())
+    let id: string
     try {
-      const id = await uploadDemo(file, token, {
+      id = await uploadDemo(file, token, {
         onStage: setStage,
         onProgress: (loaded, total) => setProgress({ loaded, total }),
-        signal: ctrlRef.current.signal,
+        signal,
       })
-      navigate(`/m/${id}`)
     } catch (err) {
       setStage(null)
-      if (isAbort(err)) return setError('Upload cancelled.')
-      setError(uploadError(err))
+      return setError(isAbort(err) ? 'Upload cancelled.' : uploadError(err))
     }
+    if (feature) {
+      try {
+        await featureMatch(id, token, true, signal)
+      } catch (err) {
+        setStage(null)
+        setOrphan(id)
+        return setError(`Uploaded, but featuring failed: ${isAbort(err) ? 'cancelled' : message(err)}`)
+      }
+    }
+    navigate(`/m/${id}`)
   }
 
   const pct = progress && progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0
   return (
-    <main class="page narrow">
-      <h1>demoView</h1>
-      <p>Upload a CS2 demo to get a scoreboard and a 2D replay of every round.</p>
+    <aside class="card upload-card" aria-labelledby="upload-title">
+      <h2 id="upload-title">Upload a demo</h2>
       {FIXTURES && (
         <p class="notice">
           Fixtures mode: nothing is uploaded. Submitting opens the sample match.
@@ -80,6 +92,11 @@ export function Upload() {
         <p id="token-help" class="muted small">
           Uploads need the token. Viewing a match only needs its link.
         </p>
+
+        <label class="check">
+          <input name="feature" type="checkbox" disabled={busy} />
+          Feature in the gallery
+        </label>
 
         <div class="actions">
           <button type="submit" class="primary" disabled={busy}>
@@ -109,14 +126,16 @@ export function Upload() {
         {error && (
           <p class="error" role="alert">
             {error}
+            {orphan && (
+              <>
+                {' '}
+                <Link href={`/m/${orphan}`}>Open the match</Link>
+              </>
+            )}
           </p>
         )}
       </form>
-      <p>
-        Or open the <Link href={`/m/${SAMPLE_ID}`}>sample match</Link>, or read{' '}
-        <Link href="/findings">what decides a round</Link> in 541 pro matches.
-      </p>
-    </main>
+    </aside>
   )
 }
 
@@ -130,7 +149,10 @@ function uploadError(err: unknown): string {
     if (err.status === 413) return 'The demo is larger than 1 GB.'
     if (err.status === 429) return 'Too many uploads in the last minute. Try again in a minute.'
     if (err.status === 409) return 'The upload could not be confirmed: the file did not reach storage. Try again.'
-    return err.message
   }
+  return message(err)
+}
+
+function message(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }

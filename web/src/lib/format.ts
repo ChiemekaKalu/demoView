@@ -80,3 +80,10 @@ export function sideOf(team: string | null | undefined, sideA: string | null | u
 // A shape for each side, so sides differ by more than color. Matches the
 // canvas: CT is a circle, T a square.
 export const SIDE_GLYPH: Record<Side, string> = { CT: '●', T: '■' }
+
+const GALLERY_DATE = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' })
+
+// A gallery card's date, in the viewer's locale: "Oct 2, 2026".
+export function galleryDate(ms: number): string {
+  return GALLERY_DATE.format(ms)
+}

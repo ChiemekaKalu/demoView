@@ -1,5 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, getEvents, getMap, getMatchFile, getPulse, getRound, getSummary, uploadDemo } from './api'
+import {
+  ApiError,
+  featureMatch,
+  getEvents,
+  getGallery,
+  getMap,
+  getMatchFile,
+  getPulse,
+  getRound,
+  getSummary,
+  radarUrl,
+  uploadDemo,
+} from './api'
 import { MAPS } from './lib/maps'
 
 // The module caches per match id, so each test uses its own id.
@@ -12,6 +24,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
 })
 
 const json = (body: unknown, status = 200) =>
@@ -231,5 +244,55 @@ describe('getPulse', () => {
     expect(await getPulse(id)).toBeNull()
     expect(await getPulse('sample')).toBeNull()
     expect(urls().some((u) => u.includes('pulse.json'))).toBe(false)
+  })
+})
+
+describe('the gallery', () => {
+  const card = { id: 'aaaaaaaaaab61', map: 'de_inferno', score_a: 13, score_b: 11, parsed_at: 5 }
+
+  it('lists the featured matches, and none from a Worker without the route', async () => {
+    fetchMock.mockResolvedValueOnce(json([card]))
+    expect(await getGallery()).toEqual([card])
+    fetchMock.mockResolvedValueOnce(json({ error: 'not found' }, 404))
+    expect(await getGallery()).toEqual([])
+    expect(urls()).toEqual(['/api/gallery', '/api/gallery'])
+  })
+
+  it('features a match with the upload token', async () => {
+    fetchMock.mockResolvedValue(json({ id: card.id, featured: true }))
+    await featureMatch(card.id, 'token', true)
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(`/api/matches/${card.id}/feature`)
+    expect(init.method).toBe('POST')
+    expect(init.headers).toMatchObject({ authorization: 'Bearer token' })
+    expect(JSON.parse(String(init.body))).toEqual({ featured: true })
+  })
+
+  it('takes a radar from the bundle, else from the API', () => {
+    expect(radarUrl('de_mirage')).toBe(MAPS.de_mirage.radar)
+    expect(radarUrl('de_inferno')).toBe('/api/maps/de_inferno/radar.png')
+    expect(radarUrl(null)).toBeNull()
+  })
+
+  it('shows only the sample in fixtures mode, with no backend', async () => {
+    vi.stubEnv('VITE_FIXTURES', '1')
+    vi.resetModules()
+    const api = await import('./api')
+    const winners = ['A', 'A', 'B']
+    fetchMock.mockResolvedValue(
+      json({
+        schema_version: 1,
+        parser_version: '0.1.0',
+        match: { map: 'de_mirage', tick_rate: 64, demo_sha256: '' },
+        players: [{ idx: 0, steam_id: '76561197960265728', name: 'someone', team: 'A' }],
+        rounds: winners.map((winner, i) => ({ n: i + 1, winner, reason: 'elimination', side_a: 'CT' })),
+        kills: [],
+        scoreboard: [],
+      }),
+    )
+    expect(await api.getGallery()).toEqual([{ id: 'sample', map: 'de_mirage', score_a: 2, score_b: 1, parsed_at: 0 }])
+    await api.featureMatch('sample', '', true)
+    expect(api.radarUrl('de_inferno')).toBeNull()
+    expect(urls()).toEqual(['/samples/match.json'])
   })
 })

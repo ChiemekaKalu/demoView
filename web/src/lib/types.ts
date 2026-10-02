@@ -82,11 +82,11 @@ export type MatchStatus = 'uploaded' | 'queued' | 'parsing' | 'ready' | 'failed'
 
 // GET /api/matches/:id. D1 columns can be null until a parse fills them.
 // One row of GET /api/matches/:id/events: a status change, parse attempt,
-// reparse request or cleanup.
+// reparse request, Pulse, cleanup or gallery change.
 export interface MatchEvent {
   seq: number
   ts: number
-  kind: 'status' | 'attempt' | 'reparse' | 'cleanup'
+  kind: 'status' | 'attempt' | 'reparse' | 'pulse' | 'cleanup' | 'feature'
   msg: string
   attempt: number | null
   build: string | null
@@ -127,4 +127,14 @@ export interface SummaryRound {
   winner: string | null
   reason: string | null
   side_a: string | null
+}
+
+// One row of GET /api/gallery: a featured, ready match. Map, score and date
+// only, never names or Steam ids.
+export interface GalleryMatch {
+  id: string
+  map: string | null
+  score_a: number | null
+  score_b: number | null
+  parsed_at: number
 }

@@ -7,7 +7,7 @@ import { deriveSummary, roundFileName } from './lib/fixtures'
 import { schemaProblem } from './lib/errors'
 import { apiMap, MAPS, type MapInfo, type RadarInfo } from './lib/maps'
 import type { PulseFile } from './lib/pulse'
-import type { MatchEvent, MatchFile, MatchSummary, RoundFile } from './lib/types'
+import type { GalleryMatch, MatchEvent, MatchFile, MatchSummary, RoundFile } from './lib/types'
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
 const SAMPLES = `${import.meta.env.BASE_URL}samples`
@@ -212,6 +212,45 @@ export function getMap(name: string): Promise<MapInfo | null> {
     maps.set(name, p)
   }
   return p
+}
+
+// ---- Gallery -------------------------------------------------------------
+
+// GET /api/gallery: the featured matches, most recently featured first.
+// Fixtures mode lists the sample, and a Worker from before the gallery (404)
+// lists none.
+export async function getGallery(signal?: AbortSignal): Promise<GalleryMatch[]> {
+  if (FIXTURES) return [await getSampleCard()]
+  try {
+    return await request<GalleryMatch[]>(`${API_BASE}/api/gallery`, { signal })
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return []
+    throw err
+  }
+}
+
+// The sample match as a gallery card, for when there is nothing else to show.
+export async function getSampleCard(): Promise<GalleryMatch> {
+  const { id, map, score_a, score_b, parsed_at } = await getSummary(SAMPLE_ID)
+  return { id, map, score_a, score_b, parsed_at: parsed_at ?? 0 }
+}
+
+// A map's radar image, for a gallery thumbnail: the bundled one, else the
+// API's (which may 404), else null.
+export function radarUrl(map: string | null): string | null {
+  if (!map) return null
+  return MAPS[map]?.radar ?? (FIXTURES ? null : `${API_BASE}/api/maps/${enc(map)}/radar.png`)
+}
+
+// POST /api/matches/:id/feature: lists the match in the gallery, or unlists it.
+export async function featureMatch(id: string, token: string, featured: boolean, signal?: AbortSignal): Promise<void> {
+  if (FIXTURES) return
+  await request(`${API_BASE}/api/matches/${enc(id)}/feature`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ featured }),
+    signal,
+  })
 }
 
 // ---- Uploading -----------------------------------------------------------
