@@ -121,6 +121,13 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
   - Against the oracle on all 10 demos: players and kill events have zero mismatches. Grenades differ only where the oracle departs from plan.md: fire end (we end at `inferno_expire`, the flame-out; it ends at entity removal, about 13 s later), its `[0,0]` fire last point, and one undetonated decoy.
   - Byte-identical across runs.
   - An entity-stage error stops only that stage: `match.json` stays complete, and the CLI exits 1 with `unknown_entity`.
+- [ ] **Pro-demo robustness (found 2026-10-02 by aiguy's bulk run).** 132 public pro GOTV demos (HF `skkwowee/chimera-cs2` @ 69b9cba, builds 9842–10847): no crashes, p95 1.6 s, max 61 MB. But:
+  - Round segmentation collapses to 1 round on 113.
+  - 2 are "no live rounds" bad_demo.
+  - 9 have teams swapped (mostly build 9842).
+  - A few have minor round-1 and ADR differences.
+  - *Prod today:* the oracle guard ships the oracle's match.json for the collapsed and swapped cases, so they're correct. The 2 "no live rounds" demos fail with a 422.
+  - *Fix in progress* in `matchlogic`. **The swap-in default stays `oracle` until the pro sample passes.** Then: a pinned pro set in CI (pipeline), downloaded from HF at test time, never rehosted.
 - [ ] **Swap-in:** the server ships our round files, falls back to the oracle on an entity-stage error, and logs `round_source`. Plus the dev shadow compare (6.6).
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
 
