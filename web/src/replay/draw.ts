@@ -174,8 +174,12 @@ export class Renderer {
     g.setTransform(ratio, 0, 0, ratio, 0, 0)
     g.fillStyle = '#13161b'
     g.fillRect(0, 0, size, size)
-    if (this.radar) g.drawImage(this.radar, 0, 0, size, size)
-    else this.placeholder(g, size)
+    if (this.radar) {
+      g.drawImage(this.radar, 0, 0, size, size)
+      if (this.scene.map.twoFloor) note(g, size, 'Both floors are drawn on the main radar')
+    } else {
+      this.placeholder(g, size)
+    }
     this.bg = c
     this.bgKey = key
     return c
@@ -232,12 +236,17 @@ export class Renderer {
     }
     g.strokeStyle = 'rgba(255,255,255,0.3)'
     g.strokeRect(0.5, 0.5, size - 1, size - 1)
-    g.textBaseline = 'bottom'
-    g.textAlign = 'right'
-    g.fillStyle = 'rgba(255,255,255,0.4)'
-    g.font = '11px system-ui, sans-serif'
-    g.fillText(map.fitted ? 'No radar for this map: positions fitted to the data' : `${map.title}: no radar image`, size - 6, size - 6)
+    note(g, size, map.fitted ? 'No radar for this map: positions fitted to the data' : `${map.title}: no radar image`)
   }
+}
+
+// A quiet caption in the bottom right corner.
+function note(g: CanvasRenderingContext2D, size: number, text: string) {
+  g.textBaseline = 'bottom'
+  g.textAlign = 'right'
+  g.fillStyle = 'rgba(255,255,255,0.4)'
+  g.font = '11px system-ui, sans-serif'
+  g.fillText(text, size - 6, size - 6)
 }
 
 type Pt = (x: number, y: number) => [number, number]

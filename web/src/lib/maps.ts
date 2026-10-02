@@ -16,6 +16,9 @@ export interface MapInfo {
   radar: string | null
   // True when the constants were fitted to the data instead of known.
   fitted?: boolean
+  // A map with a floor above another, such as Nuke: both are drawn on its
+  // main radar until there's a radar per floor.
+  twoFloor?: boolean
 }
 
 // Maps bundled with the viewer, so fixtures mode has a radar with no backend.
@@ -40,10 +43,19 @@ export interface RadarInfo {
   pos_x: number
   pos_y: number
   scale: number
+  two_floor?: boolean
 }
 
 export function apiMap(info: RadarInfo, radar: string): MapInfo {
-  return { title: mapTitle(info.name), posX: info.pos_x, posY: info.pos_y, scale: info.scale, size: 1024, radar }
+  return {
+    title: mapTitle(info.name),
+    posX: info.pos_x,
+    posY: info.pos_y,
+    scale: info.scale,
+    size: 1024,
+    radar,
+    ...(info.two_floor ? { twoFloor: true } : {}),
+  }
 }
 
 export function mapTitle(name: string | null | undefined): string {

@@ -143,6 +143,11 @@ describe('getMap', () => {
     })
   })
 
+  it('marks a two-floor map, whose floors share its main radar', async () => {
+    fetchMock.mockResolvedValue(json({ name: 'de_vertigo', pos_x: -3168, pos_y: 1762, scale: 4, two_floor: true }))
+    expect(await getMap('de_vertigo')).toMatchObject({ title: 'Vertigo', twoFloor: true })
+  })
+
   it('falls back to the bundled radar, and keeps a 404 for the session', async () => {
     fetchMock.mockResolvedValue(json({ error: 'no radar for this map' }, 404))
     expect(await getMap('de_mirage')).toBe(MAPS.de_mirage)
