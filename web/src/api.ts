@@ -57,16 +57,24 @@ const enc = encodeURIComponent
 const matchFiles = new Map<string, Promise<MatchFile | null>>()
 const readySummaries = new Map<string, MatchSummary>()
 
-// The full match.json: kills (with assisters and stable indexes) and names.
-// The API route GET /api/matches/:id/match.json is proposed but not in the
-// Worker yet, so a 404 gives null and the replay falls back to the round file.
+// A reparse overwrites a match's R2 keys, but round files are served as
+// immutable. Tagging parsed-file URLs with the ready summary's parsed_at gives
+// each parse its own cache entry. The Worker ignores the query.
+function version(id: string): string {
+  const parsedAt = readySummaries.get(id)?.parsed_at
+  return parsedAt ? `?v=${parsedAt}` : ''
+}
+
+// The full match.json: kills (with assisters and stable indexes) and names,
+// from GET /api/matches/:id/match.json. A 404 (not ready, or no file) gives
+// null, and the replay falls back to what the round file alone shows.
 export function getMatchFile(id: string): Promise<MatchFile | null> {
   const key = isFixture(id) ? SAMPLE_ID : id
   let p = matchFiles.get(key)
   if (!p) {
     p = isFixture(id)
       ? request<MatchFile>(`${SAMPLES}/match.json`)
-      : request<MatchFile>(`${API_BASE}/api/matches/${enc(id)}/match.json`).catch((err: unknown) => {
+      : request<MatchFile>(`${API_BASE}/api/matches/${enc(id)}/match.json${version(id)}`).catch((err: unknown) => {
           if (err instanceof ApiError && err.status === 404) return null
           throw err
         })
@@ -116,7 +124,9 @@ export function getRound(id: string, n: number, opts: { background?: boolean } =
     return p
   }
   if (fixture && !SAMPLE_ROUNDS.includes(n)) return Promise.resolve(null)
-  const url = fixture ? `${SAMPLES}/rounds/${roundFileName(n)}` : `${API_BASE}/api/matches/${enc(id)}/rounds/${n}`
+  const url = fixture
+    ? `${SAMPLES}/rounds/${roundFileName(n)}`
+    : `${API_BASE}/api/matches/${enc(id)}/rounds/${n}${version(id)}`
   p = request<RoundFile>(url, { priority: opts.background ? 'low' : 'auto' }).catch((err: unknown) => {
     if (err instanceof ApiError && err.status === 404) return null
     throw err
