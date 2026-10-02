@@ -16,7 +16,7 @@ export function tag(text: string, kind: 'sage' | 'tan' | 'plain' = 'plain'): HTM
   return h('span', { class: `tag ${kind}` }, text)
 }
 
-const GROUP_TAG: Record<string, 'sage' | 'tan' | 'plain'> = { Start: 'sage', 'How it works': 'sage', 'Running it': 'tan', Reference: 'plain' }
+const GROUP_TAG: Record<string, 'sage' | 'tan' | 'plain'> = { Start: 'sage', 'How it works': 'sage', 'Running it': 'tan', Operations: 'tan', Reference: 'plain' }
 export const groupTag = (group: string): HTMLElement => tag(group, GROUP_TAG[group] ?? 'plain')
 
 // An interactive model inside a framed panel, mounted into place.
