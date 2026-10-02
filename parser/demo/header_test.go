@@ -19,13 +19,14 @@ func TestReadHeader(t *testing.T) {
 
 func TestReadHeaderBadMagic(t *testing.T) {
 	in := []byte("HL2DEMO\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-	if _, err := ReadHeader(bytes.NewReader(in)); !errors.Is(err, ErrBadMagic) {
-		t.Fatalf("want ErrBadMagic, got %v", err)
+	_, err := ReadHeader(bytes.NewReader(in))
+	if !errors.Is(err, ErrBadMagic) || !errors.Is(err, ErrBadDemo) {
+		t.Fatalf("want ErrBadMagic wrapping ErrBadDemo, got %v", err)
 	}
 }
 
 func TestReadHeaderShort(t *testing.T) {
-	if _, err := ReadHeader(bytes.NewReader(Magic[:4])); err == nil {
-		t.Fatal("want error on truncated input")
+	if _, err := ReadHeader(bytes.NewReader(Magic[:4])); !errors.Is(err, ErrBadDemo) {
+		t.Fatalf("want ErrBadDemo on truncated input, got %v", err)
 	}
 }
