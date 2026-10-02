@@ -40,8 +40,11 @@
     "R2_BUCKET": "demoview-dev",
     "PARSER_BUILD": "dev",
     "PARSER_ROUNDS": "parser",
-    "PARSER_SHADOW": "oracle"
+    "PARSER_SHADOW": "oracle",
+    "PULSE_ENABLED": "true"
   },
+  // Workers AI, for Jev (Match Pulse), billed through the account's AI Gateway.
+  "ai": { "binding": "AI", "remote": true },
   // basic is 1/4 vCPU and 1 GiB: a parse of the largest fixture peaks near
   // 450 MB with round files at 64 Hz.
   "containers": [
@@ -74,9 +77,14 @@
   // dead letter queue, so max_retries 2 gives the spec's 3 attempts
   // (MAX_ATTEMPTS in src/consumer.ts). One job at a time, since every parse
   // shares the one container. The Worker also consumes the DLQ to mark
-  // matches failed.
+  // matches failed. The pulse queue is the same shape (PULSE_ATTEMPTS in
+  // src/pulse/consumer.ts), one match at a time so Jev's pacing holds, and
+  // waits 5 minutes before a retry, since Jev failing is usually a rate limit.
   "queues": {
-    "producers": [{ "binding": "PARSE_QUEUE", "queue": "demoview-dev-parse" }],
+    "producers": [
+      { "binding": "PARSE_QUEUE", "queue": "demoview-dev-parse" },
+      { "binding": "PULSE_QUEUE", "queue": "demoview-dev-pulse" }
+    ],
     "consumers": [
       {
         "queue": "demoview-dev-parse",
@@ -86,7 +94,16 @@
         "retry_delay": 30,
         "dead_letter_queue": "demoview-dev-parse-dlq"
       },
-      { "queue": "demoview-dev-parse-dlq" }
+      { "queue": "demoview-dev-parse-dlq" },
+      {
+        "queue": "demoview-dev-pulse",
+        "max_batch_size": 1,
+        "max_concurrency": 1,
+        "max_retries": 2,
+        "retry_delay": 300,
+        "dead_letter_queue": "demoview-dev-pulse-dlq"
+      },
+      { "queue": "demoview-dev-pulse-dlq" }
     ]
   },
   // New uploads and reparses: 10 a minute is room for a batch of demos, and
@@ -112,8 +129,11 @@
         "R2_BUCKET": "demoview-prod",
         "PARSER_BUILD": "dev",
         "PARSER_ROUNDS": "oracle",
-        "PARSER_SHADOW": ""
+        "PARSER_SHADOW": "",
+        // Off until the states carry the bomb timeline (state_version 2).
+        "PULSE_ENABLED": "false"
       },
+      "ai": { "binding": "AI", "remote": true },
       // basic is 1/4 vCPU and 1 GiB: a parse of the largest fixture peaks near
       // 450 MB with round files at 64 Hz.
       "containers": [
@@ -140,7 +160,10 @@
       ],
       "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "demoview-prod" }],
       "queues": {
-        "producers": [{ "binding": "PARSE_QUEUE", "queue": "demoview-prod-parse" }],
+        "producers": [
+          { "binding": "PARSE_QUEUE", "queue": "demoview-prod-parse" },
+          { "binding": "PULSE_QUEUE", "queue": "demoview-prod-pulse" }
+        ],
         "consumers": [
           {
             "queue": "demoview-prod-parse",
@@ -150,7 +173,16 @@
             "retry_delay": 30,
             "dead_letter_queue": "demoview-prod-parse-dlq"
           },
-          { "queue": "demoview-prod-parse-dlq" }
+          { "queue": "demoview-prod-parse-dlq" },
+          {
+            "queue": "demoview-prod-pulse",
+            "max_batch_size": 1,
+            "max_concurrency": 1,
+            "max_retries": 2,
+            "retry_delay": 300,
+            "dead_letter_queue": "demoview-prod-pulse-dlq"
+          },
+          { "queue": "demoview-prod-pulse-dlq" }
         ]
       },
       "ratelimits": [{ "name": "UPLOAD_LIMIT", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }],

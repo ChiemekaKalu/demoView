@@ -30,6 +30,8 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, parse_id, players, rounds }`, `no-store` | 404 |
 | `GET /api/matches/:id/events` | `200 { events }`, the match's pipeline history oldest first: `{ seq, ts, kind, msg, attempt, build, parse_id }` rows, where `kind` is `status`, `attempt`, `reparse` or `cleanup`. `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them). With `?v=<parse_id>`, that parse's, immutable for a year; without it, the live parse's, cached 5 minutes. Both with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
+| `GET /api/matches/:id/pulse.json` | `200` the parse's Match Pulse (`schema/pulse.schema.json`), cached as `match.json` is | 404 (Pulse off, or not written yet) |
+| `POST /api/matches/:id/pulse` | `202 { id, parse_id }`: queues a Pulse for the live parse | 401, 404, 409 (Pulse off, or no live parse) |
 | `GET /api/matches/:id/rounds/:n` | `200` round file, cached as `match.json` is | 404 |
 | `POST /api/admin/cron/:job` | `200 { job, ran: true }` after running `sweep`, `reparse` or `cleanup` now, as its cron would | 401, 404 (no such job) |
 | `GET /api/maps/:name` | `200 { name, pos_x, pos_y, scale }`, cached a day. A game position lands on the 1024-pixel radar at `((x - pos_x) / scale, (pos_y - y) / scale)`. | 404 (no radar, or a two-floor map) |
@@ -44,6 +46,16 @@ A failed match's `error` starts with a code, `"<code>: <detail>"`: `bad_demo` or
 Every parse attempt writes under its own prefix, `parsed/{id}/{parse_id}/`, with `manifest.json` last. Once the parser answers 200, the consumer points the match's `live_parse_id` at it and replaces its D1 rows in one batch, but only if the pointer hasn't moved since the attempt started, so a slower parse can never replace a newer one. The viewer asks for files with `?v=<parse_id>` from the summary. Matches parsed before parse ids have a null `live_parse_id`, and their files sit straight under `parsed/{id}/`.
 
 A reparse job (`{ match_id, reparse: true }`) parses a `ready` match again without leaving `ready`. If it fails, the match keeps its live parse, and `reparse_error` and `reparse_build` say why and with which build. `attempted_build` is the build of the latest attempt: `PARSER_BUILD`, which CI sets at deploy from the git trees of `parser/` and `tools/oracle/`, plus `PARSER_ROUNDS` when it's set (e.g. `9f5be622def2+parser`). So switching whose round files ship reparses every match, the same as a code change.
+
+## Match Pulse
+
+When `PULSE_ENABLED` is `true` (dev only for now), a parse that goes live queues a job on its own pulse queue, so Jev being slow or out of credits never touches the parse. The consumer (`src/pulse/`) works through these steps:
+- It builds name-free states from the parse's `match.json` and round files. State_version 1 has kills, alive counts, HP and the clock; the bomb timeline arrives in state_version 2.
+- It asks Jev (`typesafe/jev` on Workers AI, through the AI Gateway `default`) at freeze end and after every kill, and once per round. It runs at most 4 calls in flight and 4 a second, and retries rate limits 4 times.
+- It recalibrates the odds (temperature 0.54), computes the facts and checks the headline in code, then writes `parsed/{id}/{parse_id}/pulse.json`.
+- It grades the line against the real winners (`pulse_quality`), and adds Jev's tokens to `ai_usage` and a row to the match's history.
+
+When Jev runs out of credits, keeps failing for 3 attempts, or the month's 50M-token cap is reached, a 7-weight logistic model draws the line instead (`model: fallback-logit-v1`, no highlights). A Pulse is then marked `fallback` rather than missing. A match costs about $0.01.
 
 ## Scheduled jobs
 

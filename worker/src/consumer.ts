@@ -15,6 +15,7 @@ import {
   setStatus,
 } from "./matches";
 import { parserBuild, type Parser, type ParseResult } from "./parser";
+import { queuePulse } from "./pulse/consumer";
 import { addContainerTime } from "./usage";
 
 // Must match max_retries + 1 in wrangler.jsonc.
@@ -128,7 +129,9 @@ async function handleParseJob(message: Message<ParseJob>, env: Env, parser: Pars
         message.ack();
         return;
       }
-      if (!(await saveParsedMatch(env.DB, id, file, parse, Date.now(), log))) {
+      if (await saveParsedMatch(env.DB, id, file, parse, Date.now(), log)) {
+        await queuePulse(env, id, parse.id);
+      } else {
         console.warn(
           JSON.stringify({ event: "parse_superseded", match_id: id, parse_id: parse.id, started_from: parse.from }),
         );

@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [
     cloudflareTest(async () => ({
       wrangler: { configPath: "./wrangler.jsonc" },
+      // Never reach real Workers AI from tests; Pulse tests pass a fake Jev.
+      remoteBindings: false,
       miniflare: {
         // Fake secrets and vars, so tests never need a .dev.vars or real keys.
         bindings: {
@@ -19,6 +21,8 @@ export default defineConfig({
           PARSER_BUILD: "test-build",
           // The image default, so builds in the tests are just PARSER_BUILD.
           PARSER_ROUNDS: "",
+          // Tests that want Pulse turn it on with a fake queue.
+          PULSE_ENABLED: "false",
         },
       },
     })),

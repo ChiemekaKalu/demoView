@@ -1,5 +1,6 @@
 import { hasUploadToken } from "./auth";
 import { JOBS } from "./cron";
+import { queuePulse } from "./pulse/consumer";
 import { addEvent, getEvents } from "./events";
 import {
   demoKey,
@@ -8,6 +9,7 @@ import {
   isParseId,
   matchFileKey,
   newMatchId,
+  parsedPrefix,
   radarImageKey,
   radarInfoKey,
   roundKey,
@@ -54,6 +56,8 @@ const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)$/, handler: getMatchSummary },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/events$/, handler: getMatchEvents },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/match\.json$/, handler: getMatchFile },
+  { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/pulse\.json$/, handler: getPulseFile },
+  { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/pulse$/, handler: queueMatchPulse },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/rounds\/([^/]+)$/, handler: getRoundFile },
   { method: "GET", pattern: /^\/api\/maps\/([^/]+)$/, handler: getMap },
   { method: "GET", pattern: /^\/api\/maps\/([^/]+)\/radar\.png$/, handler: getRadarImage },
@@ -237,6 +241,30 @@ async function getMatchFile(request: Request, env: Env, [id = ""]: string[]): Pr
   // named parse may have been cleaned up.
   if (parse.live) console.error(JSON.stringify({ event: "object_missing", match_id: id, key }));
   return error(404, "match.json not found");
+}
+
+// GET /api/matches/:id/pulse.json: the parse's Match Pulse, once its consumer
+// has written it. Until then, or with Pulse off, a 404.
+async function getPulseFile(request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
+  if (!isMatchId(id)) return error(404, "match not found");
+  const parse = await parseToServe(request, env, id);
+  if (parse instanceof Response) return parse;
+  return (
+    (await serveObject(request, env, `${parsedPrefix(id, parse.id)}pulse.json`, parse.cacheControl)) ??
+    error(404, "no pulse for this parse")
+  );
+}
+
+// POST /api/matches/:id/pulse: queues a Pulse for the live parse now, such as
+// after a new Jev model. The consumer skips a parse that already has one.
+async function queueMatchPulse(request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
+  if (!(await hasUploadToken(request, env))) return unauthorized();
+  if (env.PULSE_ENABLED !== "true") return error(409, "pulse is off");
+  const match = isMatchId(id) ? await getMatch(env.DB, id) : null;
+  if (!match) return error(404, "match not found");
+  if (match.status !== "ready" || !match.live_parse_id) return error(409, "the match has no live parse");
+  await queuePulse(env, id, match.live_parse_id);
+  return json({ id, parse_id: match.live_parse_id }, 202);
 }
 
 // Which parse a request for a match's files reads. ?v=<parse_id> names one,
