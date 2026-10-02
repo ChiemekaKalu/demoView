@@ -35,6 +35,8 @@ type server struct {
 	// stubDir, when set, holds match.json and rounds/*.json to copy instead
 	// of parsing. M2 deploys the pipeline this way before the parser is done.
 	stubDir string
+	// oracle, when set, produces the round files (PARSER_ROUNDS=oracle).
+	oracle *oracle
 
 	logMu     sync.Mutex
 	log       io.Writer
@@ -96,23 +98,30 @@ func (s *server) handleParse(w http.ResponseWriter, r *http.Request) {
 	// measured from here belongs to this parse.
 	s.resetPeak()
 	start := time.Now()
-	body, demoSize, err := s.run(r.Context(), req)
+	out, err := s.run(r.Context(), req)
 	status, result := classify(err)
 	entry := parseLog{
-		Severity:      severity(status),
-		Message:       "parse",
-		MatchID:       req.MatchID,
-		DemoKey:       req.DemoKey,
-		DemoSize:      demoSize,
-		DurationMS:    time.Since(start).Milliseconds(),
-		PeakMemory:    s.peakMem(),
-		ParserVersion: parse.Version,
-		Result:        result,
-		Status:        status,
-		Stub:          s.stubDir != "",
+		Severity:         severity(status),
+		Message:          "parse",
+		MatchID:          req.MatchID,
+		DemoKey:          req.DemoKey,
+		DemoSize:         out.demoSize,
+		DurationMS:       time.Since(start).Milliseconds(),
+		PeakMemory:       s.peakMem(),
+		ParserVersion:    parse.Version,
+		Result:           result,
+		Status:           status,
+		Stub:             s.stubDir != "",
+		OracleMS:         out.oracleMS,
+		OraclePeakMemory: out.oraclePeak,
 	}
 	if err != nil {
 		entry.Error = err.Error()
+	} else {
+		entry.MatchSource = out.source
+		if v := parserVersionOf(out.matchJSON); v != "" {
+			entry.ParserVersion = v // the shipped file's own
+		}
 	}
 	s.writeLog(entry)
 
@@ -122,65 +131,121 @@ func (s *server) handleParse(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(body)
+	w.Write(out.matchJSON)
+}
+
+// runResult is what one parse shipped, for the response and the log line.
+type runResult struct {
+	matchJSON  []byte
+	demoSize   int64
+	source     string // whose match.json shipped: "parser" or "oracle"
+	oracleMS   int64
+	oraclePeak int64
 }
 
 // run produces the parse output for req, writes it to the store and returns
-// match.json. Every output key is overwritten, so a retry is safe. match.json
-// is written last, so its presence means the round files are there too.
-func (s *server) run(ctx context.Context, req parseRequest) (matchJSON []byte, demoSize int64, err error) {
+// match.json. Every output key is overwritten, so a retry is safe. Round
+// files are written first and match.json last, so its presence means the
+// round files are there too.
+func (s *server) run(ctx context.Context, req parseRequest) (runResult, error) {
 	if s.stubDir != "" {
 		return s.runStub(ctx, req)
 	}
 	rc, size, err := s.store.Open(ctx, req.DemoKey)
 	if err != nil {
-		return nil, 0, err
+		return runResult{}, err
 	}
-	defer rc.Close()
-
 	file, err := s.parse(ctx, rc)
+	rc.Close()
+	res := runResult{demoSize: size, source: "parser"}
 	if err != nil {
-		return nil, size, err
+		return res, err
 	}
 	var buf bytes.Buffer
 	if err := match.Write(&buf, file); err != nil {
-		return nil, size, err
+		return res, err
 	}
-	// Round files go here, before match.json, once the parser writes them.
-	if err := s.store.Put(ctx, outputKey(req.MatchID, match.FileName), buf.Bytes()); err != nil {
-		return nil, size, err
+	res.matchJSON = buf.Bytes()
+
+	var rounds []outFile
+	if s.oracle != nil {
+		if rounds, err = s.oracleRounds(ctx, req, &res); err != nil {
+			return res, err
+		}
 	}
-	return buf.Bytes(), size, nil
+	for _, f := range rounds {
+		if err := s.store.Put(ctx, outputKey(req.MatchID, "rounds/"+f.name), f.data); err != nil {
+			return res, err
+		}
+	}
+	if err := s.store.Put(ctx, outputKey(req.MatchID, match.FileName), res.matchJSON); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+// oracleRounds streams the demo a second time into the oracle and returns
+// its round files. Round files index match.json's players and kills, so
+// ours ships only when the consistency guard finds it agrees with the
+// oracle's; otherwise the oracle's match.json ships with them, and a
+// warning names the first difference.
+func (s *server) oracleRounds(ctx context.Context, req parseRequest, res *runResult) ([]outFile, error) {
+	start := time.Now()
+	rc, _, err := s.store.Open(ctx, req.DemoKey)
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.oracle.export(ctx, rc)
+	rc.Close()
+	res.oracleMS = time.Since(start).Milliseconds()
+	if err != nil {
+		// Our parser accepted this demo, so the oracle failing is not the
+		// demo's fault: a 500, which the queue retries.
+		return nil, err
+	}
+	res.oraclePeak = out.peakMem
+	if why := firstMismatch(res.matchJSON, out.matchJSON); why != "" {
+		res.matchJSON, res.source = out.matchJSON, "oracle"
+		s.writeLog(map[string]any{
+			"severity": "WARNING",
+			"message":  "match.json disagrees with the oracle's; shipping the oracle's",
+			"match_id": req.MatchID,
+			"mismatch": why,
+		})
+	}
+	return out.rounds, nil
 }
 
 // runStub checks the demo exists, then copies the fixture files to the
 // match's output keys as they are.
-func (s *server) runStub(ctx context.Context, req parseRequest) ([]byte, int64, error) {
+func (s *server) runStub(ctx context.Context, req parseRequest) (runResult, error) {
 	size, err := s.store.Stat(ctx, req.DemoKey)
 	if err != nil {
-		return nil, 0, err
+		return runResult{}, err
 	}
+	res := runResult{demoSize: size}
 	matchJSON, err := os.ReadFile(filepath.Join(s.stubDir, match.FileName))
 	if err != nil {
-		return nil, size, fmt.Errorf("stub: %w", err)
+		return res, fmt.Errorf("stub: %w", err)
 	}
 	rounds, err := filepath.Glob(filepath.Join(s.stubDir, "rounds", "*.json"))
 	if err != nil {
-		return nil, size, fmt.Errorf("stub: %w", err)
+		return res, fmt.Errorf("stub: %w", err)
 	}
 	for _, p := range rounds {
 		data, err := os.ReadFile(p)
 		if err != nil {
-			return nil, size, fmt.Errorf("stub: %w", err)
+			return res, fmt.Errorf("stub: %w", err)
 		}
 		if err := s.store.Put(ctx, outputKey(req.MatchID, "rounds/"+filepath.Base(p)), data); err != nil {
-			return nil, size, err
+			return res, err
 		}
 	}
 	if err := s.store.Put(ctx, outputKey(req.MatchID, match.FileName), matchJSON); err != nil {
-		return nil, size, err
+		return res, err
 	}
-	return matchJSON, size, nil
+	res.matchJSON = matchJSON
+	return res, nil
 }
 
 // outputKey is a key under parsed/{match_id}/ in the spec's R2 layout.
@@ -217,6 +282,11 @@ type parseLog struct {
 	Status        int    `json:"status"`
 	Error         string `json:"error,omitempty"`
 	Stub          bool   `json:"stub,omitempty"`
+	// With PARSER_ROUNDS=oracle: whose match.json shipped, and the oracle
+	// step's time and peak memory (Linux only).
+	MatchSource      string `json:"match_source,omitempty"`
+	OracleMS         int64  `json:"oracle_ms,omitempty"`
+	OraclePeakMemory int64  `json:"oracle_peak_memory_bytes,omitempty"`
 }
 
 func severity(status int) string {

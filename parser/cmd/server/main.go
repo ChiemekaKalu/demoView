@@ -15,6 +15,10 @@
 //	PARSER_STORE_DIR      use this local directory instead of R2 (development)
 //	PARSER_STUB_DIR       copy match.json and rounds/*.json from this directory
 //	                      instead of parsing (the M2 stub pipeline)
+//	PARSER_ROUNDS         "oracle" to write round files with tools/oracle, the
+//	                      v1 setting; unset writes match.json only
+//	PARSER_ORACLE_BIN     the oracle binary (default "oracle" on PATH; the
+//	                      image installs it at /usr/local/bin/oracle)
 package main
 
 import (
@@ -25,6 +29,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
@@ -60,6 +65,9 @@ func run(ctx context.Context, getenv func(string) string, log io.Writer) error {
 	}
 
 	s := newServer(st, secret, parse.Run, getenv("PARSER_STUB_DIR"), log)
+	if s.oracle, err = oracleFromEnv(getenv); err != nil {
+		return err
+	}
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           s.routes(),
@@ -97,4 +105,26 @@ func storeFromEnv(getenv func(string) string) (store.Store, error) {
 		return nil, fmt.Errorf("%w (or set PARSER_STORE_DIR for a local directory)", err)
 	}
 	return store.NewR2(cfg), nil
+}
+
+// oracleFromEnv returns the round file producer PARSER_ROUNDS asks for: nil
+// when unset, or the oracle, whose binary must exist so a misconfigured
+// image fails at startup instead of on every parse.
+func oracleFromEnv(getenv func(string) string) (*oracle, error) {
+	switch mode := getenv("PARSER_ROUNDS"); mode {
+	case "":
+		return nil, nil
+	case "oracle":
+		bin := getenv("PARSER_ORACLE_BIN")
+		if bin == "" {
+			bin = "oracle"
+		}
+		path, err := exec.LookPath(bin)
+		if err != nil {
+			return nil, fmt.Errorf("PARSER_ROUNDS=oracle: %w", err)
+		}
+		return &oracle{argv: []string{path}}, nil
+	default:
+		return nil, fmt.Errorf("PARSER_ROUNDS=%q: want \"oracle\" or unset", mode)
+	}
 }
