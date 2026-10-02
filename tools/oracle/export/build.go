@@ -405,9 +405,10 @@ func track(key string, idx int, snaps []*snapshot, death *killRec, deathFrame in
 			t.HP[f] = max(t.HP[f], 1)
 		}
 	}
-	// Once dead, stay dead and still.
+	// Once dead, stay dead and still. Before a kill's frame hp is at least 1,
+	// so this only ever holds from the death frame on.
 	for f := 1; f < n; f++ {
-		if t.HP[f-1] == 0 && (death == nil || f > deathFrame || f-1 >= deathFrame) {
+		if t.HP[f-1] == 0 {
 			t.X[f], t.Y[f], t.Yaw[f], t.HP[f] = t.X[f-1], t.Y[f-1], t.Yaw[f-1], 0
 		}
 	}
