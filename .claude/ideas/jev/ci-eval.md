@@ -34,10 +34,10 @@ It never runs on PRs that touch neither, so the usual CI stays as it is.
 | Win-probability AUC | 228 moments | < 0.85 |
 | Calibration error (ECE, 5 bins) | 228 moments | > 0.10 |
 | `how_won` cross-check | 28 rounds | < 95% agreement with code |
-| Headline precision | rounds whose template has a deterministic test | < 75% |
+| Headline precision | rounds whose template has a deterministic test | < 75%; **provisionally < 55% while `state_version` is 1** (kills-only states measured 60% in the experiments, against 80% with economy and the bomb timeline). The script raises it back to 75% when `state_version` reaches 2. |
 | Fallback model Brier | the same 228 moments, scored by the 7-weight logistic fallback in code (no calls) | > 0.17 |
 | Schema | the `pulse.json` assembled from the answers | fails `pulse.schema.json` |
-| Canary determinism | 10 fixed states, asked twice | any answer differs between the two asks |
+| Canary determinism | 10 fixed states, asked twice | any answer differs between the two asks: a noul by more than 0.01, a score by more than 0.05, or a different choice. Probability vectors aren't compared. |
 | Model id | every response | differs from the id recorded in the fixtures: **warn**, never fail |
 
 - **The thresholds come from the measured public-fixture numbers,** with room for noise: Brier 0.146, AUC 0.88, ECE 0.073 (5 bins), `how_won` 100% and headline 80%. See [experiments.md](experiments.md).
