@@ -1,0 +1,5 @@
+{"seq":0,"tick":900,"round":1,"type":"round.begin","v":1,"rule":"round@1","basis":[6],"d":{"sides":{"a":"T","b":"CT"}}}
+{"seq":1,"tick":1500,"round":1,"type":"flash.team","v":1,"rule":"teamflash@1","basis":[8],"d":{"thrower":2,"victim":0}}
+{"seq":2,"tick":1620,"round":1,"type":"kill.opening","v":1,"rule":"opening@1","basis":[9],"d":{"attacker":1,"victim":0}}
+{"seq":3,"tick":1700,"round":1,"type":"kill.multi","v":1,"rule":"multi@1","basis":[9,11],"d":{"player":1,"kills":2,"victims":[0,2]}}
+{"seq":4,"tick":1700,"round":1,"type":"round.end","v":1,"rule":"round_end@1","basis":[11],"d":{"winner":"A","method":"elimination","alive":[{"player":1,"health":100}]}}

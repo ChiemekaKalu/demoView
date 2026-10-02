@@ -1,0 +1,2 @@
+{"seq":0,"tick":0,"round":0,"type":"match.no_win_panel","v":1,"d":{}}
+{"seq":1,"tick":100,"round":0,"type":"round.not_live","v":1,"rule":"window@1","basis":[5],"d":{"reason":"knife"}}

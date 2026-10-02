@@ -1,0 +1,12 @@
+{"seq":0,"tick":0,"round":0,"type":"match.settings","v":1,"src":"cvar","d":{"map":"de_mirage","max_rounds":24,"tick_rate":64}}
+{"seq":1,"tick":10,"round":0,"type":"player.registered","v":1,"src":"st:userinfo","d":{"player":1,"name":"alice","bot":false}}
+{"seq":2,"tick":10,"round":0,"type":"player.registered","v":1,"src":"st:userinfo","d":{"player":0,"name":"bob \"the builder\"","bot":false}}
+{"seq":3,"tick":10,"round":0,"type":"player.registered","v":1,"src":"st:userinfo","d":{"player":2,"name":"BOT Cédric\ufffd","bot":true}}
+{"seq":4,"tick":10,"round":0,"type":"player.registered","v":1,"src":"st:userinfo","d":{"player":null,"name":"GOTV","bot":false}}
+{"seq":5,"tick":100,"round":0,"type":"round.freeze_end","v":1,"src":"ge:round_freeze_end","d":{}}
+{"seq":6,"tick":900,"round":1,"type":"round.freeze_end","v":1,"src":"ge:round_freeze_end","d":{}}
+{"seq":7,"tick":1500,"round":1,"type":"combat.hurt","v":1,"src":"ge:player_hurt","d":{"attacker":1,"victim":0,"weapon":"ak47","damage":27,"health":73}}
+{"seq":8,"tick":1500,"round":1,"type":"player.blind","v":1,"src":"ent:flash","d":{"player":0,"attacker":2,"ms":1820}}
+{"seq":9,"tick":1620,"round":1,"type":"combat.death","v":1,"src":"ge:player_death","d":{"attacker":1,"victim":0,"assister":null,"weapon":"ak47","headshot":true,"flags":["through_smoke"]}}
+{"seq":10,"tick":1650,"round":1,"type":"bomb.plant","v":1,"src":"ge:bomb_planted","d":{"player":1,"site":"B"}}
+{"seq":11,"tick":1700,"round":1,"type":"combat.death","v":1,"src":"ge:player_death","d":{"attacker":1,"victim":2,"assister":null,"weapon":"ak47","headshot":false,"flags":[]}}
