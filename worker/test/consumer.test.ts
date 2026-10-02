@@ -64,6 +64,10 @@ const parse = (parser: Parser, body: unknown = { match_id: ID }) =>
 
 const rows = (sql: string) => env.DB.prepare(sql).all().then((r) => r.results);
 
+// The parse id the consumer sent with the parser's nth call.
+const parseIdOf = (parser: ReturnType<typeof stubParser>, call = 0): string =>
+  parser.parse.mock.calls[call]?.[0].parse_id;
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -75,7 +79,7 @@ describe("parse queue consumer", () => {
 
     expect(await parse(parser)).toEqual({ acked: true, retried: false });
     expect(parser.parse).toHaveBeenCalledWith(
-      { match_id: ID, demo_key: `demos/${ID}.dem` },
+      { match_id: ID, demo_key: `demos/${ID}.dem`, parse_id: expect.stringMatching(/^[0-9a-z]{16}$/) },
       { attempt: 1, requestId: "msg-1" },
     );
 
@@ -88,6 +92,8 @@ describe("parse queue consumer", () => {
       demo_sha256: "ab".repeat(32),
       parser_version: "0.1.0",
       schema_version: 1,
+      live_parse_id: parseIdOf(parser),
+      attempted_build: "test-build",
     });
     expect((await matchRow(ID))?.parsed_at).toEqual(expect.any(Number));
     expect(await rows("SELECT * FROM players ORDER BY idx")).toEqual([
@@ -109,6 +115,28 @@ describe("parse queue consumer", () => {
       { match_id: ID, round: 1, tick: 100, attacker: 0, victim: 1, weapon: "ak47", headshot: 1 },
       { match_id: ID, round: 2, tick: 200, attacker: null, victim: 0, weapon: "world", headshot: 0 },
     ]);
+  });
+
+  it("gives every attempt its own parse id", async () => {
+    await insertMatch(ID, "queued");
+    const parser = stubParser({ kind: "transient", error: "parser returned 503" });
+    await parse(parser);
+    await parse(parser);
+    expect(parseIdOf(parser, 0)).not.toBe(parseIdOf(parser, 1));
+  });
+
+  it("changes nothing when a newer parse went live first", async () => {
+    await insertMatch(ID, "queued");
+    const parser = stubParser(async () => {
+      // Another delivery's parse goes live while this one runs.
+      await env.DB.prepare("UPDATE matches SET status = 'ready', live_parse_id = 'newer0000000000a' WHERE id = ?")
+        .bind(ID)
+        .run();
+      return { kind: "ok", status: 200, body: FILE };
+    });
+    expect(await parse(parser)).toEqual({ acked: true, retried: false });
+    expect(await matchRow(ID)).toMatchObject({ live_parse_id: "newer0000000000a", map: null });
+    expect(await rows("SELECT count(*) AS n FROM players")).toEqual([{ n: 0 }]);
   });
 
   it("replaces earlier rows when a match is parsed again", async () => {
@@ -208,6 +236,78 @@ describe("parse queue consumer", () => {
   );
 });
 
+describe("reparse jobs", () => {
+  const OLD = "01k6gq3m1oldoldo";
+  const reparse = (parser: Parser) => parse(parser, { match_id: ID, reparse: true });
+  const ready = (extra: Record<string, unknown> = {}) =>
+    insertMatch(ID, "ready", { live_parse_id: OLD, map: "de_mirage", parsed_at: 5, ...extra });
+
+  it("swaps the new parse in, keeping the match ready", async () => {
+    await ready({ reparse_error: "bad_demo: x", reparse_build: "old-build" });
+    const parser = stubParser({ kind: "ok", status: 200, body: FILE });
+    expect(await reparse(parser)).toEqual({ acked: true, retried: false });
+    expect(await matchRow(ID)).toMatchObject({
+      status: "ready",
+      live_parse_id: parseIdOf(parser),
+      attempted_build: "test-build",
+      reparse_error: null,
+      reparse_build: null,
+    });
+    expect(await rows("SELECT count(*) AS n FROM players")).toEqual([{ n: 2 }]);
+  });
+
+  it("never sets parsing", async () => {
+    await ready();
+    let statusDuringParse: string | undefined;
+    await reparse(
+      stubParser(async () => {
+        statusDuringParse = (await matchRow(ID))?.status;
+        return { kind: "ok", status: 200, body: FILE };
+      }),
+    );
+    expect(statusDuringParse).toBe("ready");
+  });
+
+  it.each<[string, ParseResult, string]>([
+    ["a 422", { kind: "rejected", status: 422, code: "bad_demo", error: "truncated" }, "bad_demo: truncated"],
+    [
+      "bad output",
+      { kind: "ok", status: 200, body: { ...FILE, schema_version: 2 } },
+      "bad_output: match.json has schema_version 2, expected 1",
+    ],
+  ])("keeps the live parse after %s, recording why", async (_, result, error) => {
+    await ready();
+    expect(await reparse(stubParser(result))).toEqual({ acked: true, retried: false });
+    expect(await matchRow(ID)).toMatchObject({
+      status: "ready",
+      error: null,
+      live_parse_id: OLD,
+      parsed_at: 5,
+      reparse_error: error,
+      reparse_build: "test-build",
+    });
+  });
+
+  it("retries a transient failure without touching the status", async () => {
+    await ready();
+    const result = await reparse(stubParser({ kind: "transient", error: "parser returned 503" }));
+    expect(result).toEqual({ acked: false, retried: true });
+    expect(await matchRow(ID)).toMatchObject({
+      status: "ready",
+      error: null,
+      live_parse_id: OLD,
+      reparse_error: "parser returned 503",
+    });
+  });
+
+  it.each(["queued", "failed"])("skips a %s match", async (status) => {
+    await insertMatch(ID, status);
+    const parser = stubParser({ kind: "ok", status: 200, body: FILE });
+    expect(await reparse(parser)).toEqual({ acked: true, retried: false });
+    expect(parser.parse).not.toHaveBeenCalled();
+  });
+});
+
 describe("dead letter consumer", () => {
   const deadLetter = (body: unknown = { match_id: ID }) =>
     run(DLQ, body, (b) => handleDeadLetters(b, env));
@@ -238,6 +338,17 @@ describe("dead letter consumer", () => {
 
   it("acks messages for unknown matches", async () => {
     expect(await deadLetter()).toEqual({ acked: true, retried: false });
+  });
+
+  it("keeps a reparsed match ready, recording the last error", async () => {
+    await insertMatch(ID, "ready", { reparse_error: "parser returned 503" });
+    expect(await deadLetter({ match_id: ID, reparse: true })).toEqual({ acked: true, retried: false });
+    expect(await matchRow(ID)).toMatchObject({
+      status: "ready",
+      error: null,
+      reparse_error: "parse_failed: failed after 3 attempts: parser returned 503",
+      reparse_build: "test-build",
+    });
   });
 });
 

@@ -17,6 +17,11 @@ export interface MatchRow {
   error: string | null;
   created_at: number;
   parsed_at: number | null;
+  live_parse_id: string | null;
+  attempted_build: string | null;
+  reparse_error: string | null;
+  reparse_build: string | null;
+  status_changed_at: number | null;
 }
 
 export interface PlayerRow {
@@ -45,7 +50,9 @@ export async function insertMatch(
   now: number,
 ): Promise<void> {
   await db
-    .prepare("INSERT INTO matches (id, status, demo_key, created_at) VALUES (?, 'uploaded', ?, ?)")
+    .prepare(
+      "INSERT INTO matches (id, status, demo_key, created_at, status_changed_at) VALUES (?1, 'uploaded', ?2, ?3, ?3)",
+    )
     .bind(id, demoKey, now)
     .run();
   logStatus(id, "uploaded");
@@ -69,11 +76,11 @@ export async function claimUpload(
 ): Promise<Claim> {
   const claimed = await db
     .prepare(
-      `UPDATE matches SET status = 'queued', demo_sha256 = ?2
+      `UPDATE matches SET status = 'queued', demo_sha256 = ?2, status_changed_at = ?3
        WHERE id = ?1 AND status = 'uploaded' AND NOT EXISTS (
          SELECT 1 FROM matches WHERE demo_sha256 = ?2 AND status != 'failed' AND id != ?1)`,
     )
-    .bind(id, sha256)
+    .bind(id, sha256, Date.now())
     .run();
   if (claimed.meta.changes > 0) {
     logStatus(id, "queued", log);
@@ -98,7 +105,7 @@ export function getMatch(db: D1Database, id: string): Promise<MatchRow | null> {
 }
 
 // Everything the match page needs, in one round trip. Steam ids stay out of
-// the public response until the spec's open question on them is settled.
+// the summary; match.json has them.
 export async function getMatchPage(
   db: D1Database,
   id: string,
@@ -123,8 +130,16 @@ export async function getMatchPage(
   };
 }
 
-// Replaces the match's players, rounds and kills with the parse result and
-// marks it ready, in one transaction, so a reparse overwrites cleanly.
+// The parse a job writes, and the live parse it started from.
+export interface ParseTarget {
+  id: string;
+  from: string | null;
+}
+
+// Makes the parse live: points the match at it and replaces its players,
+// rounds and kills, in one transaction. The pointer only moves if it still
+// points where this parse started from, so a parse that a newer one beat
+// changes nothing. Returns whether it went live.
 //
 // Each table gets one INSERT that reads a JSON array through json_each. D1
 // counts every statement in a batch toward its per-invocation query limit (50
@@ -133,62 +148,61 @@ export async function saveParsedMatch(
   db: D1Database,
   id: string,
   file: MatchFile,
+  parse: ParseTarget,
   now: number,
   log: Record<string, unknown> = {},
-): Promise<void> {
+): Promise<boolean> {
   const scores = new Map(file.scoreboard.map((s) => [s.player, s]));
   const players = file.players.map((p) => ({ ...scores.get(p.idx), ...p }));
   const scoreA = file.rounds.filter((r) => r.winner === "A").length;
   const scoreB = file.rounds.filter((r) => r.winner === "B").length;
+  // ?1 is the match id and ?2 this parse's id in every statement below.
+  const isLive = "(SELECT live_parse_id FROM matches WHERE id = ?1) = ?2";
   const field = (name: string) => `json_extract(value, '$.${name}')`;
   const insertFrom = (table: string, columns: string[]) =>
     `INSERT INTO ${table} (match_id, ${columns.join(", ")}) ` +
-    `SELECT ?1, ${columns.map(field).join(", ")} FROM json_each(?2)`;
-  await db.batch([
-    db.prepare("DELETE FROM players WHERE match_id = ?").bind(id),
-    db.prepare("DELETE FROM rounds WHERE match_id = ?").bind(id),
-    db.prepare("DELETE FROM kills WHERE match_id = ?").bind(id),
+    `SELECT ?1, ${columns.map(field).join(", ")} FROM json_each(?3) WHERE ${isLive}`;
+  const [swap] = await db.batch([
     db
       .prepare(
-        insertFrom("players", [
-          "idx",
-          "steam_id",
-          "name",
-          "team",
-          "kills",
-          "deaths",
-          "assists",
-          "adr",
-          "hs_pct",
-        ]),
-      )
-      .bind(id, JSON.stringify(players)),
-    db
-      .prepare(insertFrom("rounds", ["n", "winner", "reason", "side_a"]))
-      .bind(id, JSON.stringify(file.rounds)),
-    // json_extract turns the JSON booleans in headshot into 1 and 0.
-    db
-      .prepare(insertFrom("kills", ["round", "tick", "attacker", "victim", "weapon", "headshot"]))
-      .bind(id, JSON.stringify(file.kills)),
-    db
-      .prepare(
-        `UPDATE matches SET status = 'ready', error = NULL, map = ?, score_a = ?, score_b = ?,
-           demo_sha256 = ?, parser_version = ?, schema_version = ?, parsed_at = ?
-         WHERE id = ?`,
+        `UPDATE matches SET live_parse_id = ?2, status = 'ready', error = NULL,
+           status_changed_at = CASE status WHEN 'ready' THEN status_changed_at ELSE ?3 END,
+           map = ?4, score_a = ?5, score_b = ?6, demo_sha256 = ?7, parser_version = ?8,
+           schema_version = ?9, parsed_at = ?3, reparse_error = NULL, reparse_build = NULL
+         WHERE id = ?1 AND live_parse_id IS ?10`,
       )
       .bind(
+        id,
+        parse.id,
+        now,
         file.match.map,
         scoreA,
         scoreB,
         file.match.demo_sha256 ?? null,
         file.parser_version,
         file.schema_version,
-        now,
-        id,
+        parse.from,
       ),
+    db.prepare(`DELETE FROM players WHERE match_id = ?1 AND ${isLive}`).bind(id, parse.id),
+    db.prepare(`DELETE FROM rounds WHERE match_id = ?1 AND ${isLive}`).bind(id, parse.id),
+    db.prepare(`DELETE FROM kills WHERE match_id = ?1 AND ${isLive}`).bind(id, parse.id),
+    db
+      .prepare(
+        insertFrom("players", ["idx", "steam_id", "name", "team", "kills", "deaths", "assists", "adr", "hs_pct"]),
+      )
+      .bind(id, parse.id, JSON.stringify(players)),
+    db
+      .prepare(insertFrom("rounds", ["n", "winner", "reason", "side_a"]))
+      .bind(id, parse.id, JSON.stringify(file.rounds)),
+    // json_extract turns the JSON booleans in headshot into 1 and 0.
+    db
+      .prepare(insertFrom("kills", ["round", "tick", "attacker", "victim", "weapon", "headshot"]))
+      .bind(id, parse.id, JSON.stringify(file.kills)),
   ]);
+  if (!swap?.meta.changes) return false;
   logStatus(id, "ready", {
     ...log,
+    parse_id: parse.id,
     parser_version: file.parser_version,
     players: file.players.length,
     rounds: file.rounds.length,
@@ -196,6 +210,21 @@ export async function saveParsedMatch(
     score_a: scoreA,
     score_b: scoreB,
   });
+  return true;
+}
+
+// Notes the build a parse attempt runs, before it runs.
+export async function recordAttempt(db: D1Database, id: string, build: string): Promise<void> {
+  await db.prepare("UPDATE matches SET attempted_build = ? WHERE id = ?").bind(build, id).run();
+}
+
+// A reparse that fails leaves the match ready on its live parse, with the
+// error and the build that hit it kept beside it. A later success clears them.
+export async function setReparseError(db: D1Database, id: string, error: string, build: string): Promise<void> {
+  await db
+    .prepare("UPDATE matches SET reparse_error = ?, reparse_build = ? WHERE id = ?")
+    .bind(error, build, id)
+    .run();
 }
 
 // A failed match's error is "<code>: <detail>", so the match page can explain
@@ -222,8 +251,8 @@ export async function setStatus(
   status: MatchStatus,
   change: StatusChange = {},
 ): Promise<boolean> {
-  const sets = ["status = ?"];
-  const params: (string | null)[] = [status];
+  const sets = ["status = ?", "status_changed_at = ?"];
+  const params: (string | number | null)[] = [status, Date.now()];
   if (change.error !== undefined) {
     sets.push("error = ?");
     params.push(change.error);

@@ -3,11 +3,14 @@
 export interface ParseRequest {
   match_id: string;
   demo_key: string;
+  // The parse writes under parsed/{match_id}/{parse_id}/.
+  parse_id: string;
 }
 
 // status is the parser's HTTP status, absent when it could not be reached.
 export type ParseResult =
-  // 200: the body is match.json and the round files are already in R2.
+  // 200: the body is match.json, and every file of the parse, its manifest
+  // last, is already in R2.
   | { kind: "ok"; status: number; body: unknown }
   // 422: the demo is bad. Don't retry. code says why, e.g. bad_demo.
   | { kind: "rejected"; status: number; code: string; error: string }
@@ -54,6 +57,12 @@ export function httpParser(baseUrl: string, secret: string, fetcher: Fetcher): P
       }
 
       if (res.status === 200) {
+        // A parser from before parse ids, still running through a rollout,
+        // wrote somewhere else. The retry reaches the new one.
+        if (res.headers.get("x-parse-id") !== request.parse_id) {
+          await res.body?.cancel();
+          return { kind: "transient", status: 200, error: "parser did not write the requested parse" };
+        }
         try {
           return { kind: "ok", status: 200, body: await res.json() };
         } catch {

@@ -28,9 +28,13 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
+  // PARSER_BUILD names the parser's code, so the reparse cron can find matches
+  // parsed by older code. CI sets it at deploy (--var), from the git trees of
+  // parser/ and tools/oracle/.
   "vars": {
     "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
-    "R2_BUCKET": "demoview-dev"
+    "R2_BUCKET": "demoview-dev",
+    "PARSER_BUILD": "dev"
   },
   // basic is 1/4 vCPU and 1 GiB: a parse of the largest fixture peaks near
   // 450 MB with round files at 64 Hz.
@@ -92,7 +96,8 @@
       },
       "vars": {
         "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
-        "R2_BUCKET": "demoview-prod"
+        "R2_BUCKET": "demoview-prod",
+        "PARSER_BUILD": "dev"
       },
       // basic is 1/4 vCPU and 1 GiB: a parse of the largest fixture peaks near
       // 450 MB with round files at 64 Hz.

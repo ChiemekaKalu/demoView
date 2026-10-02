@@ -3,8 +3,8 @@ import { errorText } from "./log";
 
 // The parse service (parser/Dockerfile) running as a Cloudflare Container.
 // It reads the demo from R2 and writes the parsed files back itself, so it
-// gets the bucket's credentials and the shared parse secret at start. Never
-// log envVars.
+// gets the bucket's credentials and the shared parse secret at start, and the
+// build it writes into each parse's manifest. Never log envVars.
 export class ParserContainer extends Container<Env> {
   defaultPort = 8080;
   // Idle time before sleep is billed; parses take seconds.
@@ -16,6 +16,7 @@ export class ParserContainer extends Container<Env> {
     R2_BUCKET: this.env.R2_BUCKET,
     R2_ACCESS_KEY_ID: this.env.R2_ACCESS_KEY_ID,
     R2_SECRET_ACCESS_KEY: this.env.R2_SECRET_ACCESS_KEY,
+    PARSER_BUILD: this.env.PARSER_BUILD,
   };
 
   override onStart(): void {

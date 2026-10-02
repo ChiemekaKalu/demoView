@@ -101,7 +101,7 @@ describe("dead_letter", () => {
     expect(events("dead_letter")).toEqual([
       {
         level: "error",
-        entry: { event: "dead_letter", match_id: ID, attempts: 3, status: null, last_error: null },
+        entry: { event: "dead_letter", match_id: ID, reparse: false, attempts: 3, status: null, last_error: null },
       },
     ]);
   });

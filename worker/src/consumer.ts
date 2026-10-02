@@ -2,10 +2,17 @@
 // "Queue consumer" section.
 
 import type { ParseJob } from "./api";
-import { isMatchId } from "./keys";
+import { isMatchId, newParseId } from "./keys";
 import { errorStack, errorText } from "./log";
 import { asMatchFile, type MatchFile } from "./match-file";
-import { failure, getMatch, saveParsedMatch, setStatus } from "./matches";
+import {
+  failure,
+  getMatch,
+  recordAttempt,
+  saveParsedMatch,
+  setReparseError,
+  setStatus,
+} from "./matches";
 import type { Parser } from "./parser";
 
 // Must match max_retries + 1 in wrangler.jsonc.
@@ -46,30 +53,40 @@ export async function handleParseBatch(
 
 async function handleParseJob(message: Message<ParseJob>, env: Env, parser: Parser): Promise<void> {
   const id = message.body?.match_id;
+  const reparse = message.body?.reparse === true;
   const match = typeof id === "string" && isMatchId(id) ? await getMatch(env.DB, id) : null;
-  // Only queued or parsing (a redelivery) matches need work. Anything else is
-  // a stale or duplicate message.
-  if (!id || !match || (match.status !== "queued" && match.status !== "parsing")) {
+  // A parse needs a queued match, or a parsing one on redelivery. A reparse
+  // needs a ready one. Anything else is a stale or duplicate message.
+  const wanted = reparse ? ["ready"] : ["queued", "parsing"];
+  if (!id || !match || !wanted.includes(match.status)) {
     console.log(
-      JSON.stringify({ event: "job_skipped", match_id: id ?? null, status: match?.status ?? null }),
+      JSON.stringify({ event: "job_skipped", match_id: id ?? null, reparse, status: match?.status ?? null }),
     );
     message.ack();
     return;
   }
 
   const attempt = message.attempts;
-  await setStatus(env.DB, id, "parsing", { error: null, log: { attempt } });
+  const build = env.PARSER_BUILD;
+  // A new prefix for every attempt, so no two attempts write the same files.
+  const parse = { id: newParseId(), from: match.live_parse_id };
+  const log = { attempt, ...(reparse ? { reparse } : {}) };
+  await recordAttempt(env.DB, id, build);
+  // A reparse leaves the match ready on its live parse until the new one
+  // replaces it.
+  if (!reparse) await setStatus(env.DB, id, "parsing", { error: null, log });
   const started = Date.now();
   const result = await parser.parse(
-    { match_id: id, demo_key: match.demo_key },
+    { match_id: id, demo_key: match.demo_key, parse_id: parse.id },
     { attempt, requestId: message.id },
   );
-  const log = result.kind === "ok" ? console.log : console.warn;
-  log(
+  (result.kind === "ok" ? console.log : console.warn)(
     JSON.stringify({
       event: "parse_call",
       match_id: id,
-      attempt,
+      parse_id: parse.id,
+      build,
+      ...log,
       max_attempts: MAX_ATTEMPTS,
       final: attempt >= MAX_ATTEMPTS,
       duration_ms: Date.now() - started,
@@ -79,6 +96,16 @@ async function handleParseJob(message: Message<ParseJob>, env: Env, parser: Pars
     }),
   );
 
+  // Final failures: a parse fails the match, a reparse only records why.
+  const fail = async (error: string) => {
+    if (!reparse) {
+      await setStatus(env.DB, id, "failed", { error, log });
+      return;
+    }
+    await setReparseError(env.DB, id, error, build);
+    console.warn(JSON.stringify({ event: "reparse_failed", match_id: id, build, ...log, error }));
+  };
+
   switch (result.kind) {
     case "ok": {
       let file: MatchFile;
@@ -86,51 +113,55 @@ async function handleParseJob(message: Message<ParseJob>, env: Env, parser: Pars
         file = asMatchFile(result.body);
       } catch (err) {
         // Retrying would get the same output back, so this is final.
-        await setStatus(env.DB, id, "failed", {
-          error: failure("bad_output", errorText(err)),
-          log: { attempt },
-        });
+        await fail(failure("bad_output", errorText(err)));
         message.ack();
         return;
       }
-      await saveParsedMatch(env.DB, id, file, Date.now(), { attempt });
+      if (!(await saveParsedMatch(env.DB, id, file, parse, Date.now(), log))) {
+        console.warn(
+          JSON.stringify({ event: "parse_superseded", match_id: id, parse_id: parse.id, started_from: parse.from }),
+        );
+      }
       message.ack();
       return;
     }
     case "rejected":
-      await setStatus(env.DB, id, "failed", { error: failure(result.code, result.error), log: { attempt } });
+      await fail(failure(result.code, result.error));
       message.ack();
       return;
     case "transient":
       // Back in the queue until the retry. After the last attempt the queue
       // moves the message to the dead letter queue instead.
-      await setStatus(env.DB, id, "queued", { error: result.error, log: { attempt } });
+      if (reparse) await setReparseError(env.DB, id, result.error, build);
+      else await setStatus(env.DB, id, "queued", { error: result.error, log });
       message.retry();
       return;
   }
 }
 
-// Messages land here once every attempt has failed. Mark the match failed,
-// keeping the last error the consumer recorded.
+// Messages land here once every attempt has failed. A parse fails its match
+// and a reparse records why, keeping the last error the consumer recorded.
+// A match that was ever ready stays ready.
 export async function handleDeadLetters(batch: MessageBatch<ParseJob>, env: Env): Promise<void> {
   for (const message of batch.messages) {
     const id = message.body?.match_id;
+    const reparse = message.body?.reparse === true;
     const match = typeof id === "string" && isMatchId(id) ? await getMatch(env.DB, id) : null;
+    const lastError = (reparse ? match?.reparse_error : match?.error) ?? null;
     console.error(
       JSON.stringify({
         event: "dead_letter",
         match_id: id ?? null,
+        reparse,
         attempts: message.attempts,
         status: match?.status ?? null,
-        last_error: match?.error ?? null,
+        last_error: lastError,
       }),
     );
     if (match) {
-      const reason = match.error ?? "unknown error";
-      await setStatus(env.DB, match.id, "failed", {
-        error: failure("parse_failed", `failed after ${MAX_ATTEMPTS} attempts: ${reason}`),
-        from: ["queued", "parsing"],
-      });
+      const error = failure("parse_failed", `failed after ${MAX_ATTEMPTS} attempts: ${lastError ?? "unknown error"}`);
+      if (reparse) await setReparseError(env.DB, match.id, error, env.PARSER_BUILD);
+      else await setStatus(env.DB, match.id, "failed", { error, from: ["queued", "parsing"] });
     }
     message.ack();
   }

@@ -26,13 +26,21 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | ----- | ------- | ------ |
 | `POST /api/matches` | `201 { id, upload_url, upload_expires_in }`. PUT the demo to `upload_url` within `upload_expires_in` seconds. | 401 |
 | `POST /api/matches/:id/uploaded` | `202 { id, status: "queued" }`, or `200 { id, status, duplicate: true }` when a match that hasn't failed already has the same demo (by SHA-256): `id` is that match, and the new upload and its match are deleted | 401, 404, 409 (not uploaded yet, or not in `uploaded` any more: the body has `status`), 413 (over 1 GB; the demo is deleted and the match fails) |
-| `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, players, rounds }`, `no-store` | 404 |
-| `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them), cached 5 minutes with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
-| `GET /api/matches/:id/rounds/:n` | `200` round file, immutable for a year, with an ETag (304 on `If-None-Match`) | 404 |
+| `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, parse_id, players, rounds }`, `no-store` | 404 |
+| `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them). With `?v=<parse_id>`, that parse's, immutable for a year; without it, the live parse's, cached 5 minutes. Both with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
+| `GET /api/matches/:id/rounds/:n` | `200` round file, cached as `match.json` is | 404 |
 | `GET /api/maps/:name` | `200 { name, pos_x, pos_y, scale }`, cached a day. A game position lands on the 1024-pixel radar at `((x - pos_x) / scale, (pos_y - y) / scale)`. | 404 (no radar, or a two-floor map) |
 | `GET /api/maps/:name/radar.png` | `200` the radar image, cached a day, with an ETag | 404 |
 
-`players` rows are `{ idx, name, team, kills, deaths, assists, adr, hs_pct }`, ordered by `idx`. Steam ids stay out until the spec's open question on them is settled. `rounds` rows are `{ n, winner, reason, side_a }`, ordered by `n`. Timestamps are Unix milliseconds.
+`players` rows are `{ idx, name, team, kills, deaths, assists, adr, hs_pct }`, ordered by `idx`. Steam ids stay out; `match.json` has them. `rounds` rows are `{ n, winner, reason, side_a }`, ordered by `n`. Timestamps are Unix milliseconds.
+
+A failed match's `error` starts with a code, `"<code>: <detail>"`: `bad_demo` or `demo_not_found` from the parser, or `too_large`, `bad_output` or `parse_failed` from the Worker. Errors from before codes, and the last error of a pending retry, have none.
+
+## Parses
+
+Every parse attempt writes under its own prefix, `parsed/{id}/{parse_id}/`, with `manifest.json` last. Once the parser answers 200, the consumer points the match's `live_parse_id` at it and replaces its D1 rows in one batch, but only if the pointer hasn't moved since the attempt started, so a slower parse can never replace a newer one. The viewer asks for files with `?v=<parse_id>` from the summary. Matches parsed before parse ids have a null `live_parse_id`, and their files sit straight under `parsed/{id}/`.
+
+A reparse job (`{ match_id, reparse: true }`) parses a `ready` match again without leaving `ready`. If it fails, the match keeps its live parse, and `reparse_error` and `reparse_build` say why and with which build. `attempted_build` is the `PARSER_BUILD` of the latest attempt, which CI sets at deploy from the git trees of `parser/` and `tools/oracle/`.
 
 ## Viewer
 
@@ -54,11 +62,11 @@ uploaded --confirm--> queued --consumer--> parsing --200--> ready
                          3 attempts used: dead letter queue --> failed
 ```
 
-A match is `uploaded` from creation until the upload is confirmed. While a retry is pending it is back in `queued`, with the last error in `error`. Every change is logged as one JSON line, `{"event":"match_status",...}`.
+A match is `uploaded` from creation until the upload is confirmed. While a retry is pending it is back in `queued`, with the last error in `error`. A match that reached `ready` stays there. Every change is logged as one JSON line, `{"event":"match_status",...}`, and stamps `status_changed_at`.
 
 ## Parser container
 
-The queue consumer sends each parse to one container through its Durable Object (`PARSER`), one job at a time (`max_concurrency: 1`). The container gets `PARSE_SECRET` and the R2 credentials from the Worker's secrets at start, and sleeps 30 seconds after its last request, because idle time is billed. Its instance type is `basic` (1/4 vCPU, 1 GiB); the largest fixture peaks near 450 MB. It logs `container_start` and `container_stop`, where exit code 137 means it ran out of memory.
+The queue consumer sends each parse to one container through its Durable Object (`PARSER`), one job at a time (`max_concurrency: 1`). The container gets `PARSE_SECRET` and the R2 credentials from the Worker's secrets at start, and `PARSER_BUILD` from its vars, and sleeps 30 seconds after its last request, because idle time is billed. Its instance type is `basic` (1/4 vCPU, 1 GiB); the largest fixture peaks near 450 MB. It logs `container_start` and `container_stop`, where exit code 137 means it ran out of memory.
 
 The account, D1 databases (migrations applied), R2 buckets, queues and Worker secrets (`UPLOAD_TOKEN`, `PARSE_SECRET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) exist in both environments, and each bucket's CORS policy allows `PUT` from the Worker's origin, because browsers upload straight to R2. New migrations go first: `wrangler d1 migrations apply DB --remote` (plus `--env prod`).
 

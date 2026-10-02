@@ -3,6 +3,7 @@ import {
   demoKey,
   isMapName,
   isMatchId,
+  isParseId,
   matchFileKey,
   newMatchId,
   radarImageKey,
@@ -22,19 +23,21 @@ import {
 import { presignUpload, UPLOAD_URL_TTL_SECONDS } from "./presign";
 import { parseRadar } from "./radar";
 
-// The message the API puts on the parse queue.
+// The message the API puts on the parse queue. A reparse parses a ready
+// match again and keeps it ready whatever happens.
 export interface ParseJob {
   match_id: string;
+  reparse?: boolean;
 }
 
 export const MAX_DEMO_BYTES = 1024 ** 3;
 
-// Round files never change for a given parse, so browsers may keep them.
-const ROUND_CACHE_CONTROL = "public, max-age=31536000, immutable";
+// A parse's files never change, so a URL that names the parse is immutable.
+const PARSE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
-// match.json lives at a fixed key that a reparse overwrites, so it is only
-// cached briefly; the ETag makes revalidating it cheap.
-const MATCH_FILE_CACHE_CONTROL = "public, max-age=300";
+// A URL that reads the live parse changes when a reparse goes live, so it is
+// only cached briefly; the ETag makes revalidating it cheap.
+const LIVE_CACHE_CONTROL = "public, max-age=300";
 
 // Map files change only when maps/ is uploaded again, so a day is long enough
 // to cache them and short enough to pick up a fix.
@@ -152,6 +155,7 @@ async function getMatchSummary(_request: Request, env: Env, [id = ""]: string[])
       schema_version: match.schema_version,
       created_at: match.created_at,
       parsed_at: match.parsed_at,
+      parse_id: match.live_parse_id,
       players,
       rounds,
     },
@@ -168,8 +172,10 @@ async function getRoundFile(
   [id = "", n = ""]: string[],
 ): Promise<Response> {
   if (!isMatchId(id) || !/^[1-9]\d{0,2}$/.test(n)) return error(404, "round not found");
+  const parse = await parseToServe(request, env, id);
+  if (parse instanceof Response) return parse;
   return (
-    (await serveObject(request, env, roundKey(id, Number(n)), ROUND_CACHE_CONTROL)) ??
+    (await serveObject(request, env, roundKey(id, parse.id, Number(n)), parse.cacheControl)) ??
     error(404, "round not found")
   );
 }
@@ -177,15 +183,32 @@ async function getRoundFile(
 // GET /api/matches/:id/match.json: the parser's full match.json, for what
 // D1 doesn't hold (kills with assisters and stable indexes, names).
 async function getMatchFile(request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
-  const match = isMatchId(id) ? await getMatch(env.DB, id) : null;
-  if (!match) return error(404, "match not found");
-  // Before ready the object is missing, or is a reparse's half-written state.
-  if (match.status !== "ready") return error(404, `match is ${match.status}, not ready`);
-  const res = await serveObject(request, env, matchFileKey(id), MATCH_FILE_CACHE_CONTROL);
+  if (!isMatchId(id)) return error(404, "match not found");
+  const parse = await parseToServe(request, env, id);
+  if (parse instanceof Response) return parse;
+  const key = matchFileKey(id, parse.id);
+  const res = await serveObject(request, env, key, parse.cacheControl);
   if (res) return res;
-  // A ready match always has one, so this is a bug or a lost object.
-  console.error(JSON.stringify({ event: "object_missing", match_id: id, key: matchFileKey(id) }));
+  // The live parse always has one, so this is a bug or a lost object. A
+  // named parse may have been cleaned up.
+  if (parse.live) console.error(JSON.stringify({ event: "object_missing", match_id: id, key }));
   return error(404, "match.json not found");
+}
+
+// Which parse a request for a match's files reads. ?v=<parse_id> names one,
+// which needs no D1 read. Without it, the live parse, which only a ready match
+// has. Its id is null for a match parsed before parses had their own prefix.
+async function parseToServe(
+  request: Request,
+  env: Env,
+  id: string,
+): Promise<{ id: string | null; live: boolean; cacheControl: string } | Response> {
+  const v = new URL(request.url).searchParams.get("v") ?? "";
+  if (isParseId(v)) return { id: v, live: false, cacheControl: PARSE_CACHE_CONTROL };
+  const match = await getMatch(env.DB, id);
+  if (!match) return error(404, "match not found");
+  if (match.status !== "ready") return error(404, `match is ${match.status}, not ready`);
+  return { id: match.live_parse_id, live: true, cacheControl: LIVE_CACHE_CONTROL };
 }
 
 // GET /api/maps/:name: the numbers that place game positions on the map's

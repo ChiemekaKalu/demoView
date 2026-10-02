@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { httpParser, type Fetcher } from "../src/parser";
 
-const JOB = { match_id: "0123456789abc", demo_key: "demos/0123456789abc.dem" };
+const JOB = { match_id: "0123456789abc", demo_key: "demos/0123456789abc.dem", parse_id: "01k6gq3m1abcdefg" };
+
+// A 200 from a parser that wrote the requested parse.
+const ok = (body: unknown) => Response.json(body, { headers: { "x-parse-id": JOB.parse_id } });
 
 function parserReturning(response: Response | Error) {
   const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
@@ -32,12 +35,27 @@ describe("httpParser", () => {
   });
 
   it("returns the match.json body on 200", async () => {
-    const { parser } = parserReturning(Response.json({ schema_version: 1 }));
+    const { parser } = parserReturning(ok({ schema_version: 1 }));
     expect(await parser.parse(JOB)).toEqual({ kind: "ok", status: 200, body: { schema_version: 1 } });
   });
 
+  it.each([
+    ["no parse id", undefined],
+    ["another parse id", "01k6gq3m1zzzzzzz"],
+  ])("treats a 200 with %s as transient", async (_, parseId) => {
+    const headers: Record<string, string> = parseId ? { "x-parse-id": parseId } : {};
+    const { parser } = parserReturning(Response.json({ schema_version: 1 }, { headers }));
+    expect(await parser.parse(JOB)).toEqual({
+      kind: "transient",
+      status: 200,
+      error: "parser did not write the requested parse",
+    });
+  });
+
   it("treats a 200 that is not JSON as transient", async () => {
-    const { parser } = parserReturning(new Response("<html>", { status: 200 }));
+    const { parser } = parserReturning(
+      new Response("<html>", { status: 200, headers: { "x-parse-id": JOB.parse_id } }),
+    );
     expect((await parser.parse(JOB)).kind).toBe("transient");
   });
 
