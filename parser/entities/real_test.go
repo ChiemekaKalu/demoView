@@ -50,8 +50,9 @@ var pawnFields = map[string][]entities.Kind{
 }
 
 // knownUnclassified are the element types the fixture demos use that have
-// no decoder yet. None is on anything the viewer reads.
-var knownUnclassified = []string{"CGlobalSymbol", "CTransform", "CUtlBinaryBlock"}
+// no decoder. Entity data never sends one in the local demos, and none is on
+// anything the viewer reads.
+var knownUnclassified = []string{"CTransform"}
 
 func TestRealDemos(t *testing.T) {
 	if testing.Short() {
@@ -91,6 +92,14 @@ func TestRealDemos(t *testing.T) {
 			logSummary(t, sers, classes)
 			logFields(t, pawn)
 		})
+	}
+}
+
+// skipIfAbsent skips the test if the demo at path isn't present.
+func skipIfAbsent(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err != nil {
+		t.Skipf("%s not present", path)
 	}
 }
 
