@@ -1,4 +1,5 @@
 import type { VNode } from 'preact'
+import { Findings } from './pages/Findings'
 import { Match } from './pages/Match'
 import { Replay } from './pages/Replay'
 import { Upload } from './pages/Upload'
@@ -9,6 +10,7 @@ const routes: [RegExp, (m: RegExpExecArray) => VNode][] = [
   [/^\/$/, () => <Upload />],
   [/^\/m\/([^/]+)\/?$/, (m) => <Match id={decode(m[1])} />],
   [/^\/m\/([^/]+)\/r\/(\d+)\/?$/, (m) => <Replay id={decode(m[1])} n={Number(m[2])} />],
+  [/^\/findings\/?$/, () => <Findings />],
 ]
 
 function decode(s: string): string {

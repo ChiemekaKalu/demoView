@@ -1,0 +1,964 @@
+{
+ "demos": 541,
+ "rounds": 10862,
+ "moments": 86474,
+ "ct_win": {
+  "n": 10862,
+  "p": 0.528,
+  "lo": 0.518,
+  "hi": 0.537
+ },
+ "pistol_ct_win": {
+  "n": 1047,
+  "p": 0.499,
+  "lo": 0.468,
+  "hi": 0.529
+ },
+ "maps": [
+  {
+   "map": "nuke",
+   "demos": 82,
+   "n": 1707,
+   "p": 0.574,
+   "lo": 0.551,
+   "hi": 0.597
+  },
+  {
+   "map": "mirage",
+   "demos": 126,
+   "n": 2608,
+   "p": 0.561,
+   "lo": 0.542,
+   "hi": 0.58
+  },
+  {
+   "map": "inferno",
+   "demos": 83,
+   "n": 1594,
+   "p": 0.545,
+   "lo": 0.521,
+   "hi": 0.569
+  },
+  {
+   "map": "train",
+   "demos": 11,
+   "n": 210,
+   "p": 0.543,
+   "lo": 0.475,
+   "hi": 0.609
+  },
+  {
+   "map": "overpass",
+   "demos": 29,
+   "n": 623,
+   "p": 0.528,
+   "lo": 0.489,
+   "hi": 0.567
+  },
+  {
+   "map": "ancient",
+   "demos": 60,
+   "n": 1152,
+   "p": 0.527,
+   "lo": 0.498,
+   "hi": 0.556
+  },
+  {
+   "map": "dust2",
+   "demos": 104,
+   "n": 2065,
+   "p": 0.477,
+   "lo": 0.455,
+   "hi": 0.498
+  },
+  {
+   "map": "anubis",
+   "demos": 37,
+   "n": 719,
+   "p": 0.435,
+   "lo": 0.4,
+   "hi": 0.472
+  },
+  {
+   "map": "vertigo",
+   "demos": 9,
+   "n": 184,
+   "p": 0.386,
+   "lo": 0.319,
+   "hi": 0.458
+  }
+ ],
+ "post_plant": {
+  "plants": 5794,
+  "t_win": {
+   "n": 5794,
+   "p": 0.765,
+   "lo": 0.753,
+   "hi": 0.775
+  },
+  "by_alive_diff": [
+   {
+    "diff": -3,
+    "n": 58,
+    "p": 0.017,
+    "lo": 0.003,
+    "hi": 0.091
+   },
+   {
+    "diff": -2,
+    "n": 242,
+    "p": 0.14,
+    "lo": 0.102,
+    "hi": 0.19
+   },
+   {
+    "diff": -1,
+    "n": 722,
+    "p": 0.339,
+    "lo": 0.306,
+    "hi": 0.375
+   },
+   {
+    "diff": 0,
+    "n": 1376,
+    "p": 0.658,
+    "lo": 0.633,
+    "hi": 0.683
+   },
+   {
+    "diff": 1,
+    "n": 1491,
+    "p": 0.912,
+    "lo": 0.897,
+    "hi": 0.925
+   },
+   {
+    "diff": 2,
+    "n": 1228,
+    "p": 0.984,
+    "lo": 0.975,
+    "hi": 0.989
+   },
+   {
+    "diff": 3,
+    "n": 677,
+    "p": 0.999,
+    "lo": 0.992,
+    "hi": 1.0
+   }
+  ],
+  "by_time": [
+   {
+    "when": "Before 0:45",
+    "n": 789,
+    "p": 0.785,
+    "lo": 0.755,
+    "hi": 0.812
+   },
+   {
+    "when": "0:45 to 1:15",
+    "n": 1863,
+    "p": 0.791,
+    "lo": 0.772,
+    "hi": 0.809
+   },
+   {
+    "when": "After 1:15",
+    "n": 3142,
+    "p": 0.744,
+    "lo": 0.728,
+    "hi": 0.759
+   }
+  ]
+ },
+ "opening": {
+  "opener_wins": {
+   "n": 11398,
+   "p": 0.716,
+   "lo": 0.707,
+   "hi": 0.724
+  },
+  "ct": {
+   "n": 6728,
+   "p": 0.707,
+   "lo": 0.696,
+   "hi": 0.717
+  },
+  "t": {
+   "n": 4670,
+   "p": 0.729,
+   "lo": 0.716,
+   "hi": 0.741
+  },
+  "traded": {
+   "n": 2785,
+   "p": 0.409,
+   "lo": 0.391,
+   "hi": 0.427
+  },
+  "spots": {
+   "ancient": {
+    "openings": 1225,
+    "spots": [
+     {
+      "place": "Middle",
+      "side": "CT",
+      "share": 0.13,
+      "n": 159,
+      "p": 0.742,
+      "lo": 0.669,
+      "hi": 0.804
+     },
+     {
+      "place": "Middle",
+      "side": "T",
+      "share": 0.119,
+      "n": 146,
+      "p": 0.637,
+      "lo": 0.556,
+      "hi": 0.711
+     },
+     {
+      "place": "T Side Upper",
+      "side": "CT",
+      "share": 0.064,
+      "n": 78,
+      "p": 0.744,
+      "lo": 0.637,
+      "hi": 0.827
+     },
+     {
+      "place": "Bombsite B",
+      "side": "T",
+      "share": 0.062,
+      "n": 76,
+      "p": 0.789,
+      "lo": 0.685,
+      "hi": 0.866
+     },
+     {
+      "place": "Bombsite A",
+      "side": "CT",
+      "share": 0.056,
+      "n": 69,
+      "p": 0.783,
+      "lo": 0.672,
+      "hi": 0.864
+     },
+     {
+      "place": "Bombsite B",
+      "side": "CT",
+      "share": 0.053,
+      "n": 65,
+      "p": 0.615,
+      "lo": 0.494,
+      "hi": 0.724
+     }
+    ]
+   },
+   "anubis": {
+    "openings": 740,
+    "spots": [
+     {
+      "place": "Canal",
+      "side": "CT",
+      "share": 0.115,
+      "n": 85,
+      "p": 0.671,
+      "lo": 0.565,
+      "hi": 0.761
+     },
+     {
+      "place": "Bombsite B",
+      "side": "T",
+      "share": 0.088,
+      "n": 65,
+      "p": 0.785,
+      "lo": 0.67,
+      "hi": 0.867
+     },
+     {
+      "place": "Bridge",
+      "side": "CT",
+      "share": 0.078,
+      "n": 58,
+      "p": 0.655,
+      "lo": 0.527,
+      "hi": 0.764
+     },
+     {
+      "place": "Main",
+      "side": "CT",
+      "share": 0.077,
+      "n": 57,
+      "p": 0.561,
+      "lo": 0.433,
+      "hi": 0.682
+     },
+     {
+      "place": "Middle",
+      "side": "T",
+      "share": 0.061,
+      "n": 45,
+      "p": 0.733,
+      "lo": 0.59,
+      "hi": 0.84
+     },
+     {
+      "place": "Bombsite B",
+      "side": "CT",
+      "share": 0.058,
+      "n": 43,
+      "p": 0.605,
+      "lo": 0.456,
+      "hi": 0.736
+     }
+    ]
+   },
+   "dust2": {
+    "openings": 2142,
+    "spots": [
+     {
+      "place": "Long Doors",
+      "side": "CT",
+      "share": 0.091,
+      "n": 195,
+      "p": 0.651,
+      "lo": 0.582,
+      "hi": 0.715
+     },
+     {
+      "place": "Long A",
+      "side": "T",
+      "share": 0.069,
+      "n": 147,
+      "p": 0.782,
+      "lo": 0.709,
+      "hi": 0.841
+     },
+     {
+      "place": "Mid Doors",
+      "side": "CT",
+      "share": 0.066,
+      "n": 141,
+      "p": 0.702,
+      "lo": 0.622,
+      "hi": 0.771
+     },
+     {
+      "place": "Upper Tunnel",
+      "side": "CT",
+      "share": 0.065,
+      "n": 139,
+      "p": 0.647,
+      "lo": 0.565,
+      "hi": 0.722
+     },
+     {
+      "place": "Top of Mid",
+      "side": "CT",
+      "share": 0.065,
+      "n": 139,
+      "p": 0.676,
+      "lo": 0.595,
+      "hi": 0.748
+     },
+     {
+      "place": "Mid Doors",
+      "side": "T",
+      "share": 0.06,
+      "n": 128,
+      "p": 0.766,
+      "lo": 0.685,
+      "hi": 0.831
+     }
+    ]
+   },
+   "inferno": {
+    "openings": 1667,
+    "spots": [
+     {
+      "place": "Banana",
+      "side": "CT",
+      "share": 0.214,
+      "n": 356,
+      "p": 0.674,
+      "lo": 0.624,
+      "hi": 0.721
+     },
+     {
+      "place": "Banana",
+      "side": "T",
+      "share": 0.142,
+      "n": 237,
+      "p": 0.629,
+      "lo": 0.566,
+      "hi": 0.688
+     },
+     {
+      "place": "Bombsite B",
+      "side": "CT",
+      "share": 0.079,
+      "n": 131,
+      "p": 0.641,
+      "lo": 0.556,
+      "hi": 0.718
+     },
+     {
+      "place": "Middle",
+      "side": "CT",
+      "share": 0.07,
+      "n": 117,
+      "p": 0.769,
+      "lo": 0.685,
+      "hi": 0.836
+     },
+     {
+      "place": "Top of Mid",
+      "side": "CT",
+      "share": 0.063,
+      "n": 105,
+      "p": 0.743,
+      "lo": 0.652,
+      "hi": 0.817
+     },
+     {
+      "place": "Apartments",
+      "side": "CT",
+      "share": 0.06,
+      "n": 100,
+      "p": 0.67,
+      "lo": 0.573,
+      "hi": 0.754
+     }
+    ]
+   },
+   "mirage": {
+    "openings": 2754,
+    "spots": [
+     {
+      "place": "Top of Mid",
+      "side": "CT",
+      "share": 0.097,
+      "n": 268,
+      "p": 0.761,
+      "lo": 0.707,
+      "hi": 0.808
+     },
+     {
+      "place": "Bombsite A",
+      "side": "T",
+      "share": 0.086,
+      "n": 237,
+      "p": 0.73,
+      "lo": 0.67,
+      "hi": 0.782
+     },
+     {
+      "place": "Palace Interior",
+      "side": "CT",
+      "share": 0.069,
+      "n": 191,
+      "p": 0.723,
+      "lo": 0.655,
+      "hi": 0.781
+     },
+     {
+      "place": "Apartments",
+      "side": "CT",
+      "share": 0.069,
+      "n": 189,
+      "p": 0.81,
+      "lo": 0.748,
+      "hi": 0.859
+     },
+     {
+      "place": "Bombsite A",
+      "side": "CT",
+      "share": 0.068,
+      "n": 187,
+      "p": 0.749,
+      "lo": 0.682,
+      "hi": 0.805
+     },
+     {
+      "place": "Middle",
+      "side": "CT",
+      "share": 0.065,
+      "n": 180,
+      "p": 0.728,
+      "lo": 0.659,
+      "hi": 0.788
+     }
+    ]
+   },
+   "nuke": {
+    "openings": 1804,
+    "spots": [
+     {
+      "place": "Outside",
+      "side": "CT",
+      "share": 0.211,
+      "n": 381,
+      "p": 0.769,
+      "lo": 0.724,
+      "hi": 0.809
+     },
+     {
+      "place": "Outside",
+      "side": "T",
+      "share": 0.103,
+      "n": 185,
+      "p": 0.665,
+      "lo": 0.594,
+      "hi": 0.729
+     },
+     {
+      "place": "Bombsite A",
+      "side": "T",
+      "share": 0.07,
+      "n": 126,
+      "p": 0.69,
+      "lo": 0.605,
+      "hi": 0.765
+     },
+     {
+      "place": "Control",
+      "side": "CT",
+      "share": 0.062,
+      "n": 111,
+      "p": 0.757,
+      "lo": 0.669,
+      "hi": 0.827
+     },
+     {
+      "place": "Bombsite A",
+      "side": "CT",
+      "share": 0.061,
+      "n": 110,
+      "p": 0.755,
+      "lo": 0.666,
+      "hi": 0.825
+     },
+     {
+      "place": "Lobby",
+      "side": "CT",
+      "share": 0.049,
+      "n": 89,
+      "p": 0.742,
+      "lo": 0.642,
+      "hi": 0.821
+     }
+    ]
+   },
+   "overpass": {
+    "openings": 652,
+    "spots": [
+     {
+      "place": "Lower Park",
+      "side": "CT",
+      "share": 0.113,
+      "n": 74,
+      "p": 0.676,
+      "lo": 0.563,
+      "hi": 0.771
+     },
+     {
+      "place": "Canal",
+      "side": "CT",
+      "share": 0.081,
+      "n": 53,
+      "p": 0.792,
+      "lo": 0.665,
+      "hi": 0.88
+     },
+     {
+      "place": "Fountain",
+      "side": "CT",
+      "share": 0.078,
+      "n": 51,
+      "p": 0.824,
+      "lo": 0.697,
+      "hi": 0.904
+     },
+     {
+      "place": "Upper Park",
+      "side": "CT",
+      "share": 0.064,
+      "n": 42,
+      "p": 0.69,
+      "lo": 0.54,
+      "hi": 0.809
+     },
+     {
+      "place": "Lower Park",
+      "side": "T",
+      "share": 0.063,
+      "n": 41,
+      "p": 0.78,
+      "lo": 0.633,
+      "hi": 0.88
+     },
+     {
+      "place": "Bombsite B",
+      "side": "T",
+      "share": 0.063,
+      "n": 41,
+      "p": 0.756,
+      "lo": 0.607,
+      "hi": 0.862
+     }
+    ]
+   },
+   "train": {
+    "openings": 220,
+    "spots": [
+     {
+      "place": "Bombsite A",
+      "side": "T",
+      "share": 0.127,
+      "n": 28,
+      "p": 0.679,
+      "lo": 0.493,
+      "hi": 0.821
+     },
+     {
+      "place": "T Main",
+      "side": "CT",
+      "share": 0.118,
+      "n": 26,
+      "p": 0.615,
+      "lo": 0.425,
+      "hi": 0.776
+     },
+     {
+      "place": "Back of B",
+      "side": "CT",
+      "share": 0.091,
+      "n": 20,
+      "p": 0.75,
+      "lo": 0.531,
+      "hi": 0.888
+     },
+     {
+      "place": "Bombsite B",
+      "side": "CT",
+      "share": 0.086,
+      "n": 19,
+      "p": 0.474,
+      "lo": 0.273,
+      "hi": 0.683
+     },
+     {
+      "place": "Ivy",
+      "side": "CT",
+      "share": 0.082,
+      "n": 18,
+      "p": 0.889,
+      "lo": 0.672,
+      "hi": 0.969
+     },
+     {
+      "place": "Bombsite B",
+      "side": "T",
+      "share": 0.077,
+      "n": 17,
+      "p": 0.647,
+      "lo": 0.413,
+      "hi": 0.827
+     }
+    ]
+   },
+   "vertigo": {
+    "openings": 194,
+    "spots": [
+     {
+      "place": "Bridge",
+      "side": "CT",
+      "share": 0.108,
+      "n": 21,
+      "p": 0.667,
+      "lo": 0.454,
+      "hi": 0.828
+     },
+     {
+      "place": "A Ramp",
+      "side": "CT",
+      "share": 0.103,
+      "n": 20,
+      "p": 0.55,
+      "lo": 0.342,
+      "hi": 0.742
+     },
+     {
+      "place": "Bombsite B",
+      "side": "T",
+      "share": 0.088,
+      "n": 17,
+      "p": 0.706,
+      "lo": 0.469,
+      "hi": 0.867
+     },
+     {
+      "place": "Bombsite A",
+      "side": "T",
+      "share": 0.077,
+      "n": 15,
+      "p": 0.867,
+      "lo": 0.621,
+      "hi": 0.963
+     },
+     {
+      "place": "Side",
+      "side": "T",
+      "share": 0.062,
+      "n": 12,
+      "p": 1.0,
+      "lo": 0.757,
+      "hi": 1.0
+     }
+    ]
+   }
+  }
+ },
+ "economy": {
+  "eco_beats_full": {
+   "n": 2145,
+   "p": 0.122,
+   "lo": 0.109,
+   "hi": 0.136
+  },
+  "force_beats_full": {
+   "n": 2004,
+   "p": 0.335,
+   "lo": 0.315,
+   "hi": 0.356
+  },
+  "pistol_winner_wins_next": {
+   "n": 1044,
+   "p": 0.804,
+   "lo": 0.778,
+   "hi": 0.827
+  },
+  "buys": [
+   "full",
+   "force",
+   "semi",
+   "eco"
+  ],
+  "ct_win": {
+   "full v full": {
+    "n": 5133,
+    "p": 0.523,
+    "lo": 0.509,
+    "hi": 0.537
+   },
+   "full v force": {
+    "n": 1192,
+    "p": 0.67,
+    "lo": 0.643,
+    "hi": 0.696
+   },
+   "full v semi": {
+    "n": 634,
+    "p": 0.79,
+    "lo": 0.757,
+    "hi": 0.82
+   },
+   "full v eco": {
+    "n": 684,
+    "p": 0.966,
+    "lo": 0.95,
+    "hi": 0.977
+   },
+   "force v full": {
+    "n": 812,
+    "p": 0.342,
+    "lo": 0.311,
+    "hi": 0.376
+   },
+   "force v force": {
+    "n": 294,
+    "p": 0.299,
+    "lo": 0.25,
+    "hi": 0.354
+   },
+   "force v eco": {
+    "n": 68,
+    "p": 0.941,
+    "lo": 0.858,
+    "hi": 0.977
+   },
+   "semi v full": {
+    "n": 442,
+    "p": 0.188,
+    "lo": 0.154,
+    "hi": 0.227
+   },
+   "semi v force": {
+    "n": 53,
+    "p": 0.245,
+    "lo": 0.149,
+    "hi": 0.376
+   },
+   "eco v full": {
+    "n": 385,
+    "p": 0.057,
+    "lo": 0.038,
+    "hi": 0.085
+   },
+   "eco v force": {
+    "n": 101,
+    "p": 0.02,
+    "lo": 0.005,
+    "hi": 0.069
+   }
+  }
+ },
+ "clutches": [
+  {
+   "odds": "1v1",
+   "ct": {
+    "n": 815,
+    "p": 0.58,
+    "lo": 0.546,
+    "hi": 0.614
+   },
+   "t": {
+    "n": 677,
+    "p": 0.706,
+    "lo": 0.671,
+    "hi": 0.739
+   }
+  },
+  {
+   "odds": "1v2",
+   "ct": {
+    "n": 1217,
+    "p": 0.148,
+    "lo": 0.129,
+    "hi": 0.169
+   },
+   "t": {
+    "n": 1273,
+    "p": 0.241,
+    "lo": 0.218,
+    "hi": 0.265
+   }
+  },
+  {
+   "odds": "1v3+",
+   "ct": {
+    "n": 2880,
+    "p": 0.012,
+    "lo": 0.009,
+    "hi": 0.017
+   },
+   "t": {
+    "n": 4737,
+    "p": 0.022,
+    "lo": 0.019,
+    "hi": 0.027
+   }
+  }
+ ],
+ "predictability": {
+  "base": 0.1465,
+  "map": 0.146,
+  "econ": 0.1377,
+  "maps": [
+   {
+    "map": "vertigo",
+    "moments": 1502,
+    "base": 0.1375,
+    "econ": 0.1275,
+    "round_start": 0.2029
+   },
+   {
+    "map": "mirage",
+    "moments": 21029,
+    "base": 0.1411,
+    "econ": 0.1309,
+    "round_start": 0.2129
+   },
+   {
+    "map": "nuke",
+    "moments": 13818,
+    "base": 0.1401,
+    "econ": 0.1319,
+    "round_start": 0.2205
+   },
+   {
+    "map": "train",
+    "moments": 1665,
+    "base": 0.1418,
+    "econ": 0.1367,
+    "round_start": 0.2253
+   },
+   {
+    "map": "dust2",
+    "moments": 16034,
+    "base": 0.1469,
+    "econ": 0.1398,
+    "round_start": 0.219
+   },
+   {
+    "map": "ancient",
+    "moments": 9431,
+    "base": 0.1516,
+    "econ": 0.1399,
+    "round_start": 0.2139
+   },
+   {
+    "map": "anubis",
+    "moments": 5608,
+    "base": 0.1528,
+    "econ": 0.1433,
+    "round_start": 0.2159
+   },
+   {
+    "map": "overpass",
+    "moments": 4933,
+    "base": 0.1506,
+    "econ": 0.1437,
+    "round_start": 0.2184
+   },
+   {
+    "map": "inferno",
+    "moments": 12454,
+    "base": 0.1555,
+    "econ": 0.1478,
+    "round_start": 0.2225
+   }
+  ]
+ },
+ "models": {
+  "moments": 383,
+  "rows": [
+   {
+    "model": "logistic",
+    "brier": 0.1246,
+    "auc": 0.905,
+    "usd_per_call": 0.0
+   },
+   {
+    "model": "claude",
+    "brier": 0.1281,
+    "auc": 0.905,
+    "usd_per_call": 0.0028
+   },
+   {
+    "model": "jev",
+    "brier": 0.1311,
+    "auc": 0.913,
+    "usd_per_call": 2.9e-05
+   },
+   {
+    "model": "gpt-oss",
+    "brier": 0.1439,
+    "auc": 0.885,
+    "usd_per_call": null
+   }
+  ]
+ }
+}
