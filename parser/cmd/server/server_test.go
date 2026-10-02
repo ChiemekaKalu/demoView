@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -28,6 +29,10 @@ const (
 	secret  = "test-secret"
 	matchID = "0123456789abc"
 	demoKey = "demos/0123456789abc.dem"
+	parseID = "0k2m9x7qa1b2c3d4"
+
+	// outPrefix is where a parse with parseID writes.
+	outPrefix = "parsed/" + matchID + "/" + parseID + "/"
 )
 
 // testDemo is a valid one-round demo.
@@ -74,7 +79,7 @@ func (h *harness) do(req *http.Request) (int, []byte) {
 
 // newParseRequest returns an authorized POST /parse for the test demo.
 func newParseRequest(ctx context.Context) *http.Request {
-	body := fmt.Sprintf(`{"match_id":%q,"demo_key":%q}`, matchID, demoKey)
+	body := fmt.Sprintf(`{"match_id":%q,"demo_key":%q,"parse_id":%q}`, matchID, demoKey, parseID)
 	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/parse", strings.NewReader(body))
 	req.Header.Set("X-Parse-Secret", secret)
 	return req
@@ -145,13 +150,20 @@ func checkLog(t *testing.T, entry, want map[string]any) {
 	}
 }
 
+// errorBody checks body is {"code": ..., "error": ...} and returns the error.
 func errorBody(t *testing.T, body []byte) string {
 	t.Helper()
-	var e struct{ Error string }
-	if err := json.Unmarshal(body, &e); err != nil || e.Error == "" {
-		t.Fatalf("body %s is not {\"error\": ...}", body)
+	var e struct{ Code, Error string }
+	if err := json.Unmarshal(body, &e); err != nil || e.Code == "" || e.Error == "" {
+		t.Fatalf("body %s is not {\"code\": ..., \"error\": ...}", body)
 	}
 	return e.Error
+}
+
+func errorCode(body []byte) string {
+	var e struct{ Code string }
+	json.Unmarshal(body, &e)
+	return e.Code
 }
 
 func neverParse(t *testing.T) ParseFunc {
@@ -171,7 +183,7 @@ func TestAuth(t *testing.T) {
 	for _, header := range []string{"", "wrong", secret + "x"} {
 		h := newHarness(t, neverParse(t), "")
 		h.putDemo(testDemo)
-		status, body := h.post(header, fmt.Sprintf(`{"match_id":%q,"demo_key":%q}`, matchID, demoKey))
+		status, body := h.post(header, fmt.Sprintf(`{"match_id":%q,"demo_key":%q,"parse_id":%q}`, matchID, demoKey, parseID))
 		if status != http.StatusUnauthorized {
 			t.Errorf("secret %q: status %d, want 401", header, status)
 		}
@@ -186,17 +198,65 @@ func TestBadRequest(t *testing.T) {
 	for _, body := range []string{
 		`not json`,
 		`{"demo_key":"demos/x.dem"}`,
-		`{"match_id":"../etc","demo_key":"demos/x.dem"}`,
-		`{"match_id":"abc"}`,
+		`{"match_id":"../etc","demo_key":"demos/x.dem","parse_id":"abc"}`,
+		`{"match_id":"abc","parse_id":"abc"}`,
+		`{"match_id":"abc","demo_key":"demos/x.dem"}`,
+		`{"match_id":"abc","demo_key":"demos/x.dem","parse_id":"../x"}`,
+		`{"match_id":"abc","demo_key":"demos/x.dem","parse_id":"UPPER"}`,
 	} {
 		h := newHarness(t, neverParse(t), "")
-		if status, _ := h.post(secret, body); status != http.StatusBadRequest {
-			t.Errorf("%s: status %d, want 400", body, status)
+		status, resp := h.post(secret, body)
+		if status != http.StatusBadRequest || errorCode(resp) != "bad_request" {
+			t.Errorf("%s: status %d, body %s, want 400 bad_request", body, status, resp)
 		}
 		if msgs := h.messages(); len(msgs) != 1 || msgs[0] != "parse" {
 			t.Errorf("%s: logged %q, want only the summary line", body, msgs)
 		}
 		checkLog(t, h.lastLog(), map[string]any{"result": "bad_request", "status": float64(400), "severity": "WARNING"})
+	}
+}
+
+// A parse writes under its own prefix and commits with a manifest listing
+// every file, and the response names the parse and the manifest.
+func TestManifest(t *testing.T) {
+	h := newHarness(t, parse.RunStats, "")
+	h.srv.build = "a1b2c3d4e5f6"
+	h.putDemo(testDemo)
+	rec := httptest.NewRecorder()
+	h.srv.routes().ServeHTTP(rec, newParseRequest(context.Background()))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d, body %s", rec.Code, rec.Body)
+	}
+
+	data := h.stored(outPrefix + "manifest.json")
+	sum := sha256.Sum256(data)
+	if got := rec.Header().Get("X-Parse-Id"); got != parseID {
+		t.Errorf("X-Parse-Id = %q, want %q", got, parseID)
+	}
+	if got := rec.Header().Get("X-Manifest-Sha256"); got != hex.EncodeToString(sum[:]) {
+		t.Errorf("X-Manifest-Sha256 = %q, want the manifest's sha256", got)
+	}
+
+	var m manifest
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatal(err)
+	}
+	want := manifest{ParseID: parseID, MatchID: matchID, ParsedBy: "a1b2c3d4e5f6", ParserVersion: parse.Version,
+		SchemaVersion: match.SchemaVersion, MatchSource: "parser", RoundSource: "none"}
+	got := m
+	got.Files = nil
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("manifest = %+v, want %+v", got, want)
+	}
+	if len(m.Files) != 1 || m.Files[0].Key != outPrefix+match.FileName {
+		t.Fatalf("files = %+v, want only match.json", m.Files)
+	}
+	for _, f := range m.Files {
+		stored := h.stored(f.Key)
+		fileSum := sha256.Sum256(stored)
+		if f.Bytes != len(stored) || f.SHA256 != hex.EncodeToString(fileSum[:]) {
+			t.Errorf("%s: manifest says %d bytes %s, stored is %d bytes", f.Key, f.Bytes, f.SHA256, len(stored))
+		}
 	}
 }
 
@@ -216,7 +276,7 @@ func TestParseOK(t *testing.T) {
 	if file.Match.DemoSHA256 != hex.EncodeToString(sum[:]) || file.SchemaVersion != 1 || file.ParserVersion != parse.Version {
 		t.Errorf("match.json = %+v", file)
 	}
-	if stored := h.stored("parsed/" + matchID + "/match.json"); !bytes.Equal(stored, body) {
+	if stored := h.stored(outPrefix + "match.json"); !bytes.Equal(stored, body) {
 		t.Errorf("stored match.json differs from the response:\n%s\n%s", stored, body)
 	}
 
@@ -245,6 +305,11 @@ func TestParseLogLines(t *testing.T) {
 	entry := h.lastLog()
 	checkLog(t, entry, ids)
 	sum := sha256.Sum256(testDemo)
+	_, stats, err := parse.RunStats(context.Background(), bytes.NewReader(testDemo))
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := h.stored(outPrefix + "manifest.json")
 	checkLog(t, entry, map[string]any{
 		"severity":             "INFO",
 		"event":                "parse",
@@ -256,11 +321,14 @@ func TestParseLogLines(t *testing.T) {
 		"peak_scope":           "parse",
 		"demo_size":            float64(len(testDemo)),
 		"bytes_read":           float64(len(testDemo)),
-		"frames":               float64(8),
-		"last_tick":            float64(400),
-		"put_objects":          float64(1),
-		"put_bytes":            float64(len(body)),
+		"frames":               float64(stats.Frames),
+		"last_tick":            float64(stats.LastTick),
+		"put_objects":          float64(2),
+		"put_bytes":            float64(len(body) + len(manifest)),
+		"build":                "dev",
+		"parse_id":             parseID,
 		"match_source":         "parser",
+		"round_source":         "none",
 		"map":                  "de_mirage",
 		"demo_sha256":          hex.EncodeToString(sum[:]),
 		"players":              float64(2),
@@ -323,7 +391,7 @@ func TestParseBadDemo(t *testing.T) {
 	if entry := h.lastLog(); entry["result"] != "bad_demo" || entry["severity"] != "WARNING" {
 		t.Errorf("log = %v", entry)
 	}
-	if _, _, err := h.store.Open(context.Background(), "parsed/"+matchID+"/match.json"); !errors.Is(err, store.ErrNotFound) {
+	if _, _, err := h.store.Open(context.Background(), outPrefix+"match.json"); !errors.Is(err, store.ErrNotFound) {
 		t.Errorf("match.json was written for a bad demo: %v", err)
 	}
 }
@@ -490,11 +558,11 @@ func TestStubMode(t *testing.T) {
 		t.Fatalf("status %d, body %s", status, body)
 	}
 	for name, data := range fixture {
-		if got := string(h.stored("parsed/" + matchID + "/" + name)); got != data {
+		if got := string(h.stored(outPrefix + "" + name)); got != data {
 			t.Errorf("%s = %s, want %s", name, got, data)
 		}
 	}
-	checkLog(t, h.lastLog(), map[string]any{"stub": true, "result": "ok", "put_objects": float64(3), "match_parser_version": nil})
+	checkLog(t, h.lastLog(), map[string]any{"stub": true, "result": "ok", "put_objects": float64(4), "match_parser_version": nil})
 }
 
 func TestStubModeMissingFixtureIs500(t *testing.T) {

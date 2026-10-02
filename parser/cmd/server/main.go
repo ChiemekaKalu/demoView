@@ -22,6 +22,8 @@
 //	                      v1 setting; unset writes match.json only
 //	PARSER_ORACLE_BIN     the oracle binary (default "oracle" on PATH; the
 //	                      image installs it at /usr/local/bin/oracle)
+//	PARSER_BUILD          the build id the Worker reparses by (default "dev");
+//	                      written to each manifest as parsed_by
 package main
 
 import (
@@ -71,6 +73,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		return err
 	}
 	s := newServer(st, secret, parse.RunStats, getenv("PARSER_STUB_DIR"), logger)
+	s.build = cmp.Or(getenv("PARSER_BUILD"), s.build)
 	if s.oracle, err = oracleFromEnv(getenv); err != nil {
 		return err
 	}
@@ -90,6 +93,7 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	logger.Info("listening",
 		"port", ln.Addr().(*net.TCPAddr).Port,
 		"parser_version", parse.Version,
+		"build", s.build,
 		"store", storeKind(st),
 		"rounds", cmp.Or(getenv("PARSER_ROUNDS"), "none"),
 		"stub", s.stubDir != "",

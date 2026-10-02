@@ -50,6 +50,7 @@ func (s *server) summary(start time.Time, status int, result string, err error, 
 		slog.Int("status", status),
 		slog.Int64("duration_ms", time.Since(start).Milliseconds()),
 		slog.String("parser_version", parse.Version),
+		slog.String("build", s.build),
 	}, nonzero(
 		slog.Int64("in_flight", res.inFlight),
 		slog.Int64("peak_memory_bytes", res.peakMem),
@@ -84,6 +85,7 @@ func (s *server) summary(start time.Time, status int, result string, err error, 
 	}
 	return append(attrs, nonzero(
 		slog.String("match_source", res.source),
+		slog.String("round_source", res.roundSource),
 		slog.String("match_parser_version", m.ParserVersion),
 		slog.String("map", m.Match.Map),
 		slog.String("demo_sha256", m.Match.DemoSHA256),
@@ -104,6 +106,7 @@ func nonzero(attrs ...slog.Attr) []slog.Attr {
 // matchFacts is what the summary line reports of the match.json that
 // shipped, whoever wrote it.
 type matchFacts struct {
+	SchemaVersion int    `json:"schema_version"`
 	ParserVersion string `json:"parser_version"`
 	Match         struct {
 		Map        string `json:"map"`

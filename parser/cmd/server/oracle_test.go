@@ -101,13 +101,13 @@ func TestOracleAgreeShipsOurMatchJSON(t *testing.T) {
 	if v := factsOf(body).ParserVersion; v != parse.Version {
 		t.Errorf("shipped parser_version %q, want ours (%s)", v, parse.Version)
 	}
-	if stored := h.stored("parsed/" + matchID + "/match.json"); !bytes.Equal(stored, body) {
+	if stored := h.stored(outPrefix + "match.json"); !bytes.Equal(stored, body) {
 		t.Error("stored match.json differs from the response")
 	}
 	// The demo was streamed to the oracle in full, and its round files shipped.
 	for _, name := range []string{"01.json", "02.json"} {
 		var rf helperRound
-		json.Unmarshal(h.stored("parsed/"+matchID+"/rounds/"+name), &rf)
+		json.Unmarshal(h.stored(outPrefix+"rounds/"+name), &rf)
 		if rf.StdinBytes != len(testDemo) {
 			t.Errorf("%s: oracle read %d bytes of stdin, want %d", name, rf.StdinBytes, len(testDemo))
 		}
@@ -117,7 +117,8 @@ func TestOracleAgreeShipsOurMatchJSON(t *testing.T) {
 		"match_source":         "parser",
 		"parser_version":       parse.Version,
 		"match_parser_version": nil,
-		"put_objects":          float64(3),
+		"round_source":         "oracle",
+		"put_objects":          float64(4),
 		"oracle_stderr":        nil,
 	})
 	if _, ok := entry["oracle_ms"].(float64); !ok {
@@ -138,7 +139,7 @@ func TestOracleEnvironment(t *testing.T) {
 		t.Fatalf("status %d, body %s", status, body)
 	}
 	var rf helperRound
-	json.Unmarshal(h.stored("parsed/"+matchID+"/rounds/01.json"), &rf)
+	json.Unmarshal(h.stored(outPrefix+"rounds/01.json"), &rf)
 	if !slices.Contains(rf.Env, "ORACLE_HELPER=agree") || !slices.ContainsFunc(rf.Env, func(v string) bool { return strings.HasPrefix(v, "PATH=") }) {
 		t.Errorf("oracle environment %q lacks PATH or its own variable", rf.Env)
 	}
@@ -160,10 +161,10 @@ func TestOracleDisagreeShipsTheOracles(t *testing.T) {
 	if v := factsOf(body).ParserVersion; v != "9.9.9-oracle" {
 		t.Errorf("shipped parser_version %q, want the oracle's", v)
 	}
-	if stored := h.stored("parsed/" + matchID + "/match.json"); !bytes.Equal(stored, body) {
+	if stored := h.stored(outPrefix + "match.json"); !bytes.Equal(stored, body) {
 		t.Error("stored match.json differs from the response")
 	}
-	h.stored("parsed/" + matchID + "/rounds/01.json")
+	h.stored(outPrefix + "rounds/01.json")
 
 	lines := h.logLines()
 	i := slices.IndexFunc(lines, func(l map[string]any) bool { return l["mismatch"] != nil })
@@ -193,7 +194,7 @@ func TestOracleCrashIs500(t *testing.T) {
 		t.Errorf("body error = %q, want the oracle's message in the log only", msg)
 	}
 	for _, key := range []string{"match.json", "rounds/01.json"} {
-		if _, _, err := h.store.Open(context.Background(), "parsed/"+matchID+"/"+key); !errors.Is(err, store.ErrNotFound) {
+		if _, _, err := h.store.Open(context.Background(), outPrefix+""+key); !errors.Is(err, store.ErrNotFound) {
 			t.Errorf("%s was written after the oracle failed", key)
 		}
 	}
@@ -344,7 +345,7 @@ func TestRealDemosWithOracle(t *testing.T) {
 				t.Fatalf("shipped match.json has no rounds: %v", err)
 			}
 			for _, r := range shipped.Rounds {
-				h.stored(fmt.Sprintf("parsed/%s/rounds/%02d.json", matchID, r.N))
+				h.stored(fmt.Sprintf(outPrefix+"rounds/%02d.json", r.N))
 			}
 			entry := h.lastLog()
 			t.Logf("source=%v duration_ms=%v walk_ms=%v oracle_ms=%v rounds=%v", entry["match_source"], entry["duration_ms"], entry["walk_ms"], entry["oracle_ms"], entry["rounds"])

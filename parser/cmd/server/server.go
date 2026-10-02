@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,6 +43,8 @@ type server struct {
 	stubDir string
 	// oracle, when set, produces the round files (PARSER_ROUNDS=oracle).
 	oracle *oracle
+	// build identifies the parser build (PARSER_BUILD), which reparses key on.
+	build string
 
 	log       *slog.Logger
 	inFlight  atomic.Int64 // parses running now
@@ -55,6 +58,7 @@ func newServer(st store.Store, secret string, parseFn ParseFunc, stubDir string,
 		secret:    sha256.Sum256([]byte(secret)),
 		parse:     parseFn,
 		stubDir:   stubDir,
+		build:     "dev",
 		log:       log,
 		resetPeak: resetPeakMemory,
 		peakMem:   peakMemory,
@@ -70,15 +74,17 @@ func (s *server) routes() http.Handler {
 	return mux
 }
 
-// parseRequest is the body of POST /parse.
+// parseRequest is the body of POST /parse. The Worker picks a new ParseID for
+// every attempt, and the output goes under parsed/{match_id}/{parse_id}/.
 type parseRequest struct {
 	MatchID string `json:"match_id"`
 	DemoKey string `json:"demo_key"`
+	ParseID string `json:"parse_id"`
 }
 
-// matchIDPattern matches the Worker's ids. The id becomes part of output
-// keys, so nothing else is accepted.
-var matchIDPattern = regexp.MustCompile(`^[0-9a-z]{1,64}$`)
+// idPattern matches the Worker's match and parse ids. Both become part of
+// output keys, so nothing else is accepted.
+var idPattern = regexp.MustCompile(`^[0-9a-z]{1,64}$`)
 
 var (
 	errBadRequest = errors.New("bad request")
@@ -92,7 +98,7 @@ func (s *server) handleParse(w http.ResponseWriter, r *http.Request) {
 	given := sha256.Sum256([]byte(r.Header.Get("X-Parse-Secret")))
 	if subtle.ConstantTimeCompare(given[:], s.secret[:]) != 1 {
 		s.log.Warn("unauthorized parse request")
-		writeBody(w, http.StatusUnauthorized, errorJSON("missing or wrong X-Parse-Secret"))
+		writeBody(w, http.StatusUnauthorized, errorJSON("unauthorized", "missing or wrong X-Parse-Secret"))
 		return
 	}
 
@@ -101,12 +107,15 @@ func (s *server) handleParse(w http.ResponseWriter, r *http.Request) {
 	attempt, _ := strconv.Atoi(r.Header.Get("X-Attempt"))
 	log := slog.New(s.log.Handler().WithAttrs(nonzero(
 		slog.String("match_id", req.MatchID),
+		slog.String("parse_id", req.ParseID),
 		slog.String("demo_key", req.DemoKey),
 		slog.Int("attempt", attempt),
 		slog.String("request_id", r.Header.Get("X-Request-Id")),
 	)))
 	var res runResult
 	if err == nil {
+		// The Worker treats a 200 without its parse id as an old instance.
+		w.Header().Set("X-Parse-Id", req.ParseID)
 		res, err = s.track(r.Context(), log, req)
 	}
 	status, result, level := classify(err)
@@ -117,9 +126,11 @@ func (s *server) handleParse(w http.ResponseWriter, r *http.Request) {
 	case status >= 500:
 		// The details stay in the log line: the Worker shows this text on
 		// the public match page, and store errors name the account.
-		body = errorJSON(fmt.Sprintf("parser %s (see parser logs for match %s)", result, req.MatchID))
+		body = errorJSON(result, fmt.Sprintf("parser %s (see parser logs for match %s)", result, req.MatchID))
 	case err != nil:
-		body = errorJSON(err.Error())
+		body = errorJSON(result, err.Error())
+	default:
+		w.Header().Set("X-Manifest-Sha256", res.manifestSHA)
 	}
 	if err := writeBody(w, status, body); err != nil {
 		log.Warn("response write failed", "status", status, "bytes", len(body), "error", err)
@@ -133,8 +144,8 @@ func decodeRequest(w http.ResponseWriter, r *http.Request) (parseRequest, error)
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&req); err != nil {
 		return req, fmt.Errorf("%w: body must be JSON: %v", errBadRequest, err)
 	}
-	if !matchIDPattern.MatchString(req.MatchID) || req.DemoKey == "" {
-		return req, fmt.Errorf("%w: body needs a match_id of [0-9a-z] and a demo_key", errBadRequest)
+	if !idPattern.MatchString(req.MatchID) || !idPattern.MatchString(req.ParseID) || req.DemoKey == "" {
+		return req, fmt.Errorf("%w: body needs a match_id and a parse_id of [0-9a-z], and a demo_key", errBadRequest)
 	}
 	return req, nil
 }
@@ -161,12 +172,14 @@ func (s *server) track(ctx context.Context, log *slog.Logger, req parseRequest) 
 // runResult is what one parse shipped and measured, for the response and
 // the summary line.
 type runResult struct {
-	matchJSON []byte
-	source    string // whose match.json shipped: "parser" or "oracle"
-	demoSize  int64
-	parse     parse.Stats
-	store     storeStats
-	stack     string // where the parse panicked
+	matchJSON   []byte
+	source      string // whose match.json shipped: "parser", "oracle" or "stub"
+	roundSource string // whose round files shipped: "oracle", "stub" or "none"
+	manifestSHA string
+	demoSize    int64
+	parse       parse.Stats
+	store       storeStats
+	stack       string // where the parse panicked
 
 	inFlight  int64  // parses running as this one ended, itself included
 	peakScope string // "parse", or "process" where the peak couldn't be reset
@@ -188,10 +201,8 @@ func (s *server) runRecovered(ctx context.Context, req parseRequest, res *runRes
 	return s.run(ctx, req, res)
 }
 
-// run produces the parse output for req, writes it to the store and fills
-// in res. Every output key is overwritten, so a retry is safe. Round files
-// are written first and match.json last, so its presence means the round
-// files are there too.
+// run produces the parse output for req, writes it under the parse's prefix
+// and fills in res. Round files go first, then match.json, then the manifest.
 func (s *server) run(ctx context.Context, req parseRequest, res *runResult) error {
 	st := timedStore{s.store, &res.store}
 	if s.stubDir != "" {
@@ -202,7 +213,7 @@ func (s *server) run(ctx context.Context, req parseRequest, res *runResult) erro
 		return err
 	}
 	defer rc.Close() // even if the parse panics
-	res.demoSize, res.source = size, "parser"
+	res.demoSize, res.source, res.roundSource = size, "parser", "none"
 	file, stats, err := s.parse(ctx, rc)
 	res.parse = stats
 	if err != nil {
@@ -219,13 +230,35 @@ func (s *server) run(ctx context.Context, req parseRequest, res *runResult) erro
 		if rounds, err = s.oracleRounds(ctx, st, req, res); err != nil {
 			return err
 		}
+		res.roundSource = "oracle"
 	}
+	return s.write(ctx, st, req, res, rounds)
+}
+
+// write puts the round files and match.json under the parse's prefix, then
+// the manifest listing them, which marks the parse complete.
+func (s *server) write(ctx context.Context, st store.Store, req parseRequest, res *runResult, rounds []outFile) error {
+	out := &output{st: st, prefix: path.Join("parsed", req.MatchID, req.ParseID) + "/"}
 	for _, f := range rounds {
-		if err := st.Put(ctx, outputKey(req.MatchID, "rounds/"+f.name), f.data); err != nil {
+		if err := out.put(ctx, "rounds/"+f.name, f.data); err != nil {
 			return err
 		}
 	}
-	return st.Put(ctx, outputKey(req.MatchID, match.FileName), res.matchJSON)
+	if err := out.put(ctx, match.FileName, res.matchJSON); err != nil {
+		return err
+	}
+	facts := factsOf(res.matchJSON)
+	sum, err := out.commit(ctx, manifest{
+		ParseID:       req.ParseID,
+		MatchID:       req.MatchID,
+		ParsedBy:      s.build,
+		ParserVersion: facts.ParserVersion,
+		SchemaVersion: facts.SchemaVersion,
+		MatchSource:   res.source,
+		RoundSource:   res.roundSource,
+	})
+	res.manifestSHA = sum
+	return err
 }
 
 // oracleRounds streams the demo a second time into the oracle and returns
@@ -255,41 +288,81 @@ func (s *server) oracleRounds(ctx context.Context, st store.Store, req parseRequ
 	return out.rounds, nil
 }
 
-// runStub checks the demo exists, then copies the fixture files to the
-// match's output keys as they are.
+// runStub checks the demo exists, then writes the fixture files as they are,
+// with a manifest, so dev exercises the same swap as a real parse.
 func (s *server) runStub(ctx context.Context, st store.Store, req parseRequest, res *runResult) error {
 	size, err := st.Stat(ctx, req.DemoKey)
 	if err != nil {
 		return err
 	}
-	res.demoSize = size
-	matchJSON, err := os.ReadFile(filepath.Join(s.stubDir, match.FileName))
+	res.demoSize, res.source, res.roundSource = size, "stub", "stub"
+	if res.matchJSON, err = os.ReadFile(filepath.Join(s.stubDir, match.FileName)); err != nil {
+		return fmt.Errorf("stub: %w", err)
+	}
+	paths, err := filepath.Glob(filepath.Join(s.stubDir, "rounds", "*.json"))
 	if err != nil {
 		return fmt.Errorf("stub: %w", err)
 	}
-	rounds, err := filepath.Glob(filepath.Join(s.stubDir, "rounds", "*.json"))
-	if err != nil {
-		return fmt.Errorf("stub: %w", err)
-	}
-	for _, p := range rounds {
-		data, err := os.ReadFile(p)
-		if err != nil {
+	rounds := make([]outFile, len(paths))
+	for i, p := range paths {
+		if rounds[i].data, err = os.ReadFile(p); err != nil {
 			return fmt.Errorf("stub: %w", err)
 		}
-		if err := st.Put(ctx, outputKey(req.MatchID, "rounds/"+filepath.Base(p)), data); err != nil {
-			return err
-		}
+		rounds[i].name = filepath.Base(p)
 	}
-	if err := st.Put(ctx, outputKey(req.MatchID, match.FileName), matchJSON); err != nil {
+	return s.write(ctx, st, req, res, rounds)
+}
+
+// output writes one parse's files under its prefix and lists each for the
+// manifest.
+type output struct {
+	st     store.Store
+	prefix string
+	files  []manifestFile
+}
+
+func (o *output) put(ctx context.Context, name string, data []byte) error {
+	key := o.prefix + name
+	if err := o.st.Put(ctx, key, data); err != nil {
 		return err
 	}
-	res.matchJSON = matchJSON
+	sum := sha256.Sum256(data)
+	o.files = append(o.files, manifestFile{Key: key, Bytes: len(data), SHA256: hex.EncodeToString(sum[:])})
 	return nil
 }
 
-// outputKey is a key under parsed/{match_id}/ in the spec's R2 layout.
-func outputKey(matchID, name string) string {
-	return path.Join("parsed", matchID, name)
+// commit writes manifest.json, listing every file put so far, and returns
+// its sha256. A prefix without a manifest is an unfinished parse.
+func (o *output) commit(ctx context.Context, m manifest) (string, error) {
+	m.Files = o.files
+	data, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	if err := o.st.Put(ctx, o.prefix+"manifest.json", data); err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+// manifest is manifest.json. It holds no wall-clock time, so the same demo,
+// build and parse id always give the same bytes.
+type manifest struct {
+	ParseID       string         `json:"parse_id"`
+	MatchID       string         `json:"match_id"`
+	ParsedBy      string         `json:"parsed_by"`      // PARSER_BUILD
+	ParserVersion string         `json:"parser_version"` // the shipped match.json's
+	SchemaVersion int            `json:"schema_version"`
+	MatchSource   string         `json:"match_source"`
+	RoundSource   string         `json:"round_source"`
+	Files         []manifestFile `json:"files"` // in write order
+}
+
+type manifestFile struct {
+	Key    string `json:"key"`
+	Bytes  int    `json:"bytes"`
+	SHA256 string `json:"sha256"`
 }
 
 // classify maps a parse error to the HTTP status the Worker acts on, and to
@@ -323,8 +396,12 @@ func writeBody(w http.ResponseWriter, status int, body []byte) error {
 	return err
 }
 
-// errorJSON is the body of an error response.
-func errorJSON(msg string) []byte {
-	body, _ := json.Marshal(map[string]string{"error": msg})
+// errorJSON is the body of an error response. code is classify's result,
+// which the Worker stores and the match page explains.
+func errorJSON(code, msg string) []byte {
+	body, _ := json.Marshal(struct {
+		Code  string `json:"code"`
+		Error string `json:"error"`
+	}{code, msg})
 	return body
 }
