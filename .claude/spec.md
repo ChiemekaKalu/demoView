@@ -35,7 +35,7 @@ v0 ships a local CLI and v1 ships the hosted product. Anything not listed here i
 
 - Parser adds entity decoding: position, view direction, health, and alive state per player per tick
 - Parser adds grenade throws and detonations
-- Parser writes one replay file per round, downsampled to 16 Hz
+- Parser writes one replay file per round, downsampled to 32 Hz
 - Upload goes straight to R2 through a presigned URL
 - A queue and a Cloud Run service run the parse
 - D1 holds matches, players, rounds, and kills
@@ -100,7 +100,7 @@ demo diff  <file.dem> --against <reference.json>
 2. **String tables and baselines.** Entities start from a baseline state stored in a string table.
 3. **Entity updates.** Decode create, update, and delete operations, including field paths and per-type field decoders.
 4. **Extraction.** Keep only what the viewer needs: player position, view direction, health, alive state, team, and grenade projectiles.
-5. **Round files.** Downsample to 16 Hz and write one file per round.
+5. **Round files.** Downsample to 32 Hz and write one file per round.
 
 Stage 3 is the hardest part of the project. Everything else in v1 can be built before it is finished.
 
@@ -172,7 +172,7 @@ One per round, added in v1. Values are stored as columns so the viewer can index
 ```
 
 - Positions are integers in game units. `hp` of 0 means dead.
-- A long round is about 1,900 frames, so a file is a few hundred KB before compression.
+- A long round is about 3,800 frames at 32 Hz, so a file is several hundred KB to about 1 MB before compression.
 
 ### D1 tables
 
@@ -285,7 +285,7 @@ A plain Vite and Preact build is the starting point. Preact has React's componen
 
 ### Rendering
 
-- Data is 16 Hz and the canvas draws at the display's refresh rate, interpolating between frames.
+- Data is 32 Hz and the canvas draws at the display's refresh rate, interpolating between frames.
 - Opening a round fetches one file. The next round is prefetched in the background.
 - The canvas scales to the screen width and the scrubber works by touch.
 
@@ -371,7 +371,7 @@ The biggest risk is entity decoding taking far longer than planned, and the fall
 - [x] Which map for v1? Mirage.
 - [ ] Which reference parser, and does its output cover every field in the schema?
 - [ ] Does Cloudflare Queues need the paid Workers plan on this account?
-- [ ] Is 16 Hz smooth enough for the replay, or should round files be 32 Hz?
+- [x] Is 16 Hz smooth enough for the replay, or should round files be 32 Hz? 32 Hz.
 - [ ] Should a duplicate upload (same demo hash) reuse the existing match?
 - [ ] Demos include the other 8 players. Keep their Steam ids in public match data or strip them?
 - [ ] Is the repo public from day one?
