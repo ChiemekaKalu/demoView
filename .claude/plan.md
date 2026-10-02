@@ -127,7 +127,12 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
   - 9 have teams swapped (mostly build 9842).
   - A few have minor round-1 and ADR differences.
   - *Prod today:* the oracle guard ships the oracle's match.json for the collapsed and swapped cases, so they're correct. The 2 "no live rounds" demos fail with a 422.
-  - *Fix in progress* in `matchlogic`. **The swap-in default stays `oracle` until the pro sample passes.** Then: a pinned pro set in CI (pipeline), downloaded from HF at test time, never rehosted.
+  - **The swap-in default stays `oracle` until the pro sample passes.** Then: a pinned pro set in CI (pipeline), downloaded from HF at test time, never rehosted.
+  - **Stopped here (2026-10-02, 05:10 PT; resume 08:11).** No code changes yet; `matchlogic` is at its last passing state, and the user's 8 demos still match the game counters ("ALL MATCH").
+    - Repro: anubis, build 10072 (oracle: 22 rounds). Ours gives 1 round from begin_new_match at tick 559 to round 1's freeze end at 23437, with all 144 kills in it.
+    - *Hypothesis, unconfirmed:* `boundaryKind` picks the first of `round_prestart`/`round_start`/`round_poststart` seen anywhere, and `segmentRounds` splits only on that kind. If a tournament server fires it once, the window collapses. A second suspect is a misplaced `begin_new_match` (knife round, restarts, a 6-minute gap before the first freeze end).
+    - **Rule: no external demos on the user's machine.** Iterate only through aiguy's GitHub Actions research workflow in "parser" mode: push a parser branch, then cloud points the config at it, with a `paths` list of the repros plus controls.
+    - *Next:* (1) a workflow run that dumps the round-boundary events with ticks on the repros; (2) a general boundary rule or live-window fix, with synthetic tests; (3) the team swap (build 9842) and the minor round-1 cases; (4) a guard on the 10 local demos plus the scoreboard check, then a full re-run of all 132.
 - [ ] **Swap-in:** the server ships our round files, falls back to the oracle on an entity-stage error, and logs `round_source`. Plus the dev shadow compare (6.6).
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
 
