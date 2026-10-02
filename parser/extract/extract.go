@@ -77,14 +77,16 @@ func New(classes *entities.Classes) (*Recorder, error) {
 		controller: b.ref(r.pawn, "m_hController"),
 	}
 	for _, pc := range projectileClasses {
-		c := b.class(classes, pc.class)
+		// A build that lacks a projectile class has none of those grenades.
+		c := classes.ByName(pc.class)
+		if c == nil {
+			continue
+		}
 		p := &projectileRefs{typ: pc.typ, pos: b.position(c), thrower: b.ref(c, "m_hThrower")}
 		if pc.typ == roundfile.Molotov {
 			p.incendiary = b.ref(c, "m_bIsIncGrenade")
 		}
-		if c != nil {
-			r.byClass[c.ID].projectile = p
-		}
+		r.byClass[c.ID].projectile = p
 	}
 	if b.err != nil {
 		return nil, b.err

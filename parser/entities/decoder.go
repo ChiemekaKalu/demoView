@@ -2,6 +2,7 @@ package entities
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -306,8 +307,16 @@ func typeDecoder(f *Field, t typeSpec) Decoder {
 	case t.base == "uint64" && f.Encoder == "fixed64":
 		return Decoder{Kind: Fixed64}
 	}
-	return plain(f, scalars[t.base])
+	k, ok := scalars[t.base]
+	if !ok && enumName.MatchString(t.base) {
+		k = VarUint64 // networked enums are varints, and updates add new ones
+	}
+	return plain(f, k)
 }
+
+// enumName matches the naming of Valve's enum types, such as
+// EGrenadeThrowState or EKillTypes_t.
+var enumName = regexp.MustCompile(`^E[A-Z][A-Za-z0-9]*(_t)?$`)
 
 // plain returns k for a field with no encoder.
 func plain(f *Field, k Kind) Decoder {
