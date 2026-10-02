@@ -118,7 +118,11 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
 The spec's v1.1 section is the source. Owners: **parser** is this session, **pipeline** is the Worker and viewer session.
 
 - [ ] **5.1 Maps route and loader** (pipeline). `GET /api/maps/:name` serves `maps/radar_info` and radars. A map without a radar shows a plain background and a notice.
-- [ ] **5.2 Radar-alignment check** (parser, `tools/`). The share of alive player frames that land on a non-transparent radar pixel. Measure the Mirage baseline first, then set the bar. Local and dev only, because the radars are unlicensed.
+- [x] **5.2 Radar-alignment check** (parser, `tools/align`). Bar: **97.5% per demo** (alpha > 0).
+  - Measured: Mirage 99.46–99.64%; most misses are one stacked walkway the radar leaves transparent. Ancient 97.9–98.2%, because the radar hugs the walls. Inferno 99.4–99.98%. Overpass 99.68%.
+  - The radars are aligned: the best offset is within 2 px. A 6 px shift drops every demo to 97.46% or below.
+  - 99.5% would fail aligned demos. The bar comes from Mirage plus Ancient, so the spec wording needs updating (told cloud).
+  - Local and dev only.
 - [ ] **5.3 Per-map diff entries** (parser). `demo diff` coverage for Ancient, Inferno and Overpass. All 10 local demos already pass.
 - [ ] **5.4 Duplicate upload** (pipeline). `crypto.DigestStream` on confirm, indexed `demo_sha256`, existing id returned, duplicate object deleted.
 - [ ] **5.5 Reparse route and cron** (pipeline). Keyed on the last attempted build, injected at deploy. Hourly, 5 per batch, paused at 80% of the container allowance. A failed reparse never takes a match off `ready`.
