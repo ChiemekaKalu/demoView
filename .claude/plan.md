@@ -36,13 +36,15 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - *Per-kill resolution and per-round sides are checked in 1.7.*
 - [ ] **1.7 Match logic** (stage 6), and the full `match.json`. Exit: the scoreboard matches the in-game one for a match you played.
 - [ ] **1.8 `demo diff` and CI.** Exit: the diff passes on all 3 fixtures. This meets the v0 done-when and closes M1.
-  - *In progress (`terminal`):* package `parser/diff`, and a CI job that pulls fixture demos from `demoview-fixtures`, exports them with the oracle, then diffs.
-  - Comparison rules:
-    - players match by `steam_id`; rounds by `n`;
-    - kills: tick, attacker, victim, weapon and round all exact;
-    - K/D/A and HS% exact; ADR within ±1%;
-    - positions within 1 unit (M4).
-  - The `demo diff` subcommand waits for 1.7 to land.
+  - *Done:* package `parser/diff`. `Compare` checks match.json:
+    - players by `steam_id` (bots by name);
+    - rounds by `n`, all fields exact;
+    - kills in order, with tick, attacker, victim, weapon, round, headshot and assister all exact;
+    - K/D/A and HS% exact, and ADR within 1%.
+  - *Done:* `CompareRound` checks round files: x/y within 1 unit, yaw within 1°, hp exact, plus grenades and events.
+  - *Done:* the CI `diff` job. It pulls demos from `demoview-fixtures`, exports them with the oracle, then runs `demo diff`. It skips when the fixture secrets are absent. Deploy waits for every CI check.
+  - With the 1.7 work in the tree, both interim demos already diff clean against the oracle.
+  - *Remaining:* the `demo diff` subcommand, which waits for 1.7 to be committed, plus the third fixture demo.
 
 ## M2 groundwork (pulled forward)
 
@@ -59,12 +61,14 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - **`ci.yml`:** 7 parallel jobs (parser, oracle, schema, worker, web, and a Docker build with no push) on PRs and non-main pushes.
   - **`deploy.yml`:** on main, pushes the image to Artifact Registry, then deploys dev, then prod. Each deploy runs Cloud Run, then D1 migrations, then the Worker, with `PARSER_URL` filled from the Cloud Run URL. It's being gated on CI, because the user commits straight to main.
   - **Setup:** the first-run steps and GCP/Cloudflare prerequisites are in `.github/README.md`.
-- [ ] The rest of M2. Remaining per `worker/README.md` and `.github/README.md`:
-  - R2 buckets with CORS (PUT from the Worker origin)
-  - queues
-  - the parser runtime on Cloudflare Containers: a stub test of a multi-minute request first, then the Worker binding and the deploy.yml rework
-  - 4 secrets per env
-  - CI, which needs a GitHub remote; there isn't one yet
+- [x] Cloudflare dev and prod infra, done by the `cloud` session. Nothing is deployed yet.
+  - D1 with the schema applied.
+  - Queues and DLQs: `demoview-{env}-parse[-dlq]`.
+  - R2 buckets `demoview-{env}` with CORS.
+  - Per-bucket R2 S3 tokens, and Worker secrets set.
+- [ ] The rest of M2:
+  - the parser runtime on Cloudflare Containers: a stub test of a multi-minute request (`terminal`), then the Worker binding, then the deploy.yml rework
+  - a GitHub remote, so CI and deploy can run
 
 ## M3 groundwork (pulled forward)
 
