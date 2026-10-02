@@ -102,7 +102,9 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 
 v1 ships on oracle round files, but entity decoding is the spec's hardest stage, so it starts early. Each piece is a standalone package, verified on the interim demos, and not wired into `parse.Run` until stage 3.
 
-- [ ] **Stage 1, classes and serializers** (`parser/entities`). Class info plus flattened serializers become the field layout per class, with a decoder kind chosen for each field. *In progress.*
+- [x] **Stage 1, classes and serializers** (`parser/entities`). Field layouts for every class on both demos: 211 and 218 classes, about 1.5k distinct fields.
+  - Pawn position is `CBodyComponent` → `m_skeletonInstance.m_vecOrigin.m_cellX/Y/Z` + `m_vecX/Y/Z`. Also needed: `m_angEyeAngles`, `m_iHealth` and `m_lifeState`.
+  - *Unverified until stage 3 reads real data:* `ClampHealth` zigzag, `minusone`, SimTime fields by name, pointer presence bits, and how a polymorphic pointer picks its type.
 - [x] **Stage 2, string tables** (`parser/stringtables`). Packet create, update and clear-all messages match every snapshot byte for byte on both demos. `instancebaseline` is ready. *Open:* Mirage also has keys like `43:0`–`43:27` for `CCSGOViewModel`, with an unknown suffix, so look up baselines by the bare class id.
 - [ ] **Stage 3, entity updates.** Field paths, value decoders, and create/update/delete. The position diff runs against the oracle's round files.
 - [ ] **Stages 4–5, extraction and round files** at 64 Hz, then swap them in for the oracle's.
