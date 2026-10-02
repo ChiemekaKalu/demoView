@@ -106,7 +106,7 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
   - Pawn position is `CBodyComponent` → `m_skeletonInstance.m_vecOrigin.m_cellX/Y/Z` + `m_vecX/Y/Z`. Also needed: `m_angEyeAngles`, `m_iHealth` and `m_lifeState`.
   - *Unverified until stage 3 reads real data:* `ClampHealth` zigzag, `minusone`, SimTime fields by name, pointer presence bits, and how a polymorphic pointer picks its type.
 - [x] **Stage 2, string tables** (`parser/stringtables`). Packet create, update and clear-all messages match every snapshot byte for byte on both demos. `instancebaseline` is ready. *Open:* Mirage also has keys like `43:0`–`43:27` for `CCSGOViewModel`, with an unknown suffix, so look up baselines by the bare class id.
-- [ ] **Stage 3, entity updates.** Field paths, value decoders, and create/update/delete. The position diff runs against the oracle's round files.
+- [ ] **Stage 3, entity updates.** Field paths, value decoders, and create/update/delete. The position diff runs against the oracle's 64 Hz round files: x/y within 1 unit, yaw within 1°, hp exact. *In progress.*
 - [ ] **Stages 4–5, extraction and round files** at 64 Hz, then swap them in for the oracle's.
 
 ## Valve fetch (post-v1; design only)
