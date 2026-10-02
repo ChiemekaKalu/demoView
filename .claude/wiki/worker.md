@@ -12,7 +12,8 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `POST /api/matches/:id/uploaded` | Confirm the object, enqueue, return 202. **Duplicate:** the object is hashed as a stream (SHA-256), and if a match that hasn't failed already has the same demo, return `200 { id, status, duplicate: true }` for that match, delete the duplicate object and start no parse (`25c96a6`) | 409 not uploaded yet or wrong state. 413 over 1 GB (demo deleted, match failed) |
 | `GET /api/matches/:id` | Status, scoreboard and round list from D1, `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | The parser's `match.json` from R2, 5 min cache with ETag | 404 until `ready` |
-| `GET /api/matches/:id/rounds/:n` | A round file from R2, immutable for a year | 404 |
+| `GET /api/matches/:id/rounds/:n` | A round file from R2. With `?v=<parse_id>` it is that parse's file, immutable. Without it, the live parse's file (`074f5b7`) | 404 |
+| `POST /api/matches/:id/reparse` | Queue a reparse. The match stays `ready` on its live parse while it runs (`a37fc0d`) | 401 |
 | `GET /api/maps/:name` | `{ name, pos_x, pos_y, scale }`, cached a day (`091b2b5`) | 404 no radar, or a two-floor map |
 | `GET /api/maps/:name/radar.png` | The radar image, cached a day, with an ETag | 404 |
 

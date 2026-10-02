@@ -77,8 +77,9 @@ flowchart LR
 - **The viewer on a real parse.** It has only been run against the synthetic samples so far.
 - **CI diff on fixtures.** Optional: set the read-only fixtures secrets so that job runs instead of skipping.
 - **Fetching your own demos from Valve.** Decided for v1.2, along with two-floor maps (Nuke, Vertigo). The design is in `plan.md`, and nothing is started.
-- **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The user has approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, paused at 80% of the monthly allowance, on in prod). Much of it has started landing: the maps route and the viewer's loader, duplicate-upload reuse, coded errors, the alignment tool (bar 97.5% per demo) and the parser's side of the versioned parse prefix. The reparse route and cron, the pointer swap and the sweeper are not recorded as landed.
-- **Narrative log.** The design is approved in full. The `parser/eventlog` groundwork lands in M4, and the output, schema and story pane are v1.2.
+- **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The user has approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, paused at 80% of the monthly allowance, on in prod). Most of M5 and the parser half of M6 are committed: maps, duplicate reuse, coded errors, the alignment tool, the versioned parse prefix with its pointer swap, the reparse route, the no-Stop rule, fuzzing, byte-identical parses and per-map diffs. Not recorded as landed: the hourly reparse cron, the 7-day cleanup, the stuck-match sweeper, the rate limit and lifecycle rule, and the shadow compare.
+- **Narrative log.** The design is approved in full and the `parser/eventlog` groundwork is done. The output, schema and story pane are v1.2.
+- **Match Pulse.** A win-probability line under each round, approved for v1.2 after v1.1. See [decisions](decisions.md).
 
 ## The learning center
 

@@ -89,6 +89,18 @@ The Dockerfile's build context is the repo root, so `schema/samples` lands in th
 
 The server logs one JSON line for every parse and no longer leaks secrets into logs (`14ec9f0`). `parse.RunStats` returns counts alongside the result (`52f8113`).
 
+## Hardening (M6, parser side)
+
+| Item | State |
+| ---- | ----- |
+| A stream that ends without a Stop frame is `bad_demo` ("truncated: no Stop frame") | Done (`27de943`). All 2,000 truncations of the two public demos are rejected with no panic. |
+| Fuzz targets | `bitread`, `FuzzFrames` (frame loop, decoder, messages) and `FuzzApply` (string tables) are done and crash-free at 60 s. Field paths wait for M4 stage 3. |
+| Two parses in separate processes are byte-identical | Done: `match.json` is identical on all 10 local demos. |
+| Budget at `GOMAXPROCS=1` | Events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB. The full path with the oracle was over budget at 640 MiB, which was the oracle holding its whole timeline. A fix (`23e232c`) brought the peak to about 269 to 318 MiB at the same speed with byte-identical output. Re-measure when entity decoding swaps in. |
+| Per-map diff coverage | Done (`3c86e04`): one subtest per map and demo, all OK. |
+
+The narrative log's groundwork (`parser/eventlog`, `06ca637`) is done: facts, derived records and notes as NDJSON with a gzip whose mtime is 0, floats and times impossible by construction, golden and run-twice tests, about 0.5 microseconds per record. The rest of that design is v1.2.
+
 ## What's not here yet
 
 Entity decoding (M4) is the hardest part of the project, and it has started early as standalone packages that are not yet wired into `parse.Run`:
@@ -100,4 +112,4 @@ Entity decoding (M4) is the hardest part of the project, and it has started earl
 
 Entity decoding also decides exact round winners and teams, which events can only infer.
 
-Alongside it, `parser/eventlog` is the approved groundwork for the narrative log: an envelope, an emitter interface with a no-op, a spool and a deterministic finalizer, with tests. It writes no output yet. See [decisions](decisions.md#narrative-log).
+Alongside it, `parser/eventlog` (done) is the groundwork for the narrative log. It writes no output yet. See [decisions](decisions.md#narrative-log).

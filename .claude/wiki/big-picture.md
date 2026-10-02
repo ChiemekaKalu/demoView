@@ -62,7 +62,7 @@ sequenceDiagram
     W->>D: status parsing
     W->>P: POST /parse {match_id, demo_key}
     P->>R: stream demo, parse
-    P->>R: write rounds/NN.json, then match.json last
+    P->>R: write rounds/NN.json, match.json, then manifest.json last
     P-->>W: 200 match.json
     W->>D: save players, rounds, kills; status ready
     loop every few seconds
@@ -74,9 +74,9 @@ sequenceDiagram
 Details worth knowing:
 
 - **The demo never passes through the Worker.** A Worker is capped at 128 MB, and a demo can be hundreds of MB. R2 receives the PUT directly.
-- **`match.json` is written last,** so a reader who sees it knows the round files are already there.
+- **A parse commits with its manifest.** The parser writes round files, then `match.json`, then `manifest.json` last, so a manifest means the rest is already there.
 - **The parser never touches D1.** The Worker owns the database.
-- **Parsing is idempotent.** A retry overwrites the same keys.
+- **Every attempt has its own prefix.** A retry or reparse writes under a new `parse_id`, and D1 points at the live one, so nothing is overwritten in place.
 
 ## Why two parsers run in the container
 
@@ -86,9 +86,10 @@ v1 ships on round files from the oracle. Entity decoding (positions per tick) is
 
 ```text
 demos/{match_id}.dem
-parsed/{match_id}/match.json
-parsed/{match_id}/rounds/{NN}.json
+parsed/{match_id}/{parse_id}/manifest.json
+parsed/{match_id}/{parse_id}/match.json
+parsed/{match_id}/{parse_id}/rounds/{NN}.json
 maps/radars/*  maps/radar_info/*  maps/available.json  maps/manifest.json
 ```
 
-Maps are private, because the source repo has no license. Both buckets are `demoview-dev` and `demoview-prod`.
+Matches parsed before parse ids keep the older flat layout directly under `parsed/{match_id}/`, and D1's `live_parse_id` is empty for them. See [r2-layout](r2-layout.md). Maps are private, because the source repo has no license. Both buckets are `demoview-dev` and `demoview-prod`.

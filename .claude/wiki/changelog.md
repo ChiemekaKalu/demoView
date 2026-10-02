@@ -2,6 +2,14 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, morning: safe swap and hardening land
+
+- **Safe swap, Worker side:** every attempt writes under its own prefix and the match goes live by one conditional pointer swap (`074f5b7`, migration `0003`). A reparse route exists (`a37fc0d`), the viewer asks for files by parse id (`fff16cd`), and CI passes the parser's build id to the deploy (`c7134a1`). The `attempted_build` column is now named. Wiki: [R2 layout](r2-layout.md), [reparse runbook](runbook-reparse.md), [worker](worker.md), [big-picture](big-picture.md).
+- **M6, parser side:** demos with no Stop frame are rejected (`27de943`), the frame loop and string tables are fuzzed (`00e3150`), and truncation, run-twice, budget and per-map diff tests exist (`3c86e04`). The full path was 640 MiB over budget because the oracle held its whole timeline. Compacting its samples (`23e232c`) took it to about 270 to 320 MiB. Wiki: [parser](parser.md), [testing](testing.md).
+- **Narrative log groundwork is done** (`06ca637`, `b72dfce`). Wiki: [parser](parser.md).
+- **Match Pulse approved for v1.2** (`b002e11`, `158d192`): a win-probability line under each round. Wiki: [decisions](decisions.md).
+- The persisting step in the tour, the quiz about commit markers and the system map's R2 entry changed to match: it's the manifest that is written last now.
+
 ## 2026-10-02, small hours: M5 starts landing
 
 - **Maps:** the Worker serves each map's constants and radar (`091b2b5`), and the viewer loads them through the API (`c996015`). The alignment tool is in (`2c3b41d`, `f0c3e2d`), with a bar of **97.5% per demo**, which the spec adopted (`1d7ce68`): Ancient's walls-hugging radar scores about 98%, so the first-drafted 99.5% would have failed aligned demos. Wiki: [maps](maps.md), [testing](testing.md).

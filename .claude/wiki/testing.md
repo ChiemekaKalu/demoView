@@ -26,7 +26,7 @@ cd tools/oracle && go run . export path/to/match.dem --out ../../parser/testdata
 
 It does double duty. It's the answer key, and it's the v1 round-file source until our entity decoding passes. That's the spec's Fallback rule, which is the default path and not a failure mode.
 
-Checked against the game's own counters, it matches K, A and damage exactly on both demos. It now writes round files at 64 Hz by default, and Nuke peaks at 412 MB.
+Checked against the game's own counters, it matches K, A and damage exactly on both demos. It now writes round files at 64 Hz by default. On the largest demo at `GOMAXPROCS=1` its peak was 640 MiB, which was over the parser's budget. Keeping per-tick samples compact (`23e232c`) cut that to about 269 to 318 MiB, with byte-identical output.
 
 Gotchas to watch when diffing, found during research:
 - demoparser2 duplicates `round_officially_ended`.
@@ -73,6 +73,11 @@ The two public demos were an *interim* choice, and they are still the ones CI ca
 | Wiring tests | `parse/wiring_test.go` | A synthetic one-round 1v1 demo (`parsetest.Match()`) flows through `Run` into players, rounds, kills and scoreboard. |
 | Schema validation | `schema/validate.mjs --strict` | Output obeys the contract. |
 | Diff | CI `diff` job | Our output equals the oracle's on real demos. |
+| Truncation | `TestTruncated` | Every public fixture cut at 1,000 offsets is `bad_demo`, with no panic. |
+| Run twice | `TestRunTwiceIdentical` | Two separate processes give byte-identical `match.json` on all 10 local demos. |
+| Budget | `TestBudget` | The largest demo at `GOMAXPROCS=1` stays far under 512 MiB and 60 s on the events-only path. |
+| Per-map diff | `TestReferenceDiff` | One subtest per map and demo, five maps, all OK. |
+| Fuzzing | `bitread`, `FuzzFrames`, `FuzzApply` | Corrupted input is rejected, never a crash. Corpora are generated at test time, so no demo bytes are committed. |
 
 Tests that need real demos skip when the files are absent, so CI stays green on forks. The CI `diff` job also skips with a notice when the fixture secrets are missing.
 

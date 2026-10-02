@@ -1,6 +1,6 @@
 # Runbook: stuck and failed matches
 
-For a match that sits in `queued` or `parsing`, or ends `failed` and shouldn't have. **The sweeper and the `status_changed_at` column are v1.1 (`6d603ba`) and not recorded as built.** Coded errors have landed: the Worker stores a code with every failed match's error (`2f91766`), and the match page explains failed matches and unreadable data formats (`ed662e1`). Recovery today is the queue's own retries and the dead letter queue, described first.
+For a match that sits in `queued` or `parsing`, or ends `failed` and shouldn't have. **The sweeper is v1.1 (`6d603ba`) and not recorded as built. Its `status_changed_at` column exists** (migration `0003`, backfilled from `parsed_at` or `created_at`). Coded errors have landed: the Worker stores a code with every failed match's error (`2f91766`), and the match page explains failed matches and unreadable data formats (`ed662e1`). Recovery today is the queue's own retries and the dead letter queue, described first.
 
 ## What exists today
 
