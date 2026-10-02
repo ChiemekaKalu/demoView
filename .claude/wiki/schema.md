@@ -40,6 +40,10 @@ flowchart LR
 
 Positions are integers in game units. `hp` 0 means dead. **v1 writes every tick (64 Hz).** A long round is about 7,600 frames, up to roughly 2 MB before compression in the spec's estimate. The first plan was 16 Hz, then 32.
 
+## A third file: `pulse.json`
+
+Match Pulse adds a new file with its **own `pulse_version`** (1), described by `schema/pulse.schema.json`. `match.json` and the round files are untouched, so `schema_version` stays 1 (`9b0251d`). The validator pairs a pulse file with the `match.json` beside it and checks that its rounds exist there, that moment ticks strictly increase within a round, and that every `swing_tick` is one of the moment ticks. See [pulse](pulse.md).
+
 ## Conventions
 
 Most of these were gaps in the spec. They've been settled, and both the oracle and match logic follow them.

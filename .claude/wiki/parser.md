@@ -94,6 +94,8 @@ The Dockerfile's build context is the repo root, so `schema/samples` lands in th
 
 The server logs one JSON line for every parse and no longer leaks secrets into logs (`14ec9f0`). `parse.RunStats` returns counts alongside the result (`52f8113`).
 
+Round segmentation is its own stage now: a `normalize` step turns each demo into a standard round timeline before scoring (see [match-logic](match-logic.md)).
+
 ## Hardening (M6, parser side)
 
 | Item | State |

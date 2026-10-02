@@ -2,6 +2,13 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, night: M5 closes, and Match Pulse appears behind a flag
+
+- **M5 is closed** (`09ce443`, `243de41`): the self-recovery work is checked off, the budget and unknown-entity items too. There is deliberately no R2 lifecycle rule on demos, because an expiry would delete the demos a reparse needs. The daily cleanup of unconfirmed uploads covers orphans. Wiki: [worker](worker.md), [stuck-match runbook](runbook-stuck-matches.md).
+- **Match Pulse's back end is built, dev only** (`31b2e5f`, `9b0251d`, `252830d`, `8335413`): its own queue, name-free states, a model asked at every kill, a logistic fallback, a `pulse.json` with its own version, and a CI eval on golden states from the public fixtures. New page: [pulse](pulse.md). Wiki: [schema](schema.md), [decisions](decisions.md).
+- **Round segmentation became a normalize stage** (`d4c824e`, `2e3d668`), a backup restore counts as a replay of its round (`4e2858a`), and restarts a demo ends in are left out (`91268ae`, `0c5941a`). Wiki: [match-logic](match-logic.md), [parser](parser.md).
+- **The build id includes `PARSER_ROUNDS`** (`bde4f1f`), so changing whose round files ship reparses every match once. Wiki: [worker](worker.md), [reparse runbook](runbook-reparse.md).
+
 ## 2026-10-02, evening: the shadow compare passes on dev
 
 - **M6's shadow compare passed on dev** (`5b8b320`, `ad0f9d3`): dev ships our own round files, and all three dev matches reparsed with 0 mismatches against the oracle over 19, 10 and 19 rounds, saved as `shadow.json`. An independent diff of the deployed files against local oracle exports agreed. Wiki: [parser](parser.md), [testing](testing.md), [decisions](decisions.md).

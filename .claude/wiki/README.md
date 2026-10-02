@@ -49,6 +49,7 @@ flowchart LR
 | See where files live, and the proposed versioned layout | [r2-layout](r2-layout.md) |
 | Reparse matches after a parser change | [runbook-reparse](runbook-reparse.md) |
 | Diagnose a stuck or failed match | [runbook-stuck-matches](runbook-stuck-matches.md) |
+| Read about Match Pulse, the win-probability line | [pulse](pulse.md) |
 | Find out why something is the way it is | [decisions](decisions.md) |
 | Look up a term (tick, slot, oracle, DLQ) | [glossary](glossary.md) |
 | See what changed lately | [changelog](changelog.md) |
@@ -80,7 +81,7 @@ flowchart LR
 - **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The user has approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, paused at 80% of the monthly allowance, on in prod). Nearly all of M5 and the parser half of M6 are committed: maps, duplicate reuse, coded errors, the alignment tool, the versioned parse prefix with its pointer swap, the reparse route and hourly cron, the stuck-match sweeper, the rate limit, pipeline history in D1, the no-Stop rule, fuzzing, byte-identical parses and per-map diffs. **The crons are on in prod** (`6e305d0`) after the dev exit checks passed. Left: the R2 lifecycle rule for orphaned demos, the CI diff gate, and the shadow compare. The unknown-entity fallback exists in the parser and waits on the swap-in.
 - **Tournament demos and the prod flip.** The swap-in is proven on dev: our own round files, shadow compare at 0 mismatches on all three dev matches (`5b8b320`). The 132-demo tournament sample went from 113 collapsed rounds to 46 and is still being narrowed (`84f7bf8` and earlier). Prod stays on the oracle until the sample passes. See [match-logic](match-logic.md#tournament-gotv-demos-first-fix-landed-the-rest-is-narrowing) and [parser](parser.md).
 - **Narrative log.** The design is approved in full and the `parser/eventlog` groundwork is done. The output, schema and story pane are v1.2.
-- **Match Pulse.** A win-probability line under each round, approved for v1.2 after v1.1. See [decisions](decisions.md).
+- **Match Pulse.** Approved for v1.2, and its back end is already built behind a flag on dev: a win-probability model on its own queue, a new `pulse.json`, a logistic fallback and a CI eval. The viewer side isn't recorded as built. See [pulse](pulse.md).
 
 ## The learning center
 

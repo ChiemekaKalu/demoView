@@ -44,7 +44,7 @@ The Worker logs one JSON line for every change, every parse attempt, every dead 
 - **It only touches matches that have never been `ready`.** A reparse of a ready match is the [reparse runbook](runbook-reparse.md)'s business.
 - **Coded errors (landed).** D1 keeps the parser's error code beside the text, and the match page shows a message for each code instead of raw text. The parser's own responses carry the code too (`1a02084`).
 - **A fault flag** for testing, dev only, which deploy config refuses in prod. **The drill passed on dev:** with the flag making every attempt fail transiently, 20 uploads each went through 3 attempts and the dead letter queue and ended `failed` with the coded message `parse_failed: failed after 3 attempts: fault injected`. The longest any match waited in `queued` or `parsing` was 0.5 minutes. The flag was then removed, and the 20 test matches, their demos and their history were deleted.
-- **Upload hygiene.** A per-token rate limit, and an R2 lifecycle rule that removes orphaned demos (uploaded but never confirmed).
+- **Upload hygiene.** A per-token rate limit (10 a minute), and a daily cleanup that deletes uploads left unconfirmed for a day, with their demo. There is no R2 lifecycle rule on demos, because an expiry would delete the demos a reparse needs.
 
 ## Rules of thumb
 
