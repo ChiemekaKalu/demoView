@@ -37,7 +37,8 @@ type sides struct {
 //     read at its freeze end: a halftime swap can come before the event
 //     that ends the round. Without events, or if the events end on a
 //     different side than the end-of-match message gives, it is the
-//     end-of-match side carried back through the halftimes.
+//     end-of-match side carried back through the halftimes. Failing both,
+//     a bomb planter is observed on T and a defuser on CT.
 //  3. Team A is whoever was observed on CT in round 1. The side team A
 //     played in a later round is the side most of them were observed on,
 //     or the previous round's side, swapped at a halftime, when none of
@@ -138,6 +139,23 @@ func observe(log *Log, spans []span, in [][]bool, swap []bool, n *notes) [][]Sid
 				obs[r][p] = sideAfter(log, changes[p], spans[r].sidesAt())
 			} else if side.Playing() {
 				obs[r][p] = side
+			}
+		}
+	}
+
+	// The bomb shows a side where nothing else does, as in a partial
+	// recording with no player_team events or end-of-match message: whoever
+	// plants it plays T that round, and whoever defuses it CT.
+	for r, sp := range spans {
+		for _, e := range log.Entries[sp.start:sp.end] {
+			if p := e.Player; p == NoPlayer || !in[r][p] || obs[r][p].Playing() {
+				continue
+			}
+			switch e.Kind {
+			case BombPlanted:
+				obs[r][e.Player] = T
+			case BombDefused:
+				obs[r][e.Player] = CT
 			}
 		}
 	}
@@ -252,11 +270,10 @@ func teams(log *Log, spans []span, in [][]bool, obs [][]Side, sideA []Side, n *n
 	}
 
 	// Anyone who played but was never observed: opposite the players they
-	// fought.
-	for p := range log.Players {
-		if out[p] != noTeam || !playedAny(in, p) {
-			continue
-		}
+	// fought. Those who fought players of a known team are placed first,
+	// and again as more teams become known; a tie goes to B.
+	unplaced := func(p int) bool { return out[p] == noTeam && playedAny(in, p) }
+	fought := func(p int) map[team]int {
 		votes := map[team]int{}
 		for _, sp := range spans {
 			for _, e := range log.Entries[sp.start:sp.end] {
@@ -271,12 +288,29 @@ func teams(log *Log, spans []span, in [][]bool, obs [][]Side, sideA []Side, n *n
 				}
 			}
 		}
+		return votes
+	}
+	place := func(p int, votes map[team]int) {
 		out[p] = teamB
 		if votes[teamB] > votes[teamA] {
 			out[p] = teamA
 		}
 		n.add("%s has no known side; put on team %v, opposite the players they fought (%d A, %d B)",
 			log.Players[p].Name(), out[p], votes[teamA], votes[teamB])
+	}
+	for settled := false; !settled; {
+		settled = true
+		for p := range log.Players {
+			if votes := fought(p); unplaced(p) && votes[teamA] != votes[teamB] {
+				place(p, votes)
+				settled = false
+			}
+		}
+	}
+	for p := range log.Players {
+		if unplaced(p) {
+			place(p, fought(p))
+		}
 	}
 	return out
 }

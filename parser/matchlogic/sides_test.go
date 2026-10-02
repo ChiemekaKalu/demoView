@@ -188,6 +188,28 @@ func TestAssignSidesEdgeCases(t *testing.T) {
 		}
 	})
 
+	t.Run("sides only from the bomb", func(t *testing.T) {
+		// A partial recording: no player_team events and no end-of-match
+		// message. a defuses c's bomb, so a played CT and c T; b and d are
+		// placed opposite the players they fought.
+		l := &testLog{}
+		a, b := l.human("a", NoSide), l.human("b", NoSide)
+		c, d := l.human("c", NoSide), l.human("d", NoSide)
+		l.cvar(0, "mp_maxrounds", "24").cvar(0, "mp_roundtime_defuse", "1.92")
+		l.ev(10, BeginNewMatch).round(10, 100, a, b, c, d)
+		l.bomb(150, BombPlanted, c).kill(200, b, c).kill(300, a, d).bomb(400, BombDefused, a)
+		l.ev(500, WinPanelMatch)
+		res := mustBuild(t, l,
+			"b has no known side; put on team A, opposite the players they fought (0 A, 1 B)",
+			"d has no known side; put on team B, opposite the players they fought (1 A, 0 B)")
+		if got, want := teamsOf(res), map[string]string{"a": "A", "b": "A", "c": "B", "d": "B"}; !maps.Equal(got, want) {
+			t.Errorf("teams %v, want %v", got, want)
+		}
+		if got := roundsText(res)[0]; got != "1:10-100-400 A CT bomb_defused" {
+			t.Errorf("round 1 = %q", got)
+		}
+	})
+
 	t.Run("a team kill is noted", func(t *testing.T) {
 		l, a, b, c, d := twoVsTwo()
 		l.ev(10, BeginNewMatch).round(10, 100, a, b, c, d).kill(150, a, b).kill(200, a, c).kill(300, a, d).ev(400, WinPanelMatch)
