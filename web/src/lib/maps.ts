@@ -18,6 +18,9 @@ export interface MapInfo {
   fitted?: boolean
 }
 
+// Radar images in public/radar/ come from MurkyYT/cs2-map-icons
+// (images/radars/<map>_radar_psd.png, commit ae7ed6a), which extracts them from
+// the CS2 depot. The constants match that repo's data/radar_info/<map>.txt.
 export const MAPS: Record<string, MapInfo> = {
   de_mirage: { title: 'Mirage', posX: -3230, posY: 1713, scale: 5, size: 1024, radar: 'radar/de_mirage.png' },
 }
