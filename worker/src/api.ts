@@ -1,4 +1,5 @@
 import { hasUploadToken } from "./auth";
+import { JOBS } from "./cron";
 import { addEvent, getEvents } from "./events";
 import {
   demoKey,
@@ -56,6 +57,7 @@ const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/rounds\/([^/]+)$/, handler: getRoundFile },
   { method: "GET", pattern: /^\/api\/maps\/([^/]+)$/, handler: getMap },
   { method: "GET", pattern: /^\/api\/maps\/([^/]+)\/radar\.png$/, handler: getRadarImage },
+  { method: "POST", pattern: /^\/api\/admin\/cron\/([^/]+)$/, handler: runJob },
 ];
 
 export async function handleRequest(request: Request, env: Env): Promise<Response> {
@@ -251,6 +253,17 @@ async function parseToServe(
   if (!match) return error(404, "match not found");
   if (match.status !== "ready") return error(404, `match is ${match.status}, not ready`);
   return { id: match.live_parse_id, live: true, cacheControl: LIVE_CACHE_CONTROL };
+}
+
+// POST /api/admin/cron/:job: runs the sweeper, reparse batch or cleanup now
+// instead of at its next cron, so a check never waits on the clock.
+async function runJob(request: Request, env: Env, [name = ""]: string[]): Promise<Response> {
+  if (!(await hasUploadToken(request, env))) return unauthorized();
+  const job = JOBS.get(name);
+  if (!job) return error(404, "no such job: try sweep, reparse or cleanup");
+  console.log(JSON.stringify({ event: "job_run", job: name }));
+  await job(env, Date.now());
+  return json({ job: name, ran: true });
 }
 
 // GET /api/maps/:name: the numbers that place game positions on the map's

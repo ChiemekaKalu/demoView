@@ -1,11 +1,12 @@
 import { createScheduledController } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { handleRequest } from "../src/api";
 import { cleanup, reparseBatch, sweep } from "../src/cron";
 import worker from "../src/index";
 import { newParseId } from "../src/keys";
 import { CONTAINER_MS_PER_MONTH } from "../src/usage";
-import { events, insertMatch, matchRow, testEnv } from "./helpers";
+import { events, insertMatch, matchRow, request, testEnv, TOKEN } from "./helpers";
 
 const ID = "0123456789abc";
 // Status changes are stamped with the real clock, so the tests run at it.
@@ -181,5 +182,27 @@ describe("scheduled handler", () => {
     const controller = createScheduledController({ cron: "*/10 * * * *", scheduledTime: NOW });
     await worker.scheduled(controller, env);
     expect((await matchRow(ID))?.status).toBe("failed");
+  });
+});
+
+describe("POST /api/admin/cron/:job", () => {
+  const run = (job: string, token = TOKEN) => handleRequest(request("POST", `/api/admin/cron/${job}`, { token }), env);
+
+  it("runs the job now", async () => {
+    await insertMatch(ID, "parsing", { status_changed_at: Date.now() - 31 * MINUTE });
+    const res = await run("sweep");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ job: "sweep", ran: true });
+    expect((await matchRow(ID))?.status).toBe("failed");
+  });
+
+  it("requires the upload token", async () => {
+    await insertMatch(ID, "parsing", { status_changed_at: Date.now() - 31 * MINUTE });
+    expect((await run("sweep", "")).status).toBe(401);
+    expect((await matchRow(ID))?.status).toBe("parsing");
+  });
+
+  it.each(["nope", "constructor"])("returns 404 for an unknown job %s", async (job) => {
+    expect((await run(job)).status).toBe(404);
   });
 });

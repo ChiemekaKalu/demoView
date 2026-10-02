@@ -31,6 +31,7 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/matches/:id/events` | `200 { events }`, the match's pipeline history oldest first: `{ seq, ts, kind, msg, attempt, build, parse_id }` rows, where `kind` is `status`, `attempt`, `reparse` or `cleanup`. `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them). With `?v=<parse_id>`, that parse's, immutable for a year; without it, the live parse's, cached 5 minutes. Both with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
 | `GET /api/matches/:id/rounds/:n` | `200` round file, cached as `match.json` is | 404 |
+| `POST /api/admin/cron/:job` | `200 { job, ran: true }` after running `sweep`, `reparse` or `cleanup` now, as its cron would | 401, 404 (no such job) |
 | `GET /api/maps/:name` | `200 { name, pos_x, pos_y, scale }`, cached a day. A game position lands on the 1024-pixel radar at `((x - pos_x) / scale, (pos_y - y) / scale)`. | 404 (no radar, or a two-floor map) |
 | `GET /api/maps/:name/radar.png` | `200` the radar image, cached a day, with an ETag | 404 |
 

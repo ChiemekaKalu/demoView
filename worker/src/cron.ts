@@ -25,17 +25,23 @@ const KEEP_MS = 7 * 24 * 60 * 60 * 1000;
 const ABANDONED_MS = 24 * 60 * 60 * 1000;
 const CLEANUP_BATCH = 50;
 
+// The jobs by name, for running one by hand (POST /api/admin/cron/:job).
+export const JOBS = new Map<string, (env: Env, now: number) => Promise<void>>([
+  ["sweep", sweep],
+  ["reparse", reparseBatch],
+  ["cleanup", cleanup],
+]);
+
+const JOB_BY_CRON = new Map([
+  [SWEEP_CRON, "sweep"],
+  [REPARSE_CRON, "reparse"],
+  [CLEANUP_CRON, "cleanup"],
+]);
+
 export async function runCron(cron: string, env: Env, now: number): Promise<void> {
-  switch (cron) {
-    case SWEEP_CRON:
-      return sweep(env, now);
-    case REPARSE_CRON:
-      return reparseBatch(env, now);
-    case CLEANUP_CRON:
-      return cleanup(env, now);
-    default:
-      console.error(JSON.stringify({ event: "cron_unknown", cron }));
-  }
+  const job = JOBS.get(JOB_BY_CRON.get(cron) ?? "");
+  if (!job) return console.error(JSON.stringify({ event: "cron_unknown", cron }));
+  return job(env, now);
 }
 
 // Requeues a match stuck in queued, whose queue message is gone, and fails
