@@ -1,8 +1,18 @@
 import { hasUploadToken } from "./auth";
-import { demoKey, isMatchId, matchFileKey, newMatchId, roundKey } from "./keys";
+import {
+  demoKey,
+  isMapName,
+  isMatchId,
+  matchFileKey,
+  newMatchId,
+  radarImageKey,
+  radarInfoKey,
+  roundKey,
+} from "./keys";
 import { errorStack, errorText } from "./log";
 import { getMatch, getMatchPage, insertMatch, setStatus } from "./matches";
 import { presignUpload, UPLOAD_URL_TTL_SECONDS } from "./presign";
+import { parseRadar } from "./radar";
 
 // The message the API puts on the parse queue.
 export interface ParseJob {
@@ -18,6 +28,10 @@ const ROUND_CACHE_CONTROL = "public, max-age=31536000, immutable";
 // cached briefly; the ETag makes revalidating it cheap.
 const MATCH_FILE_CACHE_CONTROL = "public, max-age=300";
 
+// Map files change only when maps/ is uploaded again, so a day is long enough
+// to cache them and short enough to pick up a fix.
+const MAP_CACHE_CONTROL = "public, max-age=86400";
+
 type Handler = (request: Request, env: Env, params: string[]) => Promise<Response>;
 
 const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
@@ -26,6 +40,8 @@ const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)$/, handler: getMatchSummary },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/match\.json$/, handler: getMatchFile },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/rounds\/([^/]+)$/, handler: getRoundFile },
+  { method: "GET", pattern: /^\/api\/maps\/([^/]+)$/, handler: getMap },
+  { method: "GET", pattern: /^\/api\/maps\/([^/]+)\/radar\.png$/, handler: getRadarImage },
 ];
 
 export async function handleRequest(request: Request, env: Env): Promise<Response> {
@@ -150,6 +166,31 @@ async function getMatchFile(request: Request, env: Env, [id = ""]: string[]): Pr
   // A ready match always has one, so this is a bug or a lost object.
   console.error(JSON.stringify({ event: "object_missing", match_id: id, key: matchFileKey(id) }));
   return error(404, "match.json not found");
+}
+
+// GET /api/maps/:name: the numbers that place game positions on the map's
+// radar image.
+async function getMap(_request: Request, env: Env, [name = ""]: string[]): Promise<Response> {
+  if (!isMapName(name)) return error(404, "no radar for this map");
+  const [info, image] = await Promise.all([
+    env.BUCKET.get(radarInfoKey(name)),
+    env.BUCKET.head(radarImageKey(name)),
+  ]);
+  const radar = info ? parseRadar(await info.text()) : null;
+  if (!radar || !image) return error(404, "no radar for this map");
+  // One radar can't show two floors; that needs a layer per floor (v1.2).
+  if (radar.two_floor) return error(404, "no radar for two-floor maps yet");
+  const { pos_x, pos_y, scale } = radar;
+  return json({ name, pos_x, pos_y, scale }, 200, { "cache-control": MAP_CACHE_CONTROL });
+}
+
+// GET /api/maps/:name/radar.png
+async function getRadarImage(request: Request, env: Env, [name = ""]: string[]): Promise<Response> {
+  if (!isMapName(name)) return error(404, "radar not found");
+  return (
+    (await serveObject(request, env, radarImageKey(name), MAP_CACHE_CONTROL)) ??
+    error(404, "radar not found")
+  );
 }
 
 // serveObject streams an R2 object with its ETag, or answers 304 when the

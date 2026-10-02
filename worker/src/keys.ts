@@ -30,3 +30,18 @@ export function matchFileKey(matchId: string): string {
 export function roundKey(matchId: string, n: number): string {
   return `parsed/${matchId}/rounds/${String(n).padStart(2, "0")}.json`;
 }
+
+// Map names come from URLs and end up in R2 keys, like match ids.
+export function isMapName(s: string): boolean {
+  return /^[a-z0-9_]{1,64}$/.test(s);
+}
+
+// The map files under maps/ come from MurkyYT/cs2-map-icons: an HLTV overview
+// file and a radar image per map.
+export function radarInfoKey(map: string): string {
+  return `maps/radar_info/${map}.txt`;
+}
+
+export function radarImageKey(map: string): string {
+  return `maps/radars/${map}_radar_psd.png`;
+}

@@ -29,6 +29,8 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, players, rounds }`, `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them), cached 5 minutes with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
 | `GET /api/matches/:id/rounds/:n` | `200` round file, immutable for a year, with an ETag (304 on `If-None-Match`) | 404 |
+| `GET /api/maps/:name` | `200 { name, pos_x, pos_y, scale }`, cached a day. A game position lands on the 1024-pixel radar at `((x - pos_x) / scale, (pos_y - y) / scale)`. | 404 (no radar, or a two-floor map) |
+| `GET /api/maps/:name/radar.png` | `200` the radar image, cached a day, with an ETag | 404 |
 
 `players` rows are `{ idx, name, team, kills, deaths, assists, adr, hs_pct }`, ordered by `idx`. Steam ids stay out until the spec's open question on them is settled. `rounds` rows are `{ n, winner, reason, side_a }`, ordered by `n`. Timestamps are Unix milliseconds.
 
