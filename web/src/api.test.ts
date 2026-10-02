@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, getMap, getMatchFile, getRound, getSummary } from './api'
+import { ApiError, getMap, getMatchFile, getRound, getSummary, uploadDemo } from './api'
 import { MAPS } from './lib/maps'
 
 // The module caches per match id, so each test uses its own id.
@@ -121,5 +121,30 @@ describe('getMap', () => {
     )
     expect(await getMap('de_overpass')).toBeNull()
     expect(await getMap('de_overpass')).toMatchObject({ title: 'Overpass', scale: 5.2 })
+  })
+})
+
+describe('uploadDemo', () => {
+  // Succeeds every PUT at once.
+  class FakeXHR {
+    status = 200
+    upload = { onprogress: null }
+    onload: (() => void) | null = null
+    open() {}
+    send() {
+      queueMicrotask(() => this.onload?.())
+    }
+  }
+
+  it("opens the match the confirm returns, which may be an earlier upload's", async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeXHR)
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).endsWith('/uploaded')
+        ? json({ id: 'aaaaaaaaaaaa8', status: 'ready', duplicate: true })
+        : json({ id: 'aaaaaaaaaaaa9', upload_url: 'https://r2.test/put', upload_expires_in: 3600 }, 201),
+    )
+    const cb = { onStage: () => {}, onProgress: () => {}, signal: new AbortController().signal }
+    expect(await uploadDemo(new File(['PBDEMS2'], 'a.dem'), 'token', cb)).toBe('aaaaaaaaaaaa8')
+    expect(urls()).toEqual(['/api/matches', '/api/matches/aaaaaaaaaaaa9/uploaded'])
   })
 })

@@ -176,7 +176,8 @@ export interface UploadCallbacks {
   signal: AbortSignal
 }
 
-// The whole upload flow; resolves to the new match id.
+// The whole upload flow. Resolves to the match id: a new match, or the one
+// that already has this demo.
 export async function uploadDemo(file: File, token: string, cb: UploadCallbacks): Promise<string> {
   if (FIXTURES) return simulateUpload(file, cb)
   const auth = { authorization: `Bearer ${token}` }
@@ -188,12 +189,12 @@ export async function uploadDemo(file: File, token: string, cb: UploadCallbacks)
   cb.onStage('uploading')
   await putFile(created.upload_url, file, cb.onProgress, cb.signal)
   cb.onStage('confirming')
-  await request(`${API_BASE}/api/matches/${enc(created.id)}/uploaded`, {
+  const confirmed = await request<{ id: string }>(`${API_BASE}/api/matches/${enc(created.id)}/uploaded`, {
     method: 'POST',
     headers: auth,
     signal: cb.signal,
   })
-  return created.id
+  return confirmed.id
 }
 
 // PUT to the presigned R2 URL. XHR rather than fetch, for upload progress.
