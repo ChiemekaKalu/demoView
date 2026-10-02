@@ -1,6 +1,6 @@
 # demoView
 
-A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and a scrubbable 2D replay of every round. The parser is written from scratch in Go. Everything else is cloud plumbing around it: all on Cloudflare: the Worker API, R2, D1, Queues, and a Container for parsing.
+A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and a scrubbable 2D replay of every round. The parser is written from scratch in Go. Everything else is cloud plumbing on Cloudflare: the Worker API, R2, D1, Queues, and a Container for parsing.
 
 ## Spec and notes
 
