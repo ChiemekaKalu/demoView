@@ -104,6 +104,39 @@ func TestParseWritesMatchJSON(t *testing.T) {
 	}
 }
 
+func TestDiff(t *testing.T) {
+	file := writeTemp(t, "x.dem", matchDemo)
+	dir := filepath.Join(t.TempDir(), "out")
+	if code, _, stderr := runCLI("parse", file, "--out", dir); code != 0 {
+		t.Fatalf("parse: exit %d, stderr %s", code, stderr)
+	}
+	ref := filepath.Join(dir, "match.json")
+
+	code, stdout, stderr := runCLI("diff", file, "--against", ref)
+	if code != 0 || strings.TrimSpace(stdout) != "OK" || stderr != "" {
+		t.Errorf("same output: exit %d, stdout %q, stderr %q", code, stdout, stderr)
+	}
+
+	b, err := os.ReadFile(ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other := writeTemp(t, "ref.json", bytes.Replace(b, []byte(`"elimination"`), []byte(`"bomb_defused"`), 1))
+	code, stdout, stderr = runCLI("diff", file, "--against", other)
+	if code != 1 || !strings.Contains(stdout, "bomb_defused") {
+		t.Errorf("changed reason: exit %d, stdout %q", code, stdout)
+	}
+	checkErrLine(t, stderr, "mismatch")
+
+	for _, args := range [][]string{{"diff", file}, {"diff", "--against", ref}} {
+		code, _, stderr := runCLI(args...)
+		if code != 2 {
+			t.Errorf("%q: exit %d, want 2", args, code)
+		}
+		checkErrLine(t, stderr, "usage")
+	}
+}
+
 func TestRunErrors(t *testing.T) {
 	good := writeTemp(t, "good.dem", testDemo)
 	badMagic := writeTemp(t, "magic.dem", []byte("HL2DEMO\x00 not a cs2 demo"))

@@ -3,17 +3,19 @@
 // Usage:
 //
 //	demo parse <file.dem> --out <dir> [--events-only]
+//	demo diff <file.dem> --against <reference.json>
 //	demo inspect <file.dem>
 //
-// parse writes <dir>/match.json. inspect prints frame, file header and packet
-// message statistics; it is a development aid and not part of the CLI
-// contract. Flags may come before or
-// after the file. On failure demo writes one JSON line,
-// {"error":"...","code":"..."}, to stderr and exits 1 (bad_demo), 2 (usage)
-// or 3 (internal).
+// parse writes <dir>/match.json. diff parses the demo and compares the result
+// with a reference match.json, printing the report on stdout. inspect prints
+// frame, file header and packet message statistics; it is a development aid
+// and not part of the CLI contract. Flags may come before or after the file.
+// On failure demo writes one JSON line, {"error":"...","code":"..."}, to
+// stderr and exits 1 (bad_demo or mismatch), 2 (usage) or 3 (internal).
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -23,12 +25,14 @@ import (
 	"os"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
+	"github.com/ChiemekaKalu/demoview/parser/diff"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/parse"
 )
 
 const (
 	parseSynopsis   = "demo parse <file.dem> --out <dir> [--events-only]"
+	diffSynopsis    = "demo diff <file.dem> --against <reference.json>"
 	inspectSynopsis = "demo inspect <file.dem>"
 )
 
@@ -62,6 +66,8 @@ func classify(err error) (int, string) {
 	switch {
 	case errors.Is(err, demo.ErrBadDemo):
 		return 1, "bad_demo"
+	case errors.Is(err, errMismatch):
+		return 1, "mismatch"
 	case errors.As(err, &ue):
 		return 2, "usage"
 	}
@@ -79,18 +85,20 @@ func usagef(format string, args ...any) error {
 
 func dispatch(args []string, stdout io.Writer) error {
 	if len(args) == 0 {
-		return usagef("missing command; usage: %s | %s", parseSynopsis, inspectSynopsis)
+		return usagef("missing command; usage: %s | %s | %s", parseSynopsis, diffSynopsis, inspectSynopsis)
 	}
 	switch args[0] {
 	case "parse":
 		return cmdParse(args[1:], stdout)
+	case "diff":
+		return cmdDiff(args[1:], stdout)
 	case "inspect":
 		return cmdInspect(args[1:], stdout)
 	case "help", "-h", "-help", "--help":
-		_, err := fmt.Fprintf(stdout, "usage:\n  %s\n  %s\n", parseSynopsis, inspectSynopsis)
+		_, err := fmt.Fprintf(stdout, "usage:\n  %s\n  %s\n  %s\n", parseSynopsis, diffSynopsis, inspectSynopsis)
 		return err
 	}
-	return usagef("unknown command %q; usage: %s | %s", args[0], parseSynopsis, inspectSynopsis)
+	return usagef("unknown command %q; usage: %s | %s | %s", args[0], parseSynopsis, diffSynopsis, inspectSynopsis)
 }
 
 func cmdParse(args []string, stdout io.Writer) error {
@@ -112,6 +120,57 @@ func cmdParse(args []string, stdout io.Writer) error {
 
 // parseDemo parses the demo at path with parse.Run and writes match.json to
 // outDir. eventsOnly has no effect yet, because round files are not produced.
+func cmdDiff(args []string, stdout io.Writer) error {
+	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
+	against := fs.String("against", "", "compare with the reference match.json at `path`")
+	pos, err := parseArgs(fs, diffSynopsis, args, stdout)
+	if err != nil {
+		return err
+	}
+	switch {
+	case len(pos) != 1:
+		return usagef("diff: want one demo file, got %d; usage: %s", len(pos), diffSynopsis)
+	case *against == "":
+		return usagef("diff: --against is required; usage: %s", diffSynopsis)
+	}
+	return diffDemo(pos[0], *against, stdout)
+}
+
+// errMismatch means diff found differences; the report is on stdout.
+var errMismatch = errors.New("output differs from the reference")
+
+func diffDemo(path, refPath string, stdout io.Writer) error {
+	ref, err := os.ReadFile(refPath)
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	file, err := parse.Run(context.Background(), f)
+	if err != nil {
+		return err
+	}
+	var ours bytes.Buffer
+	if err := match.Write(&ours, file); err != nil {
+		return err
+	}
+	report, err := diff.Compare(ours.Bytes(), ref)
+	if err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(stdout, report); err != nil {
+		return err
+	}
+	if !report.OK() {
+		return errMismatch
+	}
+	return nil
+}
+
 func parseDemo(path, outDir string, eventsOnly bool) error {
 	f, err := os.Open(path)
 	if err != nil {
