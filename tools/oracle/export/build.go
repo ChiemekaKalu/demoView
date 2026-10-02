@@ -260,8 +260,9 @@ func (x *exporter) roundFile(r *roundRec, idx map[string]int, killIndex map[*kil
 
 	// This round's kills and the frame each lands on.
 	type roundKill struct {
-		k     *killRec
-		frame int
+		k      *killRec
+		frame  int
+		before bool // before the window opened, so at frame 0
 	}
 	var kills []roundKill
 	frames := len(rec.frames)
@@ -274,7 +275,7 @@ func (x *exporter) roundFile(r *roundRec, idx map[string]int, killIndex map[*kil
 			x.stats.KillFramesBefore++
 			f = 0
 		}
-		kills = append(kills, roundKill{k, f})
+		kills = append(kills, roundKill{k, f, k.tick < s})
 		frames = max(frames, f+1)
 	}
 	frames = max(frames, 1)
@@ -292,9 +293,26 @@ func (x *exporter) roundFile(r *roundRec, idx map[string]int, killIndex map[*kil
 		Players: []Track{}, Grenades: []Grenade{}, Events: []Event{},
 	}
 
+	aliveIn := func(key string) bool {
+		for _, f := range snaps {
+			if p, ok := f.player(key); ok && p.alive {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Each victim's first death in the window. A death before it, such as a
+	// kick before round 1, only holds for a player who never shows up alive
+	// in the window: one who does came back.
 	deaths := map[string]roundKill{}
 	for _, rk := range kills {
-		if _, seen := deaths[rk.k.victim]; !seen {
+		if _, seen := deaths[rk.k.victim]; !seen && !rk.before {
+			deaths[rk.k.victim] = rk
+		}
+	}
+	for _, rk := range kills {
+		if _, seen := deaths[rk.k.victim]; !seen && rk.before && !aliveIn(rk.k.victim) {
 			deaths[rk.k.victim] = rk
 		}
 	}
@@ -302,15 +320,7 @@ func (x *exporter) roundFile(r *roundRec, idx map[string]int, killIndex map[*kil
 	// Tracks for everyone who was alive in this round or died in it.
 	var tracked []string
 	for k := range idx {
-		_, died := deaths[k]
-		alive := false
-		for _, f := range snaps {
-			if p, ok := f.player(k); ok && p.alive {
-				alive = true
-				break
-			}
-		}
-		if died || alive {
+		if _, died := deaths[k]; died || aliveIn(k) {
 			tracked = append(tracked, k)
 		}
 	}
