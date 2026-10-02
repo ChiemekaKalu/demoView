@@ -123,19 +123,30 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
 
 The spec's v1.1 section is the source. Owners: **parser** is this session, **pipeline** is the Worker and viewer session.
 
-- [ ] **5.1 Maps route and loader** (pipeline). `GET /api/maps/:name` serves `maps/radar_info` and radars. A map without a radar shows a plain background and a notice.
+- [x] **5.1 Maps route and loader** (pipeline, 091b2b5, c996015). `GET /api/maps/:name` serves `maps/radar_info` and radars. A map without a radar shows a plain background and a notice.
+  - Two-floor maps (any `verticalsections` in the overview file) get a 404 until v1.2, so they replay on the plain background too.
+  - The viewer keeps its bundled Mirage radar as the fallback, for fixtures mode with no backend.
 - [x] **5.2 Radar-alignment check** (parser, `tools/align`). Bar: **97.5% per demo** (alpha > 0).
   - Measured: Mirage 99.46–99.64%; most misses are one stacked walkway the radar leaves transparent. Ancient 97.9–98.2%, because the radar hugs the walls. Inferno 99.4–99.98%. Overpass 99.68%.
   - The radars are aligned: the best offset is within 2 px. A 6 px shift drops every demo to 97.46% or below.
   - 99.5% would fail aligned demos. The bar comes from Mirage plus Ancient, so the spec wording needs updating (told cloud).
   - Local and dev only.
 - [x] **5.3 Per-map diff entries** (parser). `TestReferenceDiff` runs one subtest per map and demo: Mirage 4, Ancient 2, Inferno 2, Overpass 1, Nuke 1. All OK.
-- [ ] **5.4 Duplicate upload** (pipeline). `crypto.DigestStream` on confirm, indexed `demo_sha256`, existing id returned, duplicate object deleted.
+- [x] **5.4 Duplicate upload** (pipeline, 25c96a6, 4498e20). `crypto.DigestStream` on confirm, indexed `demo_sha256`, existing id returned, duplicate object deleted.
+  - The claim is one conditional UPDATE, so of two confirms of the same demo at once, only one parses. The new match row is deleted with the object.
+  - Verified on dev and prod: a re-upload returns the original id with `duplicate: true`.
 - [ ] **5.5 Reparse route and cron** (pipeline). Keyed on the last attempted build, injected at deploy. Hourly, 5 per batch, paused at 80% of the container allowance. A failed reparse never takes a match off `ready`.
+  - *Built:* the route (a37fc0d), the cron (9d5ead9), and container time per month in `container_usage` (1df36df).
+  - `PARSER_BUILD` is 12 hex of a hash of the git trees of `parser/` and `tools/oracle/` (c7134a1), not the commit sha, so a web-only merge reparses nothing.
+  - Crons are on in dev only. Prod's turn on after the dev exit checks: a poller across the hourly batch, and a failing build simulated with the dev-only `FAULT` flag (5994791, refused in prod by 22b3884).
 - [ ] **5.6 Safe swap.**
   - (parser) Write under a given `parsed/{id}/{parse_id}/` prefix, with `manifest.json` last. *Layout approved by the user (2026-10-02)*, along with the D1 columns and the reparse cron (hourly, 5 per batch, 80% cap, on in prod). It merges once CI passes. Contract proposed to pipeline: the Worker picks `parse_id`; `/parse` takes it as required; rounds, then match.json, then manifest.json last; `parsed_by` = `PARSER_BUILD` (the git sha).
-  - (pipeline) Conditional D1 pointer swap, `?v=<parse_id>` URLs, 7-day cleanup by exact key.
+  - (pipeline) Conditional D1 pointer swap, `?v=<parse_id>` URLs, 7-day cleanup by exact key. *Built:* 074f5b7, fff16cd and 9d5ead9. Parse ids are 9 base32 characters of time plus 7 random, one per attempt.
 - [ ] **5.7 Self-recovery** (pipeline). A 30-minute stuck-match sweeper on `status_changed_at`, coded errors on the match page, an unknown-`schema_version` message, an upload rate limit, and an orphaned-demo lifecycle rule. The parser side is the error codes in its responses.
+  - *Built:* the sweeper (9d5ead9), coded errors (2f91766, ed662e1), the `schema_version` message (ed662e1), and a 10-a-minute limit on uploads and reparses (856d8c5).
+  - Daily cleanup also deletes uploads left unconfirmed after a day, with their demo.
+  - *Left:* the R2 lifecycle rule for orphaned demos (cloud).
+  - Each match's pipeline history is in D1 `match_events` (1df36df), shown on the match page (ed9700b).
 
 ## M6: trusted and hardened (v1.1)
 
