@@ -21,6 +21,9 @@ export function testEnv(overrides: Partial<Env> = {}) {
     send: vi.fn(async (job: ParseJob) => {
       sent.push(job);
     }),
+    sendBatch: vi.fn(async (messages: { body: ParseJob }[]) => {
+      sent.push(...messages.map((m) => m.body));
+    }),
   };
   const testEnv = { ...env, PARSE_QUEUE: queue as unknown as Queue, ...overrides } as Env;
   return { env: testEnv, queue, sent };
@@ -43,4 +46,13 @@ export async function insertMatch(id: string, status: string, extra: Record<stri
   )
     .bind(...Object.values(row))
     .run();
+}
+
+export async function events(matchId: string) {
+  const { results } = await env.DB.prepare(
+    "SELECT kind, msg, attempt, build, parse_id FROM match_events WHERE match_id = ? ORDER BY seq",
+  )
+    .bind(matchId)
+    .all<{ kind: string; msg: string; attempt: number | null; build: string | null; parse_id: string | null }>();
+  return results;
 }

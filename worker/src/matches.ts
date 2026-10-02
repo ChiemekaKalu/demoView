@@ -1,5 +1,6 @@
 // D1 access for the spec's four tables. The Worker is the only writer.
 
+import { addEvent } from "./events";
 import type { MatchFile } from "./match-file";
 
 export type MatchStatus = "uploaded" | "queued" | "parsing" | "ready" | "failed";
@@ -55,7 +56,7 @@ export async function insertMatch(
     )
     .bind(id, demoKey, now)
     .run();
-  logStatus(id, "uploaded");
+  await statusChanged(db, id, "uploaded");
 }
 
 export type Claim =
@@ -83,7 +84,7 @@ export async function claimUpload(
     .bind(id, sha256, Date.now())
     .run();
   if (claimed.meta.changes > 0) {
-    logStatus(id, "queued", log);
+    await statusChanged(db, id, "queued", log);
     return { kind: "claimed" };
   }
   const original = await db
@@ -95,9 +96,14 @@ export async function claimUpload(
   return original ? { kind: "duplicate", match: original } : { kind: "lost" };
 }
 
-// Removes a match that never got past `uploaded`.
+// Removes a match that never got past `uploaded`, and its history.
 export async function deleteUploadedMatch(db: D1Database, id: string): Promise<void> {
-  await db.prepare("DELETE FROM matches WHERE id = ? AND status = 'uploaded'").bind(id).run();
+  await db.batch([
+    db.prepare("DELETE FROM matches WHERE id = ? AND status = 'uploaded'").bind(id),
+    db
+      .prepare("DELETE FROM match_events WHERE match_id = ?1 AND NOT EXISTS (SELECT 1 FROM matches WHERE id = ?1)")
+      .bind(id),
+  ]);
 }
 
 export function getMatch(db: D1Database, id: string): Promise<MatchRow | null> {
@@ -200,7 +206,7 @@ export async function saveParsedMatch(
       .bind(id, parse.id, JSON.stringify(file.kills)),
   ]);
   if (!swap?.meta.changes) return false;
-  logStatus(id, "ready", {
+  await statusChanged(db, id, "ready", {
     ...log,
     parse_id: parse.id,
     parser_version: file.parser_version,
@@ -239,12 +245,14 @@ export interface StatusChange {
   error?: string | null;
   // Only change the status if it is currently one of these.
   from?: readonly MatchStatus[];
-  // Extra fields for the match_status log line, such as the attempt.
+  // Extra fields for the match_status log line, such as the attempt. A
+  // `note` also goes into the match's history.
   log?: Record<string, unknown>;
 }
 
-// Sets a match's status and logs the change. Returns false if no row changed,
-// either because the match is missing or its status was not in `from`.
+// Sets a match's status, logs the change and adds it to the match's history.
+// Returns false if no row changed, either because the match is missing or its
+// status was not in `from`.
 export async function setStatus(
   db: D1Database,
   id: string,
@@ -265,14 +273,31 @@ export async function setStatus(
   }
   const result = await db.prepare(sql).bind(...params).run();
   const changed = result.meta.changes > 0;
-  if (changed) logStatus(id, status, { ...change.log, error: change.error });
+  if (changed) await statusChanged(db, id, status, { ...change.log, error: change.error });
   return changed;
 }
 
-// One JSON line per status change, per the spec's observability section. The
-// level follows the outcome, so the Workers Logs level filter finds failures.
-export function logStatus(matchId: string, status: MatchStatus, fields: Record<string, unknown> = {}): void {
+// Every status change is one JSON line, per the spec's observability section,
+// and one row of the match's history. The log level follows the outcome, so
+// the Workers Logs level filter finds failures.
+async function statusChanged(
+  db: D1Database,
+  matchId: string,
+  status: MatchStatus,
+  fields: Record<string, unknown> = {},
+): Promise<void> {
   const { error, ...rest } = fields;
   const log = status === "failed" ? console.error : error ? console.warn : console.log;
   log(JSON.stringify({ event: "match_status", match_id: matchId, status, ...rest, ...(error ? { error } : {}) }));
+
+  const { attempt, note, parse_id } = fields;
+  let msg: string = status;
+  if (typeof note === "string") msg += ` (${note})`;
+  if (typeof error === "string") msg += `: ${error}`;
+  await addEvent(db, matchId, {
+    kind: "status",
+    msg,
+    attempt: typeof attempt === "number" ? attempt : undefined,
+    parse_id: typeof parse_id === "string" ? parse_id : undefined,
+  });
 }

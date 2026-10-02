@@ -1,4 +1,5 @@
 import { hasUploadToken } from "./auth";
+import { addEvent, getEvents } from "./events";
 import {
   demoKey,
   isMapName,
@@ -50,6 +51,7 @@ const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
   { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/uploaded$/, handler: confirmUpload },
   { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/reparse$/, handler: reparseMatch },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)$/, handler: getMatchSummary },
+  { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/events$/, handler: getMatchEvents },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/match\.json$/, handler: getMatchFile },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/rounds\/([^/]+)$/, handler: getRoundFile },
   { method: "GET", pattern: /^\/api\/maps\/([^/]+)$/, handler: getMap },
@@ -181,6 +183,7 @@ async function reparseMatch(request: Request, env: Env, [id = ""]: string[]): Pr
   if (match.status === "ready") {
     await env.PARSE_QUEUE.send({ match_id: id, reparse: true } satisfies ParseJob);
     console.log(JSON.stringify({ event: "reparse_queued", match_id: id, live_parse_id: match.live_parse_id }));
+    await addEvent(env.DB, id, { kind: "reparse", msg: "requested through the API" });
     return json({ id, status: match.status }, 202);
   }
   if (!(await setStatus(env.DB, id, "queued", { error: null, from: ["failed"], log: { reparse: true } }))) {
@@ -193,6 +196,13 @@ async function reparseMatch(request: Request, env: Env, [id = ""]: string[]): Pr
     throw err;
   }
   return json({ id, status: "queued" }, 202);
+}
+
+// GET /api/matches/:id/events: the match's pipeline history, oldest first.
+async function getMatchEvents(_request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
+  const match = isMatchId(id) ? await getMatch(env.DB, id) : null;
+  if (!match) return error(404, "match not found");
+  return json({ events: await getEvents(env.DB, id) }, 200, { "cache-control": "no-store" });
 }
 
 // GET /api/matches/:id/rounds/:n

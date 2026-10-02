@@ -28,6 +28,7 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `POST /api/matches/:id/uploaded` | `202 { id, status: "queued" }`, or `200 { id, status, duplicate: true }` when a match that hasn't failed already has the same demo (by SHA-256): `id` is that match, and the new upload and its match are deleted | 401, 404, 409 (not uploaded yet, or not in `uploaded` any more: the body has `status`), 413 (over 1 GB; the demo is deleted and the match fails) |
 | `POST /api/matches/:id/reparse` | `202 { id, status }`. A `ready` match gets a reparse job and stays `ready` on its live parse whatever happens; a `failed` one goes back to `queued` | 401, 404, 409 (any other status, or the demo is no longer stored) |
 | `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, parse_id, players, rounds }`, `no-store` | 404 |
+| `GET /api/matches/:id/events` | `200 { events }`, the match's pipeline history oldest first: `{ seq, ts, kind, msg, attempt, build, parse_id }` rows, where `kind` is `status`, `attempt`, `reparse` or `cleanup`. `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them). With `?v=<parse_id>`, that parse's, immutable for a year; without it, the live parse's, cached 5 minutes. Both with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
 | `GET /api/matches/:id/rounds/:n` | `200` round file, cached as `match.json` is | 404 |
 | `GET /api/maps/:name` | `200 { name, pos_x, pos_y, scale }`, cached a day. A game position lands on the 1024-pixel radar at `((x - pos_x) / scale, (pos_y - y) / scale)`. | 404 (no radar, or a two-floor map) |
@@ -64,6 +65,8 @@ uploaded --confirm--> queued --consumer--> parsing --200--> ready
 ```
 
 A match is `uploaded` from creation until the upload is confirmed. While a retry is pending it is back in `queued`, with the last error in `error`. A match that reached `ready` stays there. Every change is logged as one JSON line, `{"event":"match_status",...}`, and stamps `status_changed_at`.
+
+The same changes, every parse attempt (its build, parse id, outcome and time), reparse requests and cleanups also go into D1's `match_events`, about ten rows per match, which outlast the 7 days Workers Logs keep. Each parse call's time, plus the container's 30 idle seconds, adds to `container_usage` for the month.
 
 ## Parser container
 
