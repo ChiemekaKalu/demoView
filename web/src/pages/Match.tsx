@@ -182,7 +182,7 @@ function Board({ team, summary, startSide }: { team: 'A' | 'B'; summary: MatchSu
     .sort((a, b) => (b.kills ?? 0) - (a.kills ?? 0) || (a.deaths ?? 0) - (b.deaths ?? 0))
   const score = team === 'A' ? summary.score_a : summary.score_b
   return (
-    <div class="board">
+    <div class="board card">
       <table>
         <caption>
           <span class={`who ${startSide.toLowerCase()}`}>

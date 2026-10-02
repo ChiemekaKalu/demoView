@@ -25,7 +25,7 @@ export function KillFeed({ kills, frame, hz, name, side, partial, onSeek }: Prop
     if (k.frame <= frame) latest = i
   })
   return (
-    <section class="feed" aria-label="Kill feed">
+    <section class="feed card" aria-label="Kill feed">
       <h2>Kills</h2>
       {kills.length === 0 && <p class="muted">No kills this round.</p>}
       <ol>

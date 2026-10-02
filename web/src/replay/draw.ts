@@ -7,8 +7,11 @@ import { radarToWorld, worldToRadar, type MapInfo } from '../lib/maps'
 import type { FeedKill } from '../lib/timeline'
 import type { Grenade, RoundFile, Side } from '../lib/types'
 
-export const SIDE_COLOR: Record<Side, string> = { CT: '#5ab0ff', T: '#f5b83d' }
-const SIDE_FILL: Record<Side, string> = { CT: 'rgba(90,176,255,0.36)', T: 'rgba(245,184,61,0.36)' }
+// mirrors --ct / --t in index.css
+export const SIDE_COLOR: Record<Side, string> = { CT: '#6ab7ff', T: '#f0b54a' }
+const SIDE_FILL: Record<Side, string> = { CT: 'rgba(106,183,255,0.36)', T: 'rgba(240,181,74,0.36)' }
+// The dark outline that keeps a dot readable on mid-grey radar floors.
+const OUTLINE = '#0f131a'
 
 const GRENADE_COLOR: Record<string, string> = {
   smoke: '#cfd5de',
@@ -146,8 +149,8 @@ export class Renderer {
     const [x, y] = pt(s.x, s.y)
     const side = this.side(s.idx)
     ctx.fillStyle = SIDE_COLOR[side]
-    ctx.strokeStyle = '#0b0d10'
-    ctx.lineWidth = 1.5
+    ctx.strokeStyle = OUTLINE
+    ctx.lineWidth = 2
     ctx.beginPath()
     if (side === 'CT') ctx.arc(x, y, r, 0, Math.PI * 2)
     else ctx.rect(x - r * 0.9, y - r * 0.9, r * 1.8, r * 1.8)
@@ -155,7 +158,7 @@ export class Renderer {
     ctx.stroke()
     // Health: a dark bite out of the dot, from the top, for missing hp.
     if (s.hp < 100) {
-      ctx.fillStyle = 'rgba(11,13,16,0.75)'
+      ctx.fillStyle = 'rgba(15,19,26,0.75)'
       ctx.beginPath()
       ctx.moveTo(x, y)
       ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * (100 - s.hp)) / 100)
@@ -172,7 +175,7 @@ export class Renderer {
     c.width = c.height = Math.max(1, Math.round(size * ratio))
     const g = c.getContext('2d')!
     g.setTransform(ratio, 0, 0, ratio, 0, 0)
-    g.fillStyle = '#13161b'
+    g.fillStyle = '#161b24'
     g.fillRect(0, 0, size, size)
     if (this.radar) {
       g.drawImage(this.radar, 0, 0, size, size)
@@ -354,8 +357,8 @@ function drawTrail(ctx: CanvasRenderingContext2D, g: Grenade, f: number, hz: num
   ctx.setLineDash([])
   if (fade <= 0) {
     ctx.fillStyle = color
-    ctx.strokeStyle = '#0b0d10'
-    ctx.lineWidth = 1
+    ctx.strokeStyle = OUTLINE
+    ctx.lineWidth = 2
     ctx.beginPath()
     ctx.arc(hxc, hyc, 3, 0, Math.PI * 2)
     ctx.fill()

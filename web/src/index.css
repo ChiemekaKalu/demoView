@@ -1,18 +1,41 @@
 :root {
   color-scheme: dark;
-  --bg: #0f1115;
-  --panel: #171b21;
-  --line: #313844;
-  --text: #e6e9ee;
-  --muted: #9aa4b1;
-  --link: #7cc4ff;
-  --accent: #2f7de1;
+  --bg: #1e2430;
+  --surface: #262e3d;
+  --raised: #2e3646;
+  --inset: #1a1f29;
+  /* Always darker than --bg, so the radar floor separates from the page. */
+  --stage: #161b24;
+  --line: #3a4457;
+  --line-strong: #68758e;
+  --text: #e6eaf0;
+  --text-2: #cdd4de;
+  --muted: #a9b3c3;
+  --link: #8fcbff;
+  --accent: #2f6cc8;
+  --accent-hover: #2a62b8;
+  --on-accent: #ffffff;
+  --accent-tint: #2b3a52;
+  --accent-tint-line: #46618a;
   --focus: #ffd166;
-  --ct: #5ab0ff;
-  --t: #f5b83d;
-  --error: #ff7b72;
+  /* Mirrored by SIDE_COLOR in replay/draw.ts. */
+  --ct: #6ab7ff;
+  --t: #f0b54a;
+  --error: #ff8f87;
+  --ok: #7ed69e;
+  --track: #3a4457;
+  --track-fill: #6b7891;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 6px 18px rgba(0, 0, 0, 0.22);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.45;
+  line-height: 1.5;
   background: var(--bg);
   color: var(--text);
 }
@@ -23,6 +46,7 @@
 
 body {
   margin: 0;
+  background: var(--bg);
 }
 
 a {
@@ -30,13 +54,15 @@ a {
 }
 
 h1 {
-  font-size: 1.6rem;
+  font-size: 1.75rem;
   margin: 0.4rem 0 0.6rem;
 }
 
 h2 {
-  font-size: 1.1rem;
-  margin: 1.5rem 0 0.6rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: var(--space-8) 0 0.6rem;
 }
 
 :focus-visible {
@@ -48,9 +74,9 @@ button,
 .btn {
   font: inherit;
   color: var(--text);
-  background: #1f242c;
+  background: var(--raised);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0.35rem 0.75rem;
   min-height: 2.25rem;
   cursor: pointer;
@@ -61,7 +87,7 @@ button,
 
 button:hover:not(:disabled),
 .btn:hover {
-  border-color: #4b5565;
+  border-color: var(--line-strong);
 }
 
 button:disabled,
@@ -74,15 +100,21 @@ button.primary,
 button[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
+}
+
+button.primary:hover:not(:disabled),
+button[aria-pressed='true']:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 input {
   font: inherit;
   color: inherit;
-  background: #161a20;
-  border: 1px solid var(--line);
-  border-radius: 6px;
+  background: var(--inset);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   padding: 0.5rem;
   width: 100%;
 }
@@ -95,7 +127,7 @@ progress {
 
 kbd {
   font: 0.8em ui-monospace, monospace;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-bottom-width: 2px;
   border-radius: 4px;
   padding: 0 0.3em;
@@ -108,7 +140,7 @@ abbr[title] {
 .page {
   max-width: 72rem;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--space-6) var(--space-6) 3rem;
 }
 
 .page.narrow {
@@ -118,6 +150,20 @@ abbr[title] {
 
 .page.wide {
   max-width: 90rem;
+}
+
+@media (max-width: 40rem) {
+  .page {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
 }
 
 .sr {
@@ -142,16 +188,16 @@ abbr[title] {
 }
 
 .notice {
-  background: var(--panel);
+  background: var(--surface);
   border-left: 3px solid var(--ct);
   padding: 0.6rem 0.8rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .back {
   display: inline-block;
   text-decoration: none;
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-1);
 }
 
 .spacer {
@@ -171,7 +217,7 @@ abbr[title] {
 .upload {
   display: grid;
   gap: 0.4rem;
-  margin: 1.5rem 0;
+  margin: var(--space-6) 0;
 }
 
 .upload label {
@@ -181,7 +227,7 @@ abbr[title] {
 
 .upload .actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   margin-top: 0.6rem;
 }
 
@@ -203,19 +249,19 @@ abbr[title] {
 .final {
   display: flex;
   align-items: baseline;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin: 0;
   font-size: 1.1rem;
 }
 
 .final strong {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-variant-numeric: tabular-nums;
 }
 
 .boards {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 @media (min-width: 56rem) {
@@ -226,6 +272,7 @@ abbr[title] {
 
 .board {
   overflow-x: auto;
+  padding: var(--space-3) var(--space-4);
 }
 
 table {
@@ -237,14 +284,22 @@ table {
 caption {
   text-align: left;
   font-weight: 600;
-  padding-bottom: 0.4rem;
+  padding-bottom: var(--space-2);
 }
 
 th,
 td {
-  padding: 0.4rem 0.5rem;
+  padding: 0.55rem 0.6rem;
   border-bottom: 1px solid var(--line);
   text-align: right;
+}
+
+tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+tbody tr:hover {
+  background: var(--raised);
 }
 
 th:first-child {
@@ -268,7 +323,7 @@ thead th {
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
 .rounds li.swap {
@@ -280,15 +335,16 @@ thead th {
   flex-direction: column;
   align-items: center;
   width: 4.6rem;
-  padding: 0.35rem 0.2rem;
-  background: var(--panel);
+  padding: 0.4rem 0.2rem;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: inherit;
   text-decoration: none;
 }
 
 a.round:hover {
+  background: var(--raised);
   border-color: var(--link);
 }
 
@@ -331,13 +387,13 @@ a.round:hover {
 }
 
 .round-score {
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--space-3);
 }
 
 .replay {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-6);
 }
 
 @media (min-width: 56rem) {
@@ -356,8 +412,9 @@ a.round:hover {
 
 .stage {
   aspect-ratio: 1;
-  background: #13161b;
-  border-radius: 6px;
+  background: var(--stage);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -374,7 +431,7 @@ a.round:hover {
   touch-action: none;
   cursor: pointer;
   user-select: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .scrubber-track {
@@ -384,7 +441,7 @@ a.round:hover {
   top: 50%;
   height: 6px;
   margin-top: -3px;
-  background: #2a313b;
+  background: var(--track);
   border-radius: 3px;
 }
 
@@ -393,7 +450,7 @@ a.round:hover {
   left: 0;
   top: 0;
   bottom: 0;
-  background: #56606e;
+  background: var(--track-fill);
   border-radius: 3px;
 }
 
@@ -442,11 +499,11 @@ a.round:hover {
 }
 
 .pulse-ct {
-  fill: rgba(90, 176, 255, 0.08);
+  fill: rgba(106, 183, 255, 0.09);
 }
 
 .pulse-t {
-  fill: rgba(245, 184, 61, 0.08);
+  fill: rgba(240, 181, 74, 0.09);
 }
 
 .pulse-mid {
@@ -499,7 +556,7 @@ a.round:hover {
 
 .speeds {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 
 .speeds button {
@@ -511,7 +568,7 @@ a.round:hover {
 }
 
 .history {
-  margin-top: 1.5rem;
+  margin-top: var(--space-8);
 }
 
 .history summary {
@@ -522,7 +579,7 @@ a.round:hover {
 .history ol {
   list-style: none;
   padding: 0;
-  margin: 0.5rem 0 0;
+  margin: var(--space-2) 0 0;
   display: grid;
   gap: 0.2rem;
   font-size: 0.9rem;
@@ -538,6 +595,7 @@ a.round:hover {
   flex: 1;
   min-width: 0;
   max-width: 26rem;
+  padding: var(--space-3);
 }
 
 .feed h2 {
@@ -570,8 +628,8 @@ a.round:hover {
 }
 
 .feed-item.latest button {
-  background: #1d2532;
-  border-color: #3a4658;
+  background: var(--accent-tint);
+  border-color: var(--accent-tint-line);
 }
 
 .feed-time {
@@ -581,7 +639,7 @@ a.round:hover {
 }
 
 .feed-weapon {
-  color: #c4ccd6;
+  color: var(--text-2);
   font-size: 0.85em;
 }
 
