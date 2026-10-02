@@ -135,6 +135,8 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
     | 84f7bf8 | 0 | 100 | — |
     | 91268ae | 0 | 105 | 12 |
     | main 243de41 | 0 | 106 | 11 |
+    | 37e41c6 | 0 | 114 | 1 |
+    | **6782d49** | 0 | **115** | **0: PASS** |
 
   - *Tournament quirks, now handled in the timeline stage (`matchlogic/timeline.go`, d4c824e):*
     - **Restart events:**
@@ -147,12 +149,21 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
       - a `begin_new_match` only at the end (84f7bf8);
       - restarts the demo ends in (91268ae).
     - **Backup restores,** where everyone dies and respawns on one tick: they replay the round rather than start one (4e2858a).
+    - **Restart-tick deaths:** a death on the tick a round restarts counts in the round before (6782d49).
     - **Sides:**
       - halftime sides read at the freeze end (4a3d389);
       - sides from bomb plants and defuses when nothing else shows them (37e41c6).
     - **Entity decoding:** unknown enum-like types read as varints (0108c53, 76e0708).
   - *Server:* when the reference fails on a demo our parser accepts, our plausible match ships as `fallback_reason=oracle_failed` (a40a665).
-  - *Now:* aiguy is gate-sweeping 37e41c6. It targets all of main's 11 blocking demos; 2 of them are reference-side and tagged.
+  - **Gate passed on 6782d49 (2026-10-02, run 37062846092):**
+    - 0 blocking of 132: 115 clean, 11 ADR-only, 4 reference-side (its `unknown` weapons) and 2 with no reference.
+    - All 132 parse, peak 115 MB and 7.3 s.
+    - It adds 6782d49: a death on a restart's tick counts in the round before.
+    - The prod flip is pipeline's commit, once main carries 6782d49.
+  - [ ] *Follow-up: ADR on pro demos.*
+    - 6 of the 11 ADR-only demos are partial or restored recordings, where the game's damage counter (the reference's ADR) covers damage the demo doesn't show.
+    - The other 5 are full recordings with 2–11% gaps for 1–7 players, cause unknown: spirit-vs-faze-m3-vertigo, the-mongolz-vs-vitality-m2-overpass, faze-vs-mouz-m2-overpass, natus-vincere-vs-vitality-m2-anubis, mouz-vs-natus-vincere-m1-dust2.
+    - It doesn't block the flip: prod's guard never compared the scoreboard, so prod already ships our ADR. On the user's 8 matchmaking games our ADR equals the game's counter exactly.
 - [ ] **Swap-in** (1587e55, de2ff27). The code is done and tested: `PARSER_ROUNDS=parser` (opt-in) ships our round files, falling back to the oracle on `entity_error` (6.5, tested) or `implausible_match`. `PARSER_SHADOW=oracle` diffs after a flushed response (6.6); a Mirage smoke run was a full match, 10 rounds and 0 mismatches.
   - *Remaining:* pipeline sets dev envVars (`PARSER_ROUNDS=parser`, `PARSER_SHADOW=oracle`); dev shadow lines come back clean; the gate sweep passes; then prod flips to `parser`. Never pass an empty `PARSER_ROUNDS` in prod.
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
