@@ -1,5 +1,5 @@
-import type { VNode } from 'preact'
-import { Findings } from './pages/Findings'
+import type { ComponentType, VNode } from 'preact'
+import { useEffect, useState } from 'preact/hooks'
 import { Match } from './pages/Match'
 import { Replay } from './pages/Replay'
 import { Upload } from './pages/Upload'
@@ -28,6 +28,23 @@ export function App() {
     if (m) return render(m)
   }
   return <NotFound />
+}
+
+// The findings page carries its own data and styles, so it loads as a
+// separate chunk the first time someone opens it, and replays don't pay for it.
+function Findings() {
+  const [Page, setPage] = useState<ComponentType | null>(null)
+  useEffect(() => {
+    import('./pages/Findings').then((m) => setPage(() => m.Findings))
+  }, [])
+  if (Page) return <Page />
+  return (
+    <main class="page">
+      <p class="muted" role="status">
+        Loading…
+      </p>
+    </main>
+  )
 }
 
 function NotFound() {
