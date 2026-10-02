@@ -57,6 +57,8 @@ Ideas, in order of promise. ✅ marks the ones tested.
 | **Rounds worth watching** ✅ | Highlight and share scores rank the match's rounds | ρ 0.60 vs rubric on 192 rounds; waits for human ratings |
 | **Headline picker** ✅ | Jev picks one of ~11 headline templates, and code fills in names and numbers, so no text generation | 68% precise unfiltered; ships only behind the code filter. Pairs with the narrative log's `narrate(log)`. |
 | **Beat the bot** | The replay pauses at a moment, the viewer guesses the winner, and the guess is scored against Jev's probability and the real result | No new calls; reuses Pulse data |
+| **Round recaps** ✅ | One generated sentence per round. Needs a text model: Claude was accurate in spot checks, gpt-oss invented details. Jev re-reads each recap against the timeline as a cheap check. | E6; about $0.003 per recap with Claude |
+| **Rounds like this one** ✅ | bge-m3 embeddings of each round's story. Without map names, a round's nearest neighbours from other matches share its way of winning 98% of the time (chance 30%) | [../rounds/findings.md](../rounds/findings.md); cents per match |
 | **Round search** | "Rounds where we lost a 4v2": one Choice over round ids, the line-search pattern from TypeSafe's cookbook | Untested; search is out of scope through v1.1 |
 | **Shadow-compare triage** (odd) | During M6's shadow compare, Jev labels each round-file mismatch with a likely cause (yaw wrap, late spawn, grenade id) for a human to confirm | Untested |
 

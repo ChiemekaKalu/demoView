@@ -179,6 +179,53 @@ Run in GitHub Actions (research run 37051653572) from the name-free facts of the
 
 So Jev's edge on win probability is being zero-shot. It's as good as a fitted model when there's little data (E4: 9 training matches). Once there are ~100 matches to train on, a tiny model draws the line better, for free.
 
+## E6: Jev against general-purpose LLMs
+
+The open question from the spec was whether just asking a general LLM would do as well. Run in GitHub Actions (research run 37057102040) on stored pro facts:
+- **The four predictors:**
+  - Jev
+  - `@cf/openai/gpt-oss-120b` (Workers AI, low reasoning effort)
+  - `claude-opus-5-5` (low effort, structured JSON output)
+  - the 9-feature logistic model trained on the other demos
+- **Access:** Claude went through AI Gateway's native Anthropic passthrough with Unified Billing. The official SDK's `auth_token` carries the Cloudflare token. An `x-api-key` of any value, even a placeholder, is forwarded to Anthropic and rejected. That cost the first attempt (run 37056020647) all 460 calls, at $0.
+- **The sample:** 400 moments sampled from 24 pro demos. 383 were answered by all four; 17 Claude calls hit the gateway's rate limit (429, code 2018).
+
+**Win probability, 383 shared moments:**
+
+| Predictor | Brier | AUC | ECE | Brier after a fitted temperature (T) |
+| --- | --- | --- | --- | --- |
+| Logistic + economy, trained | **0.125** | 0.905 | 0.053 | — |
+| Claude Opus 5.5 | 0.128 | 0.905 | 0.053 | 0.126 (T 0.72) |
+| Jev | 0.131 | **0.913** | 0.122 | **0.118** (T 0.48) |
+| gpt-oss-120b | 0.144 | 0.885 | 0.082 | 0.141 (T 0.74) |
+
+- **Claude is the best-calibrated zero-shot predictor,** nearly level with the trained model.
+- **Jev ranks moments best** (highest AUC) but is underconfident. With one temperature it scores lowest, though that temperature was fitted on these same 383 moments, so read 0.118 as optimistic. On E5's larger pro sample, the trained model beat recalibrated Jev.
+- **gpt-oss trails on every measure.**
+- **Cost and speed per call:**
+
+  | Model | Cost per call | p50 latency |
+  | --- | --- | --- |
+  | Jev | about $0.00003 | ~0.2 s |
+  | Claude | about $0.0028 (about 95× Jev) | 1.8 s (p95 6 s) |
+  | gpt-oss | a few Workers AI neurons | 1.1 s |
+
+  Win probability for a whole match would cost about $0.60 with Claude against about $0.01 with Jev.
+
+**Recaps, 60 rounds:** both LLMs wrote a one-sentence recap from the full round state (Jev can't write text). Each recap was then checked by code against the facts, and by Jev with the question "does the recap state anything the timeline doesn't support?".
+- **Claude:** 54 recaps (6 lost to the rate limit); 3 with code-flagged issues, 5 flagged by Jev, none flagged by both.
+- **gpt-oss:** 60 recaps; 7 code-flagged, 12 Jev-flagged, 4 by both.
+- **The code check is rough.** Its "names the losing side as the winner" test misfires on sentences like "eliminated the remaining CTs, giving the Ts the win", so the counts overstate errors.
+- **Read by hand:** Claude's flagged recaps were accurate apart from inferred score claims ("extending their lead to 6-2"). gpt-oss invented details, e.g. a "5-0 CT" score and a "2-v-0 win".
+- **Recaps used player labels only,** never names.
+- **Jev works as a cheap second reader.** It flagged most of the clearly bad gpt-oss recaps, but also some correct ones, so a flag means "look again", not "wrong".
+
+**Spend:**
+- Claude: $1.31 for 460 calls.
+- Jev: $0.012.
+- gpt-oss and the bge-m3 embeddings: Workers AI usage, small.
+- Total for the exploration: about $1.75 of the $12.50 cap.
+
 ## Observability rollup
 
 | Run | Calls | Errors | Retried | p50 ms | p95 ms | Input tokens | Cost |

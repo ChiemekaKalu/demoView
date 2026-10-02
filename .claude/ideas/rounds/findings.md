@@ -183,6 +183,24 @@ A logistic model trained on four demo groups and tested on the fifth. Brier scor
 - **Economy helps on every map.** The map term pays off noticeably only on Anubis, the strongest T lean.
 - **For Match Pulse:** a map-agnostic model plus economy is the right shape. Jev on pro play, in [../jev/experiments.md](../jev/experiments.md) E5, is beaten by exactly this kind of model.
 
+## Rounds like this one
+
+Every regulation round of the first 130-demo pass (2,575 rounds) was embedded with `@cf/baai/bge-m3`, as a short name-free story: buys, every kill, the bomb and the result. For each round, the 5 nearest rounds from other matches were compared with it (run 37057102040):
+
+| Shared with the round | Story with map and callouts | Story without them | Two random rounds |
+| --- | --- | --- | --- |
+| Winner | 92% | 99% | 50% |
+| Way of winning | 87% | 98% | 30% |
+| Buy matchup | 58% | 78% | 26% |
+| Order of the first three deaths | 24% | 29% | 13% |
+| Clutch | 81% | 85% | 77% |
+| Map | 100% | 12% | 12% |
+
+- **Map names and callouts dominate the text.** With them in, every neighbour is on the same map.
+- **With them out, neighbours come from any map but tell the same story:** same winner, same way of winning, mostly the same buys.
+- **The stories state the result and the buys,** so agreement on those is partly by construction. The first-death order (29% against 13%) is the less trivial signal.
+- A "rounds like this one" panel is cheap (52 embedding calls for 2,575 rounds) and works without any training.
+
 ## Our parser on pro demos
 
 The sweeps run our `demo parse` and `demo diff` against the oracle, demo by demo, in the cloud ("parser mode" on the research branch):
@@ -201,5 +219,5 @@ The sweeps run our `demo parse` and `demo diff` against the oracle, demo by demo
 ## Next
 
 - **The ca49811 full-132 parser sweep,** with event timelines on every demo, then whatever parser sends next.
-- **Model comparison on pro rounds:** Jev, gpt-oss-120b, Claude Opus 5.5 and the trained model on the same 400 moments, plus fact-checked recaps and "rounds like this one" embeddings. Results in a follow-up.
+- **Model comparison on pro rounds:** done, in [../jev/experiments.md](../jev/experiments.md) E6. Claude is the best-calibrated zero-shot predictor, Jev ranks best and costs about 1/95 as much, and the trained model has the lowest raw Brier.
 - **Interactive page:** a private claude.ai page, Round Odds, shows these results.
