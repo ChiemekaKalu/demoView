@@ -112,3 +112,17 @@ func TestHeadshotPercent(t *testing.T) {
 		t.Errorf("t1: %+v, want no kills and hs_pct 0", got)
 	}
 }
+
+// A round file lists the players who spawned in its round, by idx.
+func TestSpawned(t *testing.T) {
+	l, a, b, c, d := twoVsTwo()
+	l.ev(0, BeginNewMatch).round(0, 100, a, b, c, d).kill(200, a, c)
+	l.ev(1000, RoundOfficiallyEnded).round(1000, 1100, a, c, d).ev(1400, WinPanelMatch)
+	res := mustBuild(t, l,
+		"round 1: nothing decided it; guessed CT time_expired at tick 552",
+		"round 2: nothing decided it; guessed CT time_expired at tick 1400")
+	want := [][]int{{0, 1, 2, 3}, {0, 2, 3}}
+	if !slices.EqualFunc(res.Spawned, want, slices.Equal) {
+		t.Errorf("Spawned = %v, want %v", res.Spawned, want)
+	}
+}

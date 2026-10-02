@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
+	"github.com/ChiemekaKalu/demoview/parser/entities"
 	"github.com/ChiemekaKalu/demoview/parser/events"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/parse/parsetest"
@@ -68,5 +69,39 @@ func TestRunNoLiveRounds(t *testing.T) {
 	_, err := Run(context.Background(), bytes.NewReader(noRoundsDemo))
 	if !errors.Is(err, demo.ErrBadDemo) || !strings.Contains(err.Error(), "no live rounds") {
 		t.Errorf("error = %v, want ErrBadDemo for no live rounds", err)
+	}
+}
+
+// With round files on, a demo without entity classes still gets its
+// match.json, and the reason it has no round files.
+func TestParseRoundsWithoutEntities(t *testing.T) {
+	out, _, err := Parse(context.Background(), bytes.NewReader(parsetest.Match()), Options{Rounds: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Match.Rounds) != 1 || out.Rounds != nil || !errors.Is(out.RoundsErr, ErrNoEntities) {
+		t.Errorf("rounds %d, round files %d, RoundsErr %v; want 1, 0, ErrNoEntities", len(out.Match.Rounds), len(out.Rounds), out.RoundsErr)
+	}
+}
+
+// A class without a field the round files need, as a game update could
+// bring, is an entity-stage error wrapping entities.ErrUnknown; match.json
+// still comes from the events. Without round files it doesn't matter.
+func TestParseUnknownEntityField(t *testing.T) {
+	classes := parsetest.ClassFrames("CCSPlayerController", "CCSPlayerPawn", "CSmokeGrenadeProjectile",
+		"CFlashbangProjectile", "CHEGrenadeProjectile", "CMolotovProjectile", "CDecoyProjectile")
+	data := parsetest.Build(append(classes, parsetest.MatchFrames()...)...)
+	out, _, err := Parse(context.Background(), bytes.NewReader(data), Options{Rounds: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !errors.Is(out.RoundsErr, entities.ErrUnknown) || !errors.Is(out.RoundsErr, demo.ErrBadDemo) || !strings.Contains(out.RoundsErr.Error(), "m_steamID") {
+		t.Errorf("RoundsErr %v, want ErrUnknown naming m_steamID", out.RoundsErr)
+	}
+	if len(out.Match.Rounds) != 1 || len(out.Match.Kills) != 1 || out.Rounds != nil {
+		t.Errorf("match.json rounds %d, kills %d; round files %d", len(out.Match.Rounds), len(out.Match.Kills), len(out.Rounds))
+	}
+	if _, err := Run(context.Background(), bytes.NewReader(data)); err != nil {
+		t.Errorf("events only: %v", err)
 	}
 }

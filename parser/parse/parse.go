@@ -1,6 +1,6 @@
-// Package parse turns a demo stream into match.json. It is the one parse
-// path, shared by the CLI and the server, so both accept and reject exactly
-// the same demos.
+// Package parse turns a demo stream into match.json and, optionally, round
+// files. It is the one parse path, shared by the CLI and the server, so both
+// accept and reject exactly the same demos.
 package parse
 
 import (
@@ -13,11 +13,14 @@ import (
 	"time"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
+	"github.com/ChiemekaKalu/demoview/parser/entities"
 	"github.com/ChiemekaKalu/demoview/parser/events"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/matchlogic"
 	"github.com/ChiemekaKalu/demoview/parser/pb"
 	"github.com/ChiemekaKalu/demoview/parser/players"
+	"github.com/ChiemekaKalu/demoview/parser/roundfile"
+	"github.com/ChiemekaKalu/demoview/parser/stringtables"
 )
 
 // Version is the parser version recorded in every match.json.
@@ -31,6 +34,10 @@ const checkEvery = 4096
 // demo.ErrBadDemo.
 var ErrNoStop = fmt.Errorf("%w: truncated: no Stop frame", demo.ErrBadDemo)
 
+// ErrNoEntities is the round-file error of a demo with no entity classes.
+// It wraps demo.ErrBadDemo.
+var ErrNoEntities = fmt.Errorf("%w: entities: no class info", demo.ErrBadDemo)
+
 // Stats says how far a parse got and where its time went.
 type Stats struct {
 	BytesRead int64         // demo bytes read from the input
@@ -38,7 +45,30 @@ type Stats struct {
 	LastTick  int32         // the highest frame tick reached
 	Walk      time.Duration // reading and decoding the frames
 	Build     time.Duration // match logic, once the frames are done
+	Rounds    time.Duration // slicing round files, once match logic is done
 	Notes     []string      // what match logic had to guess or found inconsistent
+}
+
+// Options say what a parse produces besides match.json.
+type Options struct {
+	// Rounds decodes entities, sampling them every tick, to build round
+	// files. Without it a parse reads game events only, which is much
+	// cheaper.
+	Rounds bool
+}
+
+// Output is what a parse produced.
+type Output struct {
+	Match match.File
+	// Rounds holds one file per match round, in order, when Options.Rounds
+	// is set and the entity stage succeeded.
+	Rounds []roundfile.File
+	// RoundsErr says why Rounds is empty when Options.Rounds is set: the
+	// error that ended the entity stage. It wraps entities.ErrUnknown for a
+	// class, field or decoder this parser doesn't know, and otherwise
+	// demo.ErrBadDemo. Match is good either way, since it comes from game
+	// events, so a caller can ship it and take round files from elsewhere.
+	RoundsErr error
 }
 
 // Run reads the demo from r to the end and returns its match.json. It
@@ -54,23 +84,33 @@ func Run(ctx context.Context, r io.Reader) (match.File, error) {
 // RunStats is Run, plus Stats, which are filled in as far as the parse got
 // when it fails.
 func RunStats(ctx context.Context, r io.Reader) (match.File, Stats, error) {
+	out, st, err := Parse(ctx, r, Options{})
+	return out.Match, st, err
+}
+
+// Parse is RunStats with options. Its error is about match.json, as
+// RunStats's is; an error in the entity stage goes in Output.RoundsErr.
+func Parse(ctx context.Context, r io.Reader, opt Options) (Output, Stats, error) {
 	var st Stats
 	sum := sha256.New()
 	p := parser{rec: matchlogic.NewRecorder()}
+	if opt.Rounds {
+		p.ent = &entityStage{}
+	}
 	start := time.Now()
 	err := p.walk(ctx, io.TeeReader(r, io.MultiWriter(sum, counter{&st.BytesRead})), &st)
 	st.Walk = time.Since(start)
 	if err != nil {
-		return match.File{}, st, err
+		return Output{}, st, err
 	}
 
 	start = time.Now()
 	res := matchlogic.Build(p.rec.Log(), matchlogic.Options{Map: p.mapName, TickRate: p.tickRate})
 	st.Build, st.Notes = time.Since(start), res.Notes
 	if len(res.Rounds) == 0 {
-		return match.File{}, st, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
+		return Output{}, st, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
 	}
-	return match.File{
+	out := Output{Match: match.File{
 		SchemaVersion: match.SchemaVersion,
 		ParserVersion: Version,
 		Match: match.Info{
@@ -82,7 +122,19 @@ func RunStats(ctx context.Context, r io.Reader) (match.File, Stats, error) {
 		Rounds:     res.Rounds,
 		Kills:      res.Kills,
 		Scoreboard: res.Scoreboard,
-	}, st, nil
+	}}
+	switch {
+	case !opt.Rounds:
+	case p.entErr != nil:
+		out.RoundsErr = p.entErr
+	case p.ent.rec == nil:
+		out.RoundsErr = ErrNoEntities
+	default:
+		start = time.Now()
+		out.Rounds = p.ent.rec.Rounds(&out.Match, res.Spawned, st.LastTick)
+		st.Rounds = time.Since(start)
+	}
+	return out, st, nil
 }
 
 // counter adds the length of everything written to it to *n.
@@ -100,6 +152,25 @@ type parser struct {
 
 	events events.Decoder       // game event descriptors
 	rec    *matchlogic.Recorder // the events, players and cvars match logic needs
+
+	ent    *entityStage // nil when off, or once it fails
+	entErr error        // why it failed
+}
+
+// entity runs step, a part of the entity stage, on frame f if the stage is
+// on.
+func (p *parser) entity(f demo.Frame, step func(demo.Frame) error) {
+	if p.ent == nil {
+		return
+	}
+	if err := step(f); err != nil {
+		p.entityFailed(f, err)
+	}
+}
+
+// entityFailed ends the entity stage with err, from frame f.
+func (p *parser) entityFailed(f demo.Frame, err error) {
+	p.ent, p.entErr = nil, frameErr(f, err)
 }
 
 // walk feeds every frame of the demo in r, and every message in its
@@ -131,6 +202,9 @@ func (p *parser) walk(ctx context.Context, r io.Reader, st *Stats) error {
 		}
 		st.Frames++
 		st.LastTick = max(st.LastTick, f.Tick)
+		if p.ent != nil {
+			p.ent.sampleTo(f.Tick - 1)
+		}
 		switch f.Cmd {
 		case demo.CmdStop:
 			stopped = true
@@ -144,9 +218,16 @@ func (p *parser) walk(ctx context.Context, r io.Reader, st *Stats) error {
 			err = p.fullPacket(&mr, f)
 		case demo.CmdPacket, demo.CmdSignonPacket:
 			err = p.packet(&mr, f)
+		case demo.CmdSendTables:
+			p.entity(f, p.ent.sendTables)
+		case demo.CmdClassInfo:
+			p.entity(f, p.ent.classInfo)
 		}
 		if err != nil {
 			return err
+		}
+		if p.ent != nil {
+			p.ent.sampleTo(f.Tick)
 		}
 	}
 }
@@ -162,11 +243,15 @@ func (p *parser) fileHeader(f demo.Frame) error {
 	return nil
 }
 
-// stringTables applies a DEM_StringTables snapshot: player identity.
+// stringTables applies a DEM_StringTables snapshot: player identity, and
+// entity baselines.
 func (p *parser) stringTables(f demo.Frame) error {
 	var st pb.CDemoStringTables
 	if err := f.Unmarshal(&st); err != nil {
 		return err
+	}
+	if p.ent != nil {
+		p.ent.tables.ApplySnapshot(&st)
 	}
 	return frameErr(f, p.rec.StringTables(&st))
 }
@@ -196,7 +281,7 @@ func (p *parser) packet(mr *demo.MessageReader, f demo.Frame) error {
 		if err != nil {
 			return err
 		}
-		if err := p.message(m, f.Tick); err != nil {
+		if err := p.message(m, f); err != nil {
 			return frameErr(f, err)
 		}
 	}
@@ -211,10 +296,17 @@ func frameErr(f demo.Frame, err error) error {
 	return fmt.Errorf("%s frame at offset %d, tick %d: %w", f.Cmd, f.Offset, f.Tick, err)
 }
 
-// message hands one packet message to the stage that wants it. tick is the
-// tick of the frame that carried it.
-func (p *parser) message(m demo.Message, tick int32) error {
+// message hands one packet message, from frame f, to the stage that wants
+// it.
+func (p *parser) message(m demo.Message, f demo.Frame) error {
+	tick := f.Tick
 	switch m.Type {
+	case stringtables.MsgCreate, stringtables.MsgUpdate, stringtables.MsgClearAll, entities.MsgPacketEntities:
+		if p.ent != nil {
+			if err := p.ent.message(m, f); err != nil {
+				p.entityFailed(f, err)
+			}
+		}
 	case demo.MsgType(pb.SVC_Messages_svc_ServerInfo):
 		return p.serverInfo(m)
 	case demo.MsgType(pb.EBaseGameEvents_GE_Source1LegacyGameEventList):
@@ -225,6 +317,9 @@ func (p *parser) message(m demo.Message, tick int32) error {
 			return err
 		}
 		p.rec.Event(e)
+		if p.ent != nil && p.ent.rec != nil {
+			p.ent.rec.Event(e)
+		}
 	case demo.MsgType(pb.NET_Messages_net_SetConVar):
 		var c pb.CNETMsg_SetConVar
 		if err := m.Unmarshal(&c); err != nil {

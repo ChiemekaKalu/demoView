@@ -51,3 +51,23 @@ func listPlayers(log *Log, s sides) roster {
 	}
 	return ro
 }
+
+// spawned returns, for each round, the idx of every listed player with a
+// player_spawn in it, ascending.
+func spawned(log *Log, spans []span, ro roster) [][]int {
+	out := make([][]int, len(spans))
+	for r, sp := range spans {
+		in := make([]bool, len(ro.players))
+		for _, e := range log.Entries[sp.start:sp.end] {
+			if e.Kind == PlayerSpawn && e.Player != NoPlayer && ro.idx[e.Player] >= 0 {
+				in[ro.idx[e.Player]] = true
+			}
+		}
+		for i, ok := range in {
+			if ok {
+				out[r] = append(out[r], i)
+			}
+		}
+	}
+	return out
+}

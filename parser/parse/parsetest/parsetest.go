@@ -49,6 +49,25 @@ func Marshal(m proto.Message) []byte {
 	return b
 }
 
+// ClassFrames returns a SendTables and a ClassInfo frame that declare
+// entity classes with the given names, with ids from 0 in order, and no
+// fields.
+func ClassFrames(names ...string) []Frame {
+	var fs pb.CSVCMsg_FlattenedSerializer
+	var ci pb.CDemoClassInfo
+	for i, n := range names {
+		fs.Symbols = append(fs.Symbols, n)
+		fs.Serializers = append(fs.Serializers, &pb.ProtoFlattenedSerializerT{SerializerNameSym: proto.Int32(int32(i)), SerializerVersion: proto.Int32(0)})
+		ci.Classes = append(ci.Classes, &pb.CDemoClassInfoClassT{ClassId: proto.Int32(int32(i)), NetworkName: proto.String(n)})
+	}
+	data := Marshal(&fs)
+	tables := &pb.CDemoSendTables{Data: append(binary.AppendUvarint(nil, uint64(len(data))), data...)}
+	return []Frame{
+		{Cmd: demo.CmdSendTables, Tick: -1, Payload: Marshal(tables)},
+		{Cmd: demo.CmdClassInfo, Tick: -1, Payload: Marshal(&ci)},
+	}
+}
+
 // Msg is one packet message.
 type Msg struct {
 	Type uint32

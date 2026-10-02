@@ -18,6 +18,9 @@ type Result struct {
 	Rounds     []match.Round
 	Kills      []match.Kill
 	Scoreboard []match.ScoreRow
+	// Spawned lists, for each round, the idx of every player who spawned
+	// in it, in ascending order: the players its round file shows.
+	Spawned [][]int
 
 	// Notes say what Build had to guess, or found inconsistent, in plain
 	// words. They don't change the output; they are for whoever debugs a
@@ -46,6 +49,7 @@ func Build(log *Log, opt Options) Result {
 		Rounds:     rounds,
 		Kills:      listKills(log, w, spans, s, ro, &n),
 		Scoreboard: scoreboard(log, w, spans, s, ro),
+		Spawned:    spawned(log, spans, ro),
 		Notes:      dedupe(n),
 	}
 }
