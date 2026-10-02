@@ -9,7 +9,12 @@
   "name": "demoview-api-dev",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
-  "observability": { "enabled": true, "head_sampling_rate": 1, "logs": { "enabled": true, "invocation_logs": true } },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": { "enabled": true, "invocation_logs": true },
+    "traces": { "enabled": true }
+  },
   // The viewer, served by this same Worker so the API needs no CORS. Build
   // it first (`npm run build:web`). Requests for /api/* always reach the
   // Worker; any other path that isn't a file gets index.html, so the
@@ -52,7 +57,12 @@
   "env": {
     "prod": {
       "name": "demoview-api",
-      "observability": { "enabled": true, "head_sampling_rate": 1, "logs": { "enabled": true, "invocation_logs": true } },
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1,
+        "logs": { "enabled": true, "invocation_logs": true },
+        "traces": { "enabled": true }
+      },
       "vars": {
         "PARSER_URL": "https://demoview-parser.example.run.app",
         "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
