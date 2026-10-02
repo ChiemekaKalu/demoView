@@ -57,6 +57,28 @@ func TestSegmentRounds(t *testing.T) {
 			kills: 2,
 		},
 		{
+			// A tournament GOTV demo: round_prestart fires only before the
+			// match, so round_officially_ended splits the rounds.
+			name: "no round_prestart in play",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.ev(5, RoundPrestart).ev(10, BeginNewMatch).spawn(10, a, b, c, d).ev(100, RoundFreezeEnd)
+				l.kill(200, c, a).kill(300, d, b)
+				l.ev(748, RoundOfficiallyEnded).spawn(748, a, b, c, d).ev(1000, RoundFreezeEnd)
+				l.kill(1100, a, c).kill(1200, a, d)
+				l.ev(1648, RoundOfficiallyEnded).spawn(1648, a, b, c, d).ev(2000, RoundFreezeEnd)
+				l.kill(2100, a, c).kill(2200, b, d)
+				l.ev(2300, WinPanelMatch)
+				return l
+			},
+			rounds: []string{
+				"1:10-100-300 B CT elimination",
+				"2:748-1000-1200 A CT elimination",
+				"3:1648-2000-2200 A CT elimination",
+			},
+			kills: 6,
+		},
+		{
 			// A restart with nothing in it joins the round before it.
 			name: "empty restart",
 			build: func() *testLog {

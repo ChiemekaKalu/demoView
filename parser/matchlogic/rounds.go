@@ -15,18 +15,25 @@ type span struct {
 	restart    int   // the round_officially_ended entry, or -1 (the last round)
 }
 
-// boundaryKind returns the event that starts a round. round_prestart is the
-// first event of a round restart: the halftime team swaps and the spawns of
-// the new round all follow it, so splitting there keeps them in the round
-// they belong to. Every demo seen fires it; round_start (older demos) and
-// round_poststart fire on the same tick, and stand in if it is missing.
-func boundaryKind(log *Log) Kind {
-	seen := map[Kind]bool{}
-	for _, e := range log.Entries {
-		seen[e.Kind] = true
+// boundaryKind returns the event that starts a round in the live window w.
+// round_prestart is the first event of a round restart: the halftime team
+// swaps and the spawns of the new round all follow it, so splitting there
+// keeps them in the round they belong to. round_start (older demos) and
+// round_poststart fire on the same tick and stand in for it. Tournament GOTV
+// demos fire none of these during play; there round_officially_ended, which
+// fires as the next round restarts, marks the boundary.
+//
+// Every round has one freeze end, so a kind qualifies when w holds one for
+// every round after the first (round 1's may come before begin_new_match).
+// The first kind to qualify, in the order above, wins.
+func boundaryKind(log *Log, w window) Kind {
+	count := map[Kind]int{}
+	for _, e := range log.Entries[w.start:w.end] {
+		count[e.Kind]++
 	}
-	for _, k := range []Kind{RoundPrestart, RoundStart, RoundPoststart} {
-		if seen[k] {
+	need := count[RoundFreezeEnd] - 1
+	for _, k := range []Kind{RoundPrestart, RoundStart, RoundPoststart, RoundOfficiallyEnded} {
+		if count[k] >= need {
 			return k
 		}
 	}
@@ -48,7 +55,7 @@ func segmentRounds(log *Log, w window, n *notes) []span {
 	if w.start >= w.end {
 		return nil
 	}
-	boundary := boundaryKind(log)
+	boundary := boundaryKind(log, w)
 	first := w.start
 backward:
 	for i := w.start - 1; i >= 0; i-- {
@@ -115,9 +122,14 @@ func newSpan(log *Log, start, end int) span {
 			sp.freezeEnd, sp.freezeTick = i, e.Tick
 		case e.Kind == RoundEnd && sp.roundEnd < 0:
 			sp.roundEnd = i
-		case e.Kind == RoundOfficiallyEnded && sp.restart < 0:
+		case e.Kind == RoundOfficiallyEnded && sp.restart < 0 && i > start:
 			sp.restart = i
 		}
+	}
+	// Where round_officially_ended is the boundary, the restart that ends
+	// this round opens the next span.
+	if sp.restart < 0 && end < len(log.Entries) && log.Entries[end].Kind == RoundOfficiallyEnded {
+		sp.restart = end
 	}
 	return sp
 }
