@@ -50,12 +50,6 @@ type (
 // frame: x and y within 1 unit, yaw within 1 degree, and hp exactly.
 // Positions and yaw are compared while the oracle has the player alive,
 // since from death on it holds the pose at death.
-//
-// The oracle files a death from before a round's first frame, such as a
-// world death at match start, under that round, and holds the player dead
-// from frame 0 to the round's end, though they may have respawned. When its
-// kills show them dying again in the round, the frames before that are
-// skipped.
 func TestOracle(t *testing.T) {
 	if testing.Short() {
 		t.Skip("decodes whole demos")
@@ -105,7 +99,6 @@ func compareWithOracle(t *testing.T, path, dir string) {
 	for _, p := range m.Players {
 		steamIDs[p.Idx], names[p.Idx] = p.SteamID, p.Name
 	}
-	heldDead := heldDeadUntil(&m, samples)
 
 	w := &walker{}
 	var p *pawnReader
@@ -119,10 +112,6 @@ func compareWithOracle(t *testing.T, path, dir string) {
 			s := samples[next]
 			pawns := p.byPlayer(w.state)
 			for _, op := range s.round.Players {
-				if s.tick < heldDead[roundPlayer{s.round.Round, op.Idx}] {
-					cmp.skipped++
-					continue
-				}
 				key := steamIDs[op.Idx]
 				if key == "0" {
 					key = "bot:" + names[op.Idx]
@@ -141,35 +130,6 @@ func compareWithOracle(t *testing.T, path, dir string) {
 	}
 	t.Logf("%d svc_PacketEntities, all consumed exactly; %d frames of %d rounds", w.packets, len(samples), len(files))
 	cmp.report(t)
-}
-
-type roundPlayer struct{ round, idx int }
-
-// heldDeadUntil finds the players that the oracle holds dead from a
-// round's first frame because of a death before that frame, but who died
-// again later in the round, so were alive in between. It returns the tick
-// of that later death for each.
-func heldDeadUntil(m *oracleMatch, samples []sample) map[roundPlayer]int {
-	start := map[int]int{}
-	for _, s := range samples {
-		if s.frame == 0 {
-			start[s.round.Round] = s.tick
-		}
-	}
-	early := map[roundPlayer]bool{}
-	for _, k := range m.Kills {
-		if s, ok := start[k.Round]; ok && k.Tick < s {
-			early[roundPlayer{k.Round, k.Victim}] = true
-		}
-	}
-	out := map[roundPlayer]int{}
-	for _, k := range m.Kills {
-		key := roundPlayer{k.Round, k.Victim}
-		if _, done := out[key]; early[key] && !done && k.Tick >= start[k.Round] {
-			out[key] = k.Tick
-		}
-	}
-	return out
 }
 
 // pawnReader reads players' pawns: controllers by Steam id (or "bot:" and
@@ -242,9 +202,8 @@ func (p *pawnReader) byPlayer(s *entities.State) map[string]pawnState {
 
 // comparison counts frames within tolerance, per column.
 type comparison struct {
-	n, bad  [4]int // x, y, yaw, hp
-	skipped int    // player frames held dead by the oracle
-	shown   int
+	n, bad [4]int // x, y, yaw, hp
+	shown  int
 }
 
 var columns = [4]string{"x", "y", "yaw", "hp"}
@@ -287,7 +246,7 @@ func (c *comparison) report(t *testing.T) {
 			t.Errorf("%s: %d of %d frames out of tolerance", name, c.bad[col], c.n[col])
 		}
 	}
-	t.Logf("within tolerance:%s; %d player frames skipped", line, c.skipped)
+	t.Logf("within tolerance:%s", line)
 }
 
 // yawDegrees maps a yaw in degrees to [0, 360), as the oracle's integer
