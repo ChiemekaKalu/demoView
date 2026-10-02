@@ -107,6 +107,8 @@ A bulk run of 132 public pro GOTV demos (builds 9842 to 10847) was run through t
 
 **Where the full sweep of 132 stood after the first fix** (`68a02cf`): 46 still collapse to one round, because none of the four boundary events qualifies on them, and the cause stays unknown until the timelines come back. 37 have a boundary or reason difference, 21 fail in the entity stage, and 14 have a clean `match.json`. Parsing is fast: p50 3.5 s, the slowest 7.4 s and 219 MB. A smaller repro sweep showed two round-1 cases where 9 or 10 of 10 players have no round-1 spawn and `begin_new_match` is at tick -1, so the recording probably starts after round 1's spawns. The fix waits on the timelines rather than a guess.
 
+**Then segmentation was extended** (`84f7bf8`): when no other restart event fires each round, rounds split on `cs_pre_restart` and each starts at its spawns. The match starts at a `begin_new_match` that has rounds after it, or otherwise at the first round's restart. When a recording starts inside round 1, round 2's players are taken to have spawned in it.
+
 **Not ours:** the 2 "no live rounds" demos fail in the reference parser too, so there is nothing to fall back to, and prod returns a 422 just as it would with the reference alone.
 
 **Now:** the timelines are being run on 11 demos (collapsed, round-1, no-live-rounds and controls), then the full 132 again. The 10 local demos still match the reference, and the scoreboard check still matches the game's counters. The swap-in's prod flip waits for the sweep to pass.

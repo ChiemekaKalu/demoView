@@ -55,7 +55,7 @@ Mismatches name the field path: `kills[12].weapon: ours ak47, reference m4a1`. O
 
 ## The shadow compare
 
-In dev, after each response is flushed, the server reruns the oracle and diffs its `match.json` and round files against what shipped (`PARSER_SHADOW=oracle`, `1587e55`). It logs one `shadow` line with counts by category and never writes to the store. On a full Mirage match it gave 10 rounds and 0 mismatches. It is how our own round files get compared against the reference on every real upload.
+In dev, after each response is flushed, the server reruns the oracle and diffs its `match.json` and round files against what shipped (`PARSER_SHADOW=oracle`, `1587e55`). It logs one `shadow` line with counts by category and never writes to the store. On a full Mirage match it gave 10 rounds and 0 mismatches, and on dev's three real matches (19, 10 and 19 rounds) it also read `result: match` with 0 mismatches, saved as `shadow.json` next to each parse. A separate diff of the deployed files against local oracle exports found 0 mismatches too. It is how our own round files get compared against the reference on every real upload.
 
 ## The pro-demo sample
 

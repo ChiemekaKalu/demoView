@@ -2,6 +2,12 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, evening: the shadow compare passes on dev
+
+- **M6's shadow compare passed on dev** (`5b8b320`, `ad0f9d3`): dev ships our own round files, and all three dev matches reparsed with 0 mismatches against the oracle over 19, 10 and 19 rounds, saved as `shadow.json`. An independent diff of the deployed files against local oracle exports agreed. Wiki: [parser](parser.md), [testing](testing.md), [decisions](decisions.md).
+- **Tournament segmentation extended** (`84f7bf8`): rounds split on `cs_pre_restart` when no other restart event fires, and a recording that starts inside round 1 is handled. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-first-fix-landed-the-rest-is-narrowing).
+- **Parser mode now ships our files when the oracle fails on a plausible match** (`a40a665`) instead of failing the upload.
+
 ## 2026-10-02, afternoon: the sweep narrows, and the fault drill passes
 
 - **Full sweep of 132 tournament demos** after the first round fix: 46 still collapse, 37 have a boundary or reason difference, 21 fail in the entity stage, 14 have a clean `match.json`, and parsing stays fast (p50 3.5 s, max 7.4 s). Fixes since: unknown enum-like types decode as varints, covering 13 of the 21 failures (`76e0708`), and sides are read at each round's freeze end (`4a3d389`). `demo inspect --events` prints a round-structure timeline (`ca49811`), and the shadow compare writes `shadow.json` (`ad0f9d3`). The 2 "no live rounds" demos fail in the reference too. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-first-fix-landed-the-rest-is-narrowing), [parser](parser.md).
