@@ -182,10 +182,10 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
 - [x] **5.6 Safe swap.**
   - (parser) Write under a given `parsed/{id}/{parse_id}/` prefix, with `manifest.json` last. *Layout approved by the user (2026-10-02)*, along with the D1 columns and the reparse cron (hourly, 5 per batch, 80% cap, on in prod). It merges once CI passes. Contract proposed to pipeline: the Worker picks `parse_id`; `/parse` takes it as required; rounds, then match.json, then manifest.json last; `parsed_by` = `PARSER_BUILD` (the git sha).
   - (pipeline) Conditional D1 pointer swap, `?v=<parse_id>` URLs, 7-day cleanup by exact key. *Built:* 074f5b7, fff16cd and 9d5ead9. Parse ids are 9 base32 characters of time plus 7 random, one per attempt.
-- [ ] **5.7 Self-recovery** (pipeline). A 30-minute stuck-match sweeper on `status_changed_at`, coded errors on the match page, an unknown-`schema_version` message, an upload rate limit, and an orphaned-demo lifecycle rule. The parser side is the error codes in its responses.
+- [x] **5.7 Self-recovery** (pipeline). A 30-minute stuck-match sweeper on `status_changed_at`, coded errors on the match page, an unknown-`schema_version` message, an upload rate limit, and an orphaned-demo lifecycle rule. The parser side is the error codes in its responses.
   - *Built:* the sweeper (9d5ead9), coded errors (2f91766, ed662e1), the `schema_version` message (ed662e1), and a 10-a-minute limit on uploads and reparses (856d8c5).
   - Daily cleanup also deletes uploads left unconfirmed after a day, with their demo.
-  - *Left:* the R2 lifecycle rule for orphaned demos (cloud).
+  - *Orphaned demos:* no R2 lifecycle rule, since an expiry on `demos/` would delete the demos reparse needs. The daily cleanup's removal of unconfirmed uploads covers it (spec, 59fe937).
   - Each match's pipeline history is in D1 `match_events` (1df36df), shown on the match page (ed9700b).
 
 ## M6: trusted and hardened (v1.1)
