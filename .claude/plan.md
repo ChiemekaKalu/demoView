@@ -35,6 +35,11 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - Bots can stand in for disconnected players and appear in kills.
   - *Per-kill resolution and per-round sides are checked in 1.7.*
 - [ ] **1.7 Match logic** (stage 6), and the full `match.json`. Exit: the scoreboard matches the in-game one for a match you played.
+  - *Done on both interim demos.* `parser/matchlogic` records events while the demo streams, then builds players, rounds, kills and scoreboard.
+  - Against the game's own counters: K/D/A, headshot kills and raw damage are exact for every player, and so is every round's winner, reason and end tick.
+  - Kills match the oracle row for row. `demo parse` output passes the strict schema check.
+  - A demo with no live rounds is a bad demo (exit 1, HTTP 422).
+  - *Open:* the user's own match plus a scoreboard screenshot. Choices to confirm are under Spec gaps → Match logic.
 - [ ] **1.8 `demo diff` and CI.** Exit: the diff passes on all 3 fixtures. This meets the v0 done-when and closes M1.
   - *Done:* package `parser/diff`. `Compare` checks match.json:
     - players by `steam_id` (bots by name);
@@ -43,8 +48,8 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
     - K/D/A and HS% exact, and ADR within 1%.
   - *Done:* `CompareRound` checks round files: x/y within 1 unit, yaw within 1°, hp exact, plus grenades and events.
   - *Done:* the CI `diff` job. It pulls demos from `demoview-fixtures`, exports them with the oracle, then runs `demo diff`. It skips when the fixture secrets are absent. Deploy waits for every CI check.
-  - With the 1.7 work in the tree, both interim demos already diff clean against the oracle.
-  - *Remaining:* the `demo diff` subcommand, which waits for 1.7 to be committed, plus the third fixture demo.
+  - *Done:* `demo diff <file.dem> --against <ref.json>`. It exits 0 when they agree, or 1 with code `mismatch` and the report on stdout. Both interim demos diff OK against the oracle.
+  - *Remaining:* the third fixture demo, and the `demoview-fixtures` bucket plus secrets so the CI job runs.
 
 ## M2 groundwork (pulled forward)
 
@@ -88,7 +93,7 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - **Round boundaries:** `round_freeze_end`, `round_officially_ended` (none for the last round; use `cs_win_panel_match`), match start from the last `begin_new_match`, halftime from `announce_phase_end`.
   - **Winner and reason:** inferred from bomb events, eliminations and the round timer. Surrenders and backup restores can break this.
   - **Teams:** from `player_team`, `CS_UM_EndOfMatchAllPlayersData` when present, and the halftime swap.
-  - **ADR:** allowed to be up to 1% off the in-game value. `player_hurt.dmg_health` is uncapped, so cap it at the HP before the hit. The exact value is the controller's `m_iDamage`.
+  - **ADR:** allowed to be up to 1% off the in-game value. In practice it is exact: each hit counts as HP before minus `player_hurt.health`, because `dmg_health` is uncapped and rounded.
   - **Exact values** come with entity decoding (game rules proxy, `m_iTeamNum`), which goes at the front of M4. The diff test flags mismatches until then.
 - **Public demos as interim fixtures (decided 2026-10-02):** yes, until the user's own demos arrive.
 - **Wrangler account and D1 ids in git (approved by the user 2026-10-02, in the `terminal` session):** committed in `worker/wrangler.jsonc`.
@@ -121,13 +126,25 @@ Things the spec leaves open that the code has to decide. Each one has a proposed
   - Until then, stop at the win panel.
 - **Assists:** the event's `assister` when on the other team from the victim. Flash assists count. No damage threshold.
 - **HS%:** headshot kills / kills × 100, on a 0–100 scale with one decimal; 0 when there are no kills.
-- **ADR:** enemy damage capped at the victim's HP before the hit, team damage excluded, divided by rounds played, one decimal.
+- **ADR:** enemy damage, where each hit counts as the victim's HP before minus `health` after (not `dmg_health`), team damage excluded, divided by all live rounds, one decimal. This matches the game's `m_iDamage` exactly.
 - **Ticks:** the demo-frame tick clock, not `net_Tick`, which is offset.
 
 ### Schema (from the schema draft; the samples follow these defaults)
 
 - **Round `reason`:** `elimination | bomb_exploded | bomb_defused | time_expired | surrender`. `winner` plus `side_a` already says which side won.
-- **Null `attacker`:** null for world, fall and bomb deaths, and `attacker == victim` for suicides. *Mismatch:* Go's `match.Kill.Attacker` is a plain `int`, so it should become `*int`.
+- **Null `attacker`:** null for world, fall and bomb deaths, and `attacker == victim` for suicides. *Built:* `match.Kill.Attacker` is `*int`.
+
+### Match logic (built in 1.7; confirm)
+
+- Bots are keyed by name, so a bot holding two slots is one player, `steam_id` "0".
+- Names come from the end-of-match message when it lists the player, which is what the game's scoreboard shows.
+- An assister on the victim's own side is dropped from the kill list, as the oracle does.
+- Round `start_tick` comes from `round_start` or `round_prestart`. Round 1 is clamped to `begin_new_match`.
+- Round timer: `mp_roundtime_defuse` on de_ maps, otherwise 1.92 min with a note. No fixture has a round that ran out of time.
+- Overtime swaps: none entering overtime, then one at each overtime half. `player_team` gives them directly on modern demos. Unverified until an overtime fixture arrives.
+- Reason codes 12 (time) and 17/18 (surrender) follow the game's numbering. Only a surrender is covered by a fixture.
+- Match-logic notes, i.e. what it had to guess, are returned by `Build` but not surfaced in the CLI or server yet.
+- Team kills (they don't count and don't subtract) and coaches are untested.
 - **`weapon`:** the kill event's name without `weapon_`, e.g. `ak47`, `m4a1_silencer`, `hegrenade`, `inferno`, `knife`, `world`. Open: do knife skins collapse to `knife`?
 - **Players:** `idx` runs 0..N−1 in array order, team A first, and A is the team on CT in round 1. Include anyone who played a live round; leave out spectators, coaches and GOTV. Open: how bots appear (`steam_id "0"`?) and mid-match team switches.
 - **Kill ownership:** a kill between one round's end and the next round's start belongs to the round that just ended. Kills are sorted by tick.
