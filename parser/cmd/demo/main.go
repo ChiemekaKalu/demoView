@@ -4,7 +4,7 @@
 //
 //	demo parse <file.dem> --out <dir> [--events-only]
 //	demo diff <file.dem> --against <reference.json>
-//	demo inspect <file.dem>
+//	demo inspect <file.dem> [--events]
 //
 // parse writes <dir>/match.json and, unless --events-only, one
 // <dir>/rounds/NN.json per round. If the entity stage fails, match.json is
@@ -13,7 +13,8 @@
 // bad_demo otherwise. diff parses the demo and compares the result with a
 // reference match.json, and with the reference's round files when a rounds
 // directory sits beside it, printing the report on stdout. inspect prints
-// frame, file header and packet message statistics; it is a development aid
+// frame, file header and packet message statistics, and with --events a
+// round-structure timeline of game events; it is a development aid
 // and not part of the CLI contract. Flags may come before or after the file.
 // On failure demo writes one JSON line, {"error":"...","code":"..."}, to
 // stderr and exits 1 (bad_demo, unknown_entity or mismatch), 2 (usage) or 3
@@ -42,7 +43,7 @@ import (
 const (
 	parseSynopsis   = "demo parse <file.dem> --out <dir> [--events-only]"
 	diffSynopsis    = "demo diff <file.dem> --against <reference.json>"
-	inspectSynopsis = "demo inspect <file.dem>"
+	inspectSynopsis = "demo inspect <file.dem> [--events]"
 )
 
 func main() {

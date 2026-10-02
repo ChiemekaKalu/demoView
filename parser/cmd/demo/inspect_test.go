@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
+	"github.com/ChiemekaKalu/demoview/parser/parse/parsetest"
 )
 
 // tableRows returns the fields of each output line whose first field is
@@ -116,5 +117,39 @@ func TestInspectNoHeaderOrInfo(t *testing.T) {
 	}
 	if rows := tableRows(stdout, isNumber); len(rows) != 0 {
 		t.Errorf("unexpected message rows %q", rows)
+	}
+}
+
+func TestInspectEvents(t *testing.T) {
+	file := writeTemp(t, "x.dem", parsetest.MatchRounds(2))
+	code, stdout, stderr := runCLI("inspect", "--events", file)
+	if code != 0 {
+		t.Fatalf("exit %d, stderr %s", code, stderr)
+	}
+	_, after, ok := strings.Cut(stdout, "game event\n")
+	if !ok {
+		t.Fatalf("no game event table:\n%s", stdout)
+	}
+	want := `       1 begin_new_match
+       1 cs_win_panel_match
+       2 player_death
+       4 player_spawn
+       2 round_freeze_end
+       2 round_prestart
+
+    tick round-structure event (xN: N on one tick)
+     100 round_prestart
+     100 player_spawn x2
+     100 begin_new_match
+     200 round_freeze_end
+     300 player_death
+     400 round_prestart
+     400 player_spawn x2
+     500 round_freeze_end
+     600 player_death
+     700 cs_win_panel_match
+`
+	if after != want {
+		t.Errorf("events\n got:\n%s\nwant:\n%s", after, want)
 	}
 }

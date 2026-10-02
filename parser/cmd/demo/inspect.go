@@ -7,16 +7,21 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
+	"github.com/ChiemekaKalu/demoview/parser/events"
 	"github.com/ChiemekaKalu/demoview/parser/pb"
 )
 
 // cmdInspect prints statistics for a demo: frames by command, the file
-// header and info, and packet messages by type. It is a development aid, not
-// part of the CLI contract, so its output format may change freely.
+// header and info, and packet messages by type. With --events it adds game
+// events by name and a timeline of the ones that shape rounds; neither names
+// a player, so the output is safe to keep from any demo. It is a development
+// aid, not part of the CLI contract, so its output format may change freely.
 func cmdInspect(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("inspect", flag.ContinueOnError)
+	withEvents := fs.Bool("events", false, "also print game events by name and a round-structure timeline")
 	pos, err := parseArgs(fs, inspectSynopsis, args, stdout)
 	if err != nil {
 		return err
@@ -38,6 +43,9 @@ func cmdInspect(args []string, stdout io.Writer) error {
 		byCmd:          map[demo.Command]*frameStats{},
 		byType:         map[demo.MsgType]*msgStats{},
 		fileInfoOffset: -1,
+	}
+	if *withEvents {
+		in.byEvent = map[string]int{}
 	}
 	if err := in.read(demo.NewDecoder(r)); err != nil {
 		return err
@@ -73,6 +81,17 @@ type inspection struct {
 	messages    int
 	maxTrailing int // most padding bits left after a packet's last message
 	byType      map[demo.MsgType]*msgStats
+
+	events   events.Decoder
+	byEvent  map[string]int // game events by name; nil without --events
+	timeline []timelineEntry
+}
+
+// timelineEntry is a run of one game event on one tick.
+type timelineEntry struct {
+	tick  int32
+	name  string
+	count int
 }
 
 // read consumes every frame from d.
@@ -160,10 +179,51 @@ func (in *inspection) packet(mr *demo.MessageReader, f demo.Frame) error {
 		s.count++
 		s.bytes += len(m.Body)
 		in.messages++
+		if in.byEvent != nil {
+			if err := in.gameEvent(m, f.Tick); err != nil {
+				return err
+			}
+		}
 	}
 	in.packets++
 	in.maxTrailing = max(in.maxTrailing, mr.TrailingBits())
 	return nil
+}
+
+// gameEvent counts m if it is a game event, and adds it to the timeline if
+// it shapes rounds.
+func (in *inspection) gameEvent(m demo.Message, tick int32) error {
+	switch m.Type {
+	case demo.MsgType(pb.EBaseGameEvents_GE_Source1LegacyGameEventList):
+		return in.events.HandleList(m.Body)
+	case demo.MsgType(pb.EBaseGameEvents_GE_Source1LegacyGameEvent):
+		e, err := in.events.Decode(m.Body, tick)
+		if err != nil {
+			return err
+		}
+		in.byEvent[e.Name]++
+		if !onTimeline(e.Name) {
+			return nil
+		}
+		if n := len(in.timeline); n > 0 && in.timeline[n-1].tick == tick && in.timeline[n-1].name == e.Name {
+			in.timeline[n-1].count++
+			return nil
+		}
+		in.timeline = append(in.timeline, timelineEntry{tick, e.Name, 1})
+	}
+	return nil
+}
+
+// onTimeline reports whether the event named name shapes rounds: one that
+// names a round, match, phase or freeze time, or a spawn, team change,
+// death or bomb event.
+func onTimeline(name string) bool {
+	for _, s := range []string{"round", "match", "phase", "freeze", "restart", "warmup", "player_spawn", "player_team", "player_death", "bomb_"} {
+		if strings.Contains(name, s) {
+			return true
+		}
+	}
+	return false
 }
 
 func (in *inspection) print(w io.Writer, path string, h demo.Header) {
@@ -213,6 +273,22 @@ func (in *inspection) print(w io.Writer, path string, h demo.Header) {
 		for _, t := range slices.Sorted(maps.Keys(in.byType)) {
 			s := in.byType[t]
 			p("%6d %-32s %10d %14d\n", uint32(t), t, s.count, s.bytes)
+		}
+	}
+
+	if in.byEvent == nil {
+		return
+	}
+	p("\n%8s %s\n", "count", "game event")
+	for _, name := range slices.Sorted(maps.Keys(in.byEvent)) {
+		p("%8d %s\n", in.byEvent[name], name)
+	}
+	p("\n%8s %s\n", "tick", "round-structure event (xN: N on one tick)")
+	for _, e := range in.timeline {
+		if e.count > 1 {
+			p("%8d %s x%d\n", e.tick, e.name, e.count)
+		} else {
+			p("%8d %s\n", e.tick, e.name)
 		}
 	}
 }
