@@ -1,12 +1,12 @@
 {
-  "mode": "parser",
+  "mode": "full",
   "source_run": "37003041437",
-  "parser_ref": "68a02cf1957917fd09364479a480bb5c1a989e40",
+  "parser_ref": null,
   "parser_sample": "repro",
   "dataset": "skkwowee/chimera-cs2",
   "seed": 2026,
-  "per_map": 16,
-  "shards": 12,
+  "per_map": 1000,
+  "shards": 40,
   "paths": null,
   "parser_shards": 5,
   "parser_paths": [
@@ -22,7 +22,7 @@
     "demos/the-mongolz-vs-parivision-m1-dust2.dem"
   ],
   "jev": {
-    "enabled": true,
+    "enabled": false,
     "demos": 24,
     "rps": 4,
     "workers": 4,

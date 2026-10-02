@@ -460,28 +460,37 @@ def robustness(recs):
     out["categories_by_build"] = {b: dict(v) for b, v in sorted(by_build.items())}
     out["category_examples"] = dict(examples)
     out["diff_kinds_demos"] = dict(kinds.most_common(30))
+    out["round_files_differ"] = sum(1 for r in recs if any(k.startswith("round[]") for k in ((r.get("diff") or {}).get("kinds") or {})))
     return out
 
 
 def category(r):
+    """One outcome per demo, judged on match.json first. Round-file
+    differences are counted separately (see round_files_differ)."""
     parse, diff = r.get("parse") or {}, r.get("diff") or {}
     if r.get("download") == "failed":
         return "download failed"
-    if parse.get("rc") == 1:
-        return "bad_demo"
     if parse.get("rc") not in (0, None):
-        return "parser error"
+        try:
+            code = json.loads(parse.get("err") or "{}").get("code")
+        except ValueError:
+            code = None
+        return f"parse failed: {code or 'exit ' + str(parse.get('rc'))}"
     if diff.get("rc") == 0:
         return "diff OK"
     if "rounds" in diff:
         ours, ref = diff["rounds"]
-        return "rounds collapsed" if ours <= 3 and ref >= 10 else "round count differs"
-    kinds = diff.get("kinds", {})
-    if "players[].team" in kinds:
-        return "team assignment differs"
-    if kinds and all(k.startswith("scoreboard") for k in kinds):
-        return "scoreboard only"
-    return "other"
+        return "match: rounds collapsed" if ours <= 3 and ref >= 10 else "match: round count differs"
+    match = [k for k in diff.get("kinds", {}) if not k.startswith("round[]")]
+    if not match:
+        return "match OK, round files differ"
+    if "players[].team" in match:
+        return "match: team assignment differs"
+    if all(k.startswith("scoreboard") for k in match):
+        return "match: scoreboard only"
+    if all(k.startswith("rounds[]") for k in match):
+        return "match: round boundary or reason differs"
+    return "match: other"
 
 
 # ---------- report ----------

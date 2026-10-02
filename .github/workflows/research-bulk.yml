@@ -15,10 +15,9 @@ on:
 permissions:
   contents: read
 
-# Pushes queue rather than cancel, so a parser sweep never kills a running study.
-concurrency:
-  group: research-bulk
-  cancel-in-progress: false
+# No shared concurrency group: every push is its own run with its own R2 prefix,
+# so a parser sweep never waits behind a long study. The full run's matrix is
+# capped at 14 jobs, which leaves room under the account's job limit.
 
 env:
   GO_VERSION: "1.27"
@@ -73,6 +72,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       fail-fast: false
+      max-parallel: 14
       matrix:
         shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     steps:
