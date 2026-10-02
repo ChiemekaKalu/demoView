@@ -41,11 +41,10 @@ const defaultRestartDelay = 7
 func decideRounds(log *Log, spans []span, s sides, opt Options, n *notes) []outcome {
 	out := make([]outcome, len(spans))
 	for r, sp := range spans {
-		at := sp.start
+		var roundTicks int32 // the timer starts at freeze end, so a round without one has none
 		if sp.freezeEnd >= 0 {
-			at = sp.freezeEnd
+			roundTicks = roundTimeTicks(log, sp.freezeEnd, opt.Map, opt.TickRate, n)
 		}
-		roundTicks := roundTimeTicks(log, at, opt.Map, opt.TickRate, n)
 		inferred, ok := inferOutcome(log, sp, s.of[r], roundTicks)
 		switch {
 		case sp.roundEnd >= 0:

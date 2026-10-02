@@ -124,6 +124,51 @@ func TestSegmentRounds(t *testing.T) {
 			notes: []string{"no begin_new_match before a round: the match starts at tick 0"},
 		},
 		{
+			// A recording that starts after round 1's freeze end, with
+			// deaths before the first restart: that is round 1, with no
+			// freeze end of its own, and round 2's players.
+			name: "recorded from the middle of round 1",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.kill(200, c, a).kill(300, d, b)
+				l.ev(729, PreRestart).ev(748, RoundOfficiallyEnded).spawn(748, a, b, c, d).ev(1000, RoundFreezeEnd)
+				l.kill(1100, a, c).kill(1200, a, d)
+				l.ev(1629, PreRestart).ev(1648, RoundOfficiallyEnded).spawn(1648, a, b, c, d).ev(2000, RoundFreezeEnd)
+				l.kill(2100, a, c).kill(2200, b, d)
+				l.ev(2300, WinPanelMatch)
+				return l
+			},
+			rounds: []string{
+				"1:0-300-300 B CT elimination",
+				"2:748-1000-1200 A CT elimination",
+				"3:1648-2000-2200 A CT elimination",
+			},
+			kills: 6,
+			notes: []string{"no begin_new_match before a round: the match starts at tick 0"},
+		},
+		{
+			// A recording that starts with a restore: everyone dies on the
+			// tick of the restart. Those deaths are part of the restart,
+			// not a round, so the match starts at it.
+			name: "restore at the start",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.world(5, a).world(5, b).world(5, c).world(5, d)
+				l.ev(5, PreRestart).ev(5, RoundOfficiallyEnded).spawn(5, a, b, c, d).ev(100, RoundFreezeEnd)
+				l.kill(200, c, a).kill(300, d, b)
+				l.ev(729, PreRestart).ev(748, RoundOfficiallyEnded).spawn(748, a, b, c, d).ev(1000, RoundFreezeEnd)
+				l.kill(1100, a, c).kill(1200, a, d)
+				l.ev(1300, WinPanelMatch)
+				return l
+			},
+			rounds: []string{
+				"1:5-100-300 B CT elimination",
+				"2:748-1000-1200 A CT elimination",
+			},
+			kills: 4,
+			notes: []string{"no begin_new_match before a round: the match starts at tick 5"},
+		},
+		{
 			// A recording of a first half whose only begin_new_match comes
 			// at its end, as the match restarts, with no win panel. The
 			// rounds before it are still the match.
@@ -234,7 +279,9 @@ func TestLiveWindow(t *testing.T) {
 		{"restart after the end", []Kind{BeginNewMatch, PlayerDeath, WinPanelMatch, BeginNewMatch, PlayerDeath}, 0, 2, 0},
 		{"no win panel", []Kind{PlayerDeath, BeginNewMatch, PlayerDeath}, 1, 3, 1},
 		{"no begin_new_match", []Kind{PlayerDeath, WinPanelMatch}, 0, 1, 1},
-		{"no begin_new_match, a restart before the first round", []Kind{PlayerDeath, RoundPrestart, RoundFreezeEnd, PlayerDeath, WinPanelMatch}, 1, 4, 1},
+		{"no begin_new_match, a restart before the first round", []Kind{PlayerSpawn, RoundPrestart, RoundFreezeEnd, PlayerDeath, WinPanelMatch}, 1, 4, 1},
+		// A death before that restart: the recording starts mid-round.
+		{"no begin_new_match, a death before the first restart", []Kind{PlayerDeath, RoundPrestart, RoundFreezeEnd, PlayerDeath, WinPanelMatch}, 0, 4, 1},
 		// A match restarted at the end of the demo doesn't hide the one played.
 		{"begin_new_match after the last round", []Kind{RoundFreezeEnd, PlayerDeath, BeginNewMatch}, 0, 3, 2},
 		{"begin_new_match before and after the rounds", []Kind{BeginNewMatch, RoundFreezeEnd, PlayerDeath, BeginNewMatch, WinPanelMatch}, 0, 4, 0},

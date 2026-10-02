@@ -92,8 +92,11 @@ backward:
 		}
 		return w.end
 	}
+	// A round the recording starts in the middle of comes first, with no
+	// restart before it.
+	isRound := func(j int, sp span) bool { return sp.played(log) || j == 0 && sp.midRound(log) }
 	last := len(starts) - 1 // the last restart that starts a round
-	for last >= 0 && !newSpan(log, starts[last], end(last)).played(log) {
+	for last >= 0 && !isRound(last, newSpan(log, starts[last], end(last))) {
 		last--
 	}
 	if last >= 0 && last < len(starts)-1 {
@@ -105,7 +108,7 @@ backward:
 	for j, s := range starts[:last+1] {
 		sp := newSpan(log, s, end(j))
 		switch {
-		case sp.played(log):
+		case isRound(j, sp):
 			if lead >= 0 {
 				sp.start, lead = lead, -1
 			}
@@ -146,15 +149,23 @@ func restartAfter(log *Log, i, end int) int {
 }
 
 // presumeSpawns gives round 1 the spawns a demo recorded from after them
-// lacks, as a tournament recording that starts in round 1's freeze time
-// does: when no restart comes before round 1's freeze end, everyone who
-// spawns in round 2 is presumed to have spawned at the start of round 1.
-// It reports whether it did.
+// lacks, as a tournament recording that starts in round 1 does: when no
+// restart comes before round 1's play (its freeze end, or its first death
+// if the recording starts after that), everyone who spawns in round 2 is
+// presumed to have spawned at the start of round 1. It reports whether it
+// did.
 func presumeSpawns(log *Log, spans []span) bool {
-	if len(spans) < 2 || spans[0].freezeEnd < 0 {
+	if len(spans) < 2 {
 		return false
 	}
-	for _, e := range log.Entries[:spans[0].freezeEnd] {
+	play := spans[0].end
+	for i := spans[0].start; i < spans[0].end; i++ {
+		if k := log.Entries[i].Kind; k == RoundFreezeEnd || k == PlayerDeath {
+			play = i
+			break
+		}
+	}
+	for _, e := range log.Entries[:play] {
 		if restartKinds[e.Kind] {
 			return false
 		}
@@ -203,6 +214,21 @@ func newSpan(log *Log, start, end int) span {
 // round_end or a surrender.
 func (sp span) played(log *Log) bool {
 	return sp.freezeEnd >= 0 || sp.roundEnd >= 0 || has(log, sp.start, sp.end, Surrender)
+}
+
+// midRound reports whether the span is a round the recording starts in the
+// middle of, after its freeze end: no restart opens it, and a death comes
+// before the restart that ends it.
+func (sp span) midRound(log *Log) bool {
+	if restartKinds[log.Entries[sp.start].Kind] {
+		return false
+	}
+	for _, e := range log.Entries[sp.start:sp.end] {
+		if e.Kind == PlayerDeath && e.Tick < sp.endTick {
+			return true
+		}
+	}
+	return false
 }
 
 // tickAt returns the tick of entry i, or of the last entry if i is past the
