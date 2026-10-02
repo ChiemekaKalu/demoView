@@ -127,6 +127,7 @@ function uploadError(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 401) return 'The upload token was not accepted.'
     if (err.status === 413) return 'The demo is larger than 1 GB.'
+    if (err.status === 429) return 'Too many uploads in the last minute. Try again in a minute.'
     if (err.status === 409) return 'The upload could not be confirmed: the file did not reach storage. Try again.'
     return err.message
   }
