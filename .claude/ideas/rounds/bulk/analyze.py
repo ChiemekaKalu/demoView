@@ -475,6 +475,8 @@ def category(r):
         return "download failed"
     if os.path.basename(r["path"]) in REFERENCE_SIDE and parse.get("rc") == 0:
         return "reference-side difference (known)"
+    if parse.get("rc") == 0 and "diff" not in r:
+        return "no reference (oracle failed)"
     if parse.get("rc") not in (0, None):
         try:
             code = json.loads(parse.get("err") or "{}").get("code")

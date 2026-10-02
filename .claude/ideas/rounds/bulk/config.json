@@ -1,13 +1,25 @@
 {
   "mode": "parser",
   "source_run": "37003041437",
-  "parser_ref": "ca49811d84658b830b3995e8f704d6b7d04c3e6c",
-  "parser_sample": "full",
+  "parser_ref": "84f7bf8b6ac2407fd017f0aea0e7f3566e129f30",
+  "parser_sample": "repro",
   "dataset": "skkwowee/chimera-cs2",
   "seed": 2026,
   "per_map": 16,
   "shards": 12,
-  "paths": null,
+  "paths": [
+    "demos/2372338/g2-vs-mouz-m2-nuke.dem",
+    "demos/2373288/mouz-vs-natus-vincere-m3-mirage.dem",
+    "demos/the-mongolz-vs-natus-vincere-m1-ancient.dem",
+    "demos/astralis-vs-pain-m2-overpass.dem",
+    "demos/2389666/furia-vs-vitality-m3-nuke.dem",
+    "demos/g2-vs-faze-m3-mirage.dem",
+    "demos/natus-vincere-vs-g2-m3-ancient.dem",
+    "demos/natus-vincere-vs-g2-m5-ancient.dem",
+    "demos/2368041/vitality-vs-faze-m2-nuke.dem",
+    "demos/2387395/mouz-vs-vitality-m1-train.dem",
+    "demos/2377047/g2-vs-spirit-m3-nuke.dem"
+  ],
   "parser_shards": 6,
   "parser_paths": [
     "demos/2375775/vitality-vs-g2-m1-anubis.dem",
