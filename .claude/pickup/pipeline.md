@@ -19,6 +19,8 @@ v1 and v1.1 are done. M4, M5 and M6 are closed except M6 6.7. Match Pulse v1 is 
   - Output is `pulse.json` beside the parse (`schema/pulse.schema.json`), plus `pulse_quality` and `ai_usage` in D1.
   - All 3 dev matches have real Jev Pulses, at about $0.006 a match.
 - **CI.** `pulse-eval.yml` scores Jev on 225 + 28 golden states (`worker/test/pulse-golden/`), about $0.01 a run. It runs on Pulse changes, weekly and by hand. All bars were green on the last run except the canary, which `6abed7c` fixed; that run follows the push.
+- **Maps.** Every map with a radar is served by `/api/maps/:name`. Two-floor maps (Nuke, Train, Vertigo) get their main radar with `two_floor: true`; the replay notes that both floors share it. The user chose this interim; v1.2 adds a radar per floor.
+- **Findings page.** `/findings` shows the pro-round study, aiguy's aggregate data. It loads as its own chunk.
 - **Other.** Uploads and reparses are limited to 10 a minute. A dev-only `FAULT` secret exists, but it's unset now; prod's deploy refuses it. The match page shows the pipeline history (`match_events`).
 
 ## In flight
