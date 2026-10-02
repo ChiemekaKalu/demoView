@@ -314,7 +314,10 @@ func TestMessageReaderAllocs(t *testing.T) {
 }
 
 // FuzzMessageReader checks that any packet data either reads to io.EOF with
-// at most 7 bits left or fails with ErrBadDemo, without panicking.
+// at most 7 bits left or fails with ErrBadDemo, without panicking. The
+// spec's exit check runs it for 10 minutes:
+//
+//	go test ./demo -run '^$' -fuzz '^FuzzMessageReader$' -fuzztime 10m
 func FuzzMessageReader(f *testing.F) {
 	var w bitWriter
 	w.message(4, []byte{8, 1})
