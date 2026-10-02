@@ -17,9 +17,10 @@ A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and 
 | Path      | What                                                                   |
 | --------- | ---------------------------------------------------------------------- |
 | `parser/` | Go module `github.com/ChiemekaKalu/demoview/parser`: the demo parser and its binaries |
+| `worker/` | Cloudflare Worker: API routes, parse queue consumer, D1 migrations. API response shapes and M2 setup steps are in `worker/README.md` |
 | `web/`    | Viewer: static Vite + Preact + TypeScript single-page app              |
 
-Not created yet (see the spec's repo layout): `worker/`, `schema/`, `tools/`.
+Not created yet (see the spec's repo layout): `schema/`, `tools/`.
 
 ## Commands
 
@@ -28,6 +29,12 @@ Not created yet (see the spec's repo layout): `worker/`, `schema/`, `tools/`.
 cd parser && go test ./...
 cd parser && go run ./cmd/demo parse path/to/match.dem --out out/
 cd parser && go run ./cmd/demo inspect path/to/match.dem   # dev: frame stats
+
+# worker
+cd worker && npm test           # vitest in the Workers runtime
+cd worker && npm run typecheck
+cd worker && npm run lint       # oxlint
+cd worker && npm run dev        # wrangler dev, with D1 and Queues emulated locally
 
 # web
 cd web && npm run dev      # local dev server
