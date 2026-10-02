@@ -13,6 +13,12 @@ type span struct {
 	freezeTick int32 // its tick
 	roundEnd   int   // the round_end entry, or -1 (newer demos)
 	restart    int   // the round_officially_ended entry, or -1 (the last round)
+	halftime   bool  // announce_phase_end fires in it, outside a restore: sides swap after it
+
+	// play is where the play that decides the round begins: its start, or
+	// the last backup restore in it, which plays the round again (see
+	// restoreTicks). playFreeze is the first freeze end from play on, or -1.
+	play, playFreeze int
 
 	// presumed are participants taken to have spawned at the start, though
 	// the demo has no spawn for them: it was recorded from after their
@@ -78,11 +84,19 @@ backward:
 			first = i
 		}
 	}
-	starts := []int{first}
+	// A restore restarts the round being played rather than starting one.
+	restores := restoreTicks(log, w)
+	starts, plays := []int{first}, []int{first}
 	for i := w.start + 1; i < w.end; i++ {
-		if log.Entries[i].Kind == boundary {
-			starts = append(starts, restartAfter(log, i, w.end))
+		if log.Entries[i].Kind != boundary {
+			continue
 		}
+		s := restartAfter(log, i, w.end)
+		if restores[log.Entries[i].Tick] {
+			plays[len(plays)-1] = s
+			continue
+		}
+		starts, plays = append(starts, s), append(plays, s)
 	}
 
 	end := func(j int) int {
@@ -95,7 +109,7 @@ backward:
 	// restart before it.
 	isRound := func(j int, sp span) bool { return sp.played(log) || j == 0 && sp.midRound(log) }
 	last := len(starts) - 1 // the last restart that starts a round
-	for last >= 0 && !isRound(last, newSpan(log, starts[last], end(last))) {
+	for last >= 0 && !isRound(last, newSpan(log, starts[last], plays[last], end(last), restores)) {
 		last--
 	}
 	if last >= 0 && last < len(starts)-1 {
@@ -105,7 +119,7 @@ backward:
 	var spans []span
 	lead := -1 // start of restarts before the first real round
 	for j, s := range starts[:last+1] {
-		sp := newSpan(log, s, end(j))
+		sp := newSpan(log, s, plays[j], end(j), restores)
 		switch {
 		case isRound(j, sp):
 			if lead >= 0 {
@@ -114,8 +128,9 @@ backward:
 			spans = append(spans, sp)
 		case len(spans) > 0:
 			n.add("restart at tick %d has no freeze end or round end; folded into round %d", sp.startTick, len(spans))
-			spans[len(spans)-1].end = end(j)
-			spans[len(spans)-1].endTick = sp.endTick
+			prev := &spans[len(spans)-1]
+			prev.end, prev.endTick = end(j), sp.endTick
+			prev.halftime = prev.halftime || sp.halftime
 		default:
 			if lead < 0 {
 				lead = s
@@ -176,13 +191,15 @@ func presumeSpawns(log *Log, spans []span) bool {
 	return true
 }
 
-// newSpan describes the round in entries [start, end).
-func newSpan(log *Log, start, end int) span {
+// newSpan describes the round in entries [start, end), whose deciding play
+// begins at play. restores are the ticks of backup restores.
+func newSpan(log *Log, start, play, end int, restores map[int32]bool) span {
 	sp := span{
 		start: start, end: end,
 		startTick: log.Entries[start].Tick,
 		endTick:   tickAt(log, end),
 		freezeEnd: -1, roundEnd: -1, restart: -1,
+		play: play, playFreeze: -1,
 	}
 	sawStart := false
 	for i := start; i < end; i++ {
@@ -190,20 +207,51 @@ func newSpan(log *Log, start, end int) span {
 		switch {
 		case e.Kind == RoundStart && !sawStart:
 			sp.startTick, sawStart = e.Tick, true
-		case e.Kind == RoundFreezeEnd && sp.freezeEnd < 0:
-			sp.freezeEnd, sp.freezeTick = i, e.Tick
+		case e.Kind == RoundFreezeEnd:
+			if sp.freezeEnd < 0 {
+				sp.freezeEnd, sp.freezeTick = i, e.Tick
+			}
+			if sp.playFreeze < 0 && i >= play {
+				sp.playFreeze = i
+			}
 		case e.Kind == RoundEnd && sp.roundEnd < 0:
 			sp.roundEnd = i
-		case e.Kind == RoundOfficiallyEnded && sp.restart < 0 && i > start:
-			sp.restart = i
+		case e.Kind == RoundOfficiallyEnded && i > start:
+			sp.restart = i // the last: a restore in the round fires one too
+		case e.Kind == AnnouncePhaseEnd && !restores[e.Tick]:
+			sp.halftime = true
 		}
 	}
 	// Where round_officially_ended is the boundary, the restart that ends
 	// this round opens the next span.
-	if sp.restart < 0 && end < len(log.Entries) && log.Entries[end].Kind == RoundOfficiallyEnded {
+	if end < len(log.Entries) && log.Entries[end].Kind == RoundOfficiallyEnded {
 		sp.restart = end
 	}
 	return sp
+}
+
+// restoreTicks returns the ticks in w on which a backup restore happens:
+// two or more players die and two or more spawn on the same tick. A
+// restore loads the state saved at a round's start and plays the round
+// again, killing and respawning everyone at once; in a live match nothing
+// else kills and spawns players on one tick.
+func restoreTicks(log *Log, w window) map[int32]bool {
+	died, spawned := map[int32]int{}, map[int32]int{}
+	for _, e := range log.Entries[w.start:w.end] {
+		switch e.Kind {
+		case PlayerDeath:
+			died[e.Tick]++
+		case PlayerSpawn:
+			spawned[e.Tick]++
+		}
+	}
+	restores := map[int32]bool{}
+	for t, n := range died {
+		if n >= 2 && spawned[t] >= 2 {
+			restores[t] = true
+		}
+	}
+	return restores
 }
 
 // played reports whether anything makes the span a round: a freeze end, a

@@ -97,7 +97,8 @@ func fromRoundEnd(e Entry, inferred outcome, ok bool, r int, n *notes) outcome {
 //     not planted: CT win, time_expired.
 //
 // Living players are tracked from spawns, presumed or recorded, deaths and
-// disconnects, with the sides the round was played on. ok is false if nothing decided the round.
+// disconnects, with the sides the round was played on. A restored round is
+// decided by its replay, from its last restore on. ok is false if nothing decided the round.
 func inferOutcome(log *Log, sp span, side []Side, roundTicks int32) (o outcome, ok bool) {
 	alive := make([]bool, len(side))
 	var living, spawned [CT + 1]int // by side
@@ -108,15 +109,17 @@ func inferOutcome(log *Log, sp span, side []Side, roundTicks int32) (o outcome, 
 			spawned[side[p]]++
 		}
 	}
-	for _, p := range sp.presumed {
-		spawn(p)
+	if sp.play == sp.start {
+		for _, p := range sp.presumed {
+			spawn(p)
+		}
 	}
 	planted := false
 	expiry := int32(-1) // tick the round timer runs out
-	if sp.freezeEnd >= 0 && roundTicks > 0 {
-		expiry = sp.freezeTick + roundTicks
+	if sp.playFreeze >= 0 && roundTicks > 0 {
+		expiry = log.Entries[sp.playFreeze].Tick + roundTicks
 	}
-	for i := sp.start; i < sp.end; i++ {
+	for i := sp.play; i < sp.end; i++ {
 		e := log.Entries[i]
 		if expiry >= 0 && !planted && e.Tick > expiry {
 			return outcome{expiry, CT, reasonTimeExpired}, true

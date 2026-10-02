@@ -144,11 +144,11 @@ func observe(log *Log, spans []span, in [][]bool, swap []bool, n *notes) [][]Sid
 	return obs
 }
 
-// sidesAt returns the entry the round's sides are read at: its freeze end,
-// or its end for a round that ended in freeze time.
+// sidesAt returns the entry the round's sides are read at: the freeze end
+// of its deciding play, or its end for a round that ended in freeze time.
 func (sp span) sidesAt() int {
-	if sp.freezeEnd >= 0 {
-		return sp.freezeEnd
+	if sp.playFreeze >= 0 {
+		return sp.playFreeze
 	}
 	return sp.end
 }

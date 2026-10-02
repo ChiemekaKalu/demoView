@@ -217,6 +217,54 @@ func TestSegmentRounds(t *testing.T) {
 			},
 		},
 		{
+			// A backup restore in the middle of round 2: everyone alive dies
+			// and respawns on one tick, with an announce_phase_end, and the
+			// round is played again. It stays round 2, decided by the replay,
+			// and the announce_phase_end is no halftime.
+			name: "restore mid-round",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.ev(10, BeginNewMatch).spawn(10, a, b, c, d).ev(100, RoundFreezeEnd)
+				l.kill(200, c, a).kill(300, d, b)
+				l.ev(729, PreRestart).spawn(748, a, b, c, d).ev(1000, RoundFreezeEnd)
+				l.kill(1100, a, c)
+				l.world(1500, a).world(1500, b).world(1500, d).spawn(1500, a, b, c, d)
+				l.ev(1500, AnnouncePhaseEnd).ev(1500, PreRestart).spawn(1500, a, b, c, d).ev(1800, RoundFreezeEnd)
+				l.kill(1900, c, a).kill(2000, d, b)
+				l.ev(2429, PreRestart).spawn(2448, a, b, c, d).ev(2700, RoundFreezeEnd)
+				l.kill(2800, a, c).kill(2900, b, d)
+				l.ev(3000, WinPanelMatch)
+				return l
+			},
+			rounds: []string{
+				"1:10-100-300 B CT elimination",
+				"2:748-1000-2000 B CT elimination",
+				"3:2448-2700-2900 A CT elimination",
+			},
+			kills: 10,
+		},
+		{
+			// A backup restore in round 2's freeze time: the round still
+			// starts at its restart, not at the restore.
+			name: "restore in freeze time",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.ev(10, BeginNewMatch).spawn(10, a, b, c, d).ev(100, RoundFreezeEnd)
+				l.kill(200, c, a).kill(300, d, b)
+				l.ev(729, PreRestart).spawn(748, a, b, c, d)
+				l.world(1000, a).world(1000, b).world(1000, c).world(1000, d).spawn(1000, a, b, c, d)
+				l.ev(1000, PreRestart).spawn(1000, a, b, c, d).ev(1200, RoundFreezeEnd)
+				l.kill(1300, a, c).kill(1400, a, d)
+				l.ev(1500, WinPanelMatch)
+				return l
+			},
+			rounds: []string{
+				"1:10-100-300 B CT elimination",
+				"2:748-1200-1400 A CT elimination",
+			},
+			kills: 8,
+		},
+		{
 			// A restart with nothing in it joins the round before it.
 			name: "empty restart",
 			build: func() *testLog {

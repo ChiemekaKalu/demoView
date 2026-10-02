@@ -58,18 +58,15 @@ func cvarBool(log *Log, name string, i int) (val, ok bool) {
 
 // halftimes returns, for each round, whether sides swap after it.
 //
-// Every announce_phase_end inside the match marks a halftime, and sides
-// swap at the next restart. A demo without one falls back to the schedule
-// in the cvars (see scheduledSwap). When both exist and disagree, the event
-// wins and a note says so.
+// Every round the timeline marks as a halftime (an announce_phase_end in
+// it) swaps sides at the next restart. A demo without one falls back to the
+// schedule in the cvars (see scheduledSwap). When both exist and disagree,
+// the event wins and a note says so.
 func halftimes(log *Log, spans []span, w window, n *notes) []bool {
 	swap := make([]bool, len(spans))
 	announced := false
-	for i := w.start; i < w.end; i++ {
-		if log.Entries[i].Kind != AnnouncePhaseEnd {
-			continue
-		}
-		if r := roundOf(spans, i); r >= 0 && r < len(spans)-1 {
+	for r := range spans[:max(len(spans)-1, 0)] {
+		if spans[r].halftime {
 			swap[r], announced = true, true
 		}
 	}
