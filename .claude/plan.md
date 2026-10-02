@@ -116,7 +116,12 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
   - **Stage-1 unknowns resolved:** ClampHealth is zigzag, pointer presence is 1 bit, a polymorphic pointer is a UBitVar type index, and SimTime fields are varint ticks.
   - **For stage 4:** apply only the *first* FullPacket's entities, because later ones omit fields.
   - Found an oracle bug: a pre-round world death is filed under round 1. Reported to pipeline.
-- [ ] **Stages 4–5, extraction and round files** at 64 Hz, then swap them in for the oracle's.
+- [x] **Stages 4–5, extraction and round files** (ad573c1..0eaa37c).
+  - `parse.Parse` with `Options{Rounds}`; packages `extract` and `roundfile`; the CLI writes and diffs round files.
+  - Against the oracle on all 10 demos: players and kill events have zero mismatches. Grenades differ only where the oracle departs from plan.md: fire end (we end at `inferno_expire`, the flame-out; it ends at entity removal, about 13 s later), its `[0,0]` fire last point, and one undetonated decoy.
+  - Byte-identical across runs.
+  - An entity-stage error stops only that stage: `match.json` stays complete, and the CLI exits 1 with `unknown_entity`.
+- [ ] **Swap-in:** the server ships our round files, falls back to the oracle on an entity-stage error, and logs `round_source`. Plus the dev shadow compare (6.6).
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
 
 ## M5: every map and safe reparse (v1.1)
@@ -158,7 +163,7 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
   - *Full path (2026-10-02), largest fixture with GOMAXPROCS=1:* the oracle's 64 Hz export first peaked at 640 MiB, over budget.
     - pipeline's 23e232c brought it to **8.3 s and 270 MiB**, with byte-identical output, by compacting per-tick samples and freeing each round once built.
     - The server now runs the oracle with GOMEMLIMIT=400MiB (fe09822). So the full v1 path fits the budget.
-  - Re-measure our own entity path when M4 swaps in.
+  - *Our own full path:* 3.4 s and 108 MiB with round files, 0.58 s and 17 MiB events-only. **Within budget.**
 - [ ] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit: a synthetic unknown-field test.
 - [ ] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
 - [ ] **6.7 CI diff gates deploys** (pipeline). Needs the fixtures bucket secrets.
