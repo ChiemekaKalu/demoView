@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lerpAngle, playerAt, sampleAt, wrapDeg, yawToCanvas } from './interp'
+import { lerpAngle, playerAt, wrapDeg, yawToCanvas } from './interp'
 import type { PlayerTrack } from './types'
 
 describe('lerpAngle', () => {
@@ -40,19 +40,6 @@ describe('wrapDeg', () => {
     expect(wrapDeg(360)).toBe(0)
     expect(wrapDeg(-90)).toBe(270)
     expect(wrapDeg(725)).toBe(5)
-  })
-})
-
-describe('sampleAt', () => {
-  const col = [0, 10, 30]
-  it('interpolates between frames', () => {
-    expect(sampleAt(col, 0.5)).toBe(5)
-    expect(sampleAt(col, 1.25)).toBe(15)
-  })
-  it('clamps outside the column', () => {
-    expect(sampleAt(col, -3)).toBe(0)
-    expect(sampleAt(col, 2)).toBe(30)
-    expect(sampleAt(col, 99)).toBe(30)
   })
 })
 

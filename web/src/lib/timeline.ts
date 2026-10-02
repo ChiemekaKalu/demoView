@@ -15,17 +15,9 @@ export function timeToFrame(t: number, round: Pick<RoundFile, 'frames' | 'hz'>):
   return clamp(t * round.hz, 0, Math.max(round.frames - 1, 0))
 }
 
-export function frameToTime(frame: number, hz: number): number {
-  return frame / hz
-}
-
 // A tick's frame: the first frame at or after the tick (schema convention).
 export function tickToFrame(tick: number, startTick: number, tickRate: number, hz: number): number {
   return Math.ceil(((tick - startTick) * hz) / tickRate)
-}
-
-export function frameToTick(frame: number, startTick: number, tickRate: number, hz: number): number {
-  return startTick + (frame * tickRate) / hz
 }
 
 export interface FeedKill {
@@ -46,8 +38,7 @@ export interface FeedKill {
 // match.json kills. Kills of this round that no event references get their
 // frame from their tick.
 //
-// Without match.json (the API route for it is pending), the round file still
-// says when kills happen, and the victim is the player whose hp first hits 0
+// Without match.json, the round file still says when kills happen, and the victim is the player whose hp first hits 0
 // on that frame. The attacker and weapon are unknown.
 export function roundKills(round: RoundFile, match: MatchFile | null): FeedKill[] {
   const last = Math.max(round.frames - 1, 0)

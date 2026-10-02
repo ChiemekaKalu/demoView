@@ -1,5 +1,5 @@
-// Interpolation between 16 Hz (or whatever `hz` is) frames, so the canvas can
-// draw at the display's refresh rate.
+// Interpolation between a round file's frames, so the canvas can draw at the
+// display's refresh rate.
 
 import type { PlayerTrack } from './types'
 
@@ -23,17 +23,6 @@ export function lerpAngle(a: number, b: number, t: number): number {
   let diff = wrapDeg(b - a)
   if (diff > 180) diff -= 360
   return wrapDeg(a + diff * t)
-}
-
-// Linear interpolation into a column at a fractional frame, clamped to the
-// column's ends.
-export function sampleAt(col: readonly number[], f: number): number {
-  const n = col.length
-  if (n === 0) return 0
-  if (!(f > 0)) return col[0]
-  if (f >= n - 1) return col[n - 1]
-  const i = Math.floor(f)
-  return lerp(col[i], col[i + 1], f - i)
 }
 
 export interface PlayerState {

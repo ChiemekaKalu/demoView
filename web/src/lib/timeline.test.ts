@@ -5,8 +5,6 @@ import round16Json from '../../../schema/samples/rounds/16.json'
 import {
   formatClock,
   formatT,
-  frameToTick,
-  frameToTime,
   parseT,
   roundDuration,
   roundKills,
@@ -33,9 +31,8 @@ describe('time and frames', () => {
     expect(timeToFrame(roundDuration(round), round)).toBe(1455)
   })
 
-  it('round-trips time and frame', () => {
+  it('maps time to frames', () => {
     expect(timeToFrame(42, round)).toBe(672)
-    expect(frameToTime(672, 16)).toBe(42)
     expect(timeToFrame(0.03125, round)).toBe(0.5)
   })
 
@@ -50,7 +47,6 @@ describe('time and frames', () => {
     expect(tickToFrame(1001, 1000, 64, 16)).toBe(1)
     expect(tickToFrame(1004, 1000, 64, 16)).toBe(1)
     expect(tickToFrame(1005, 1000, 64, 16)).toBe(2)
-    expect(frameToTick(2, 1000, 64, 16)).toBe(1008)
   })
 })
 
