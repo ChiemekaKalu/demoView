@@ -100,9 +100,18 @@ export class RoundView {
     return this.sideOf(this.round.winner);
   }
 
-  // The moments Jev reads: freeze end, then every kill before the round ended.
+  // The moments Jev reads: freeze end, then each kill tick until the round
+  // ended. Kills before freeze end only shape the first moment, and kills on
+  // one tick are one moment, after the last of them.
   get cuts(): number[] {
-    return this.events.flatMap((e, i) => (e.type === "freeze_end" || !e.afterEnd ? [i] : []));
+    const cuts: number[] = [];
+    const start = this.events.findIndex((e) => e.type === "freeze_end");
+    for (let i = start; i < this.events.length; i++) {
+      const e = this.events[i]!;
+      if (e.afterEnd || this.events[i + 1]?.tick === e.tick) continue;
+      cuts.push(i);
+    }
+    return cuts;
   }
 
   // The state at event index cut, or of the whole round with its result.

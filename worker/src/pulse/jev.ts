@@ -105,9 +105,12 @@ export function jevClient(ai: Ai, gateway: string, ledger: Ledger, pacer = new P
     async ask(state, questions) {
       for (let attempt = 0; ; attempt++) {
         if (outOfCredits) throw new JevError("AI Gateway credits are empty", "credits");
-        const started = Date.now();
+        let started = Date.now();
         try {
-          const out = await pacer.run(() => run("typesafe/jev", { state, questions }, { gateway: { id: gateway } }));
+          const out = await pacer.run(() => {
+            started = Date.now(); // the call's own time, not its wait in the pacer
+            return run("typesafe/jev", { state, questions }, { gateway: { id: gateway } });
+          });
           const result = unwrap(out);
           ledger.record(Date.now() - started, result.usage?.input_tokens ?? 0);
           if (!result.answers || Object.keys(result.answers).length === 0) {

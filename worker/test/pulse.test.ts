@@ -52,10 +52,30 @@ const quick = () => new Pacer(4, 0);
 describe("RoundView states", () => {
   const view = new RoundView(match, 1, round01 as unknown as PulseRound);
 
-  it("reads freeze end, then every kill before the round ended", () => {
+  it("reads freeze end, then each kill tick before the round ended", () => {
     expect(view.events[0]?.type).toBe("freeze_end");
     expect(view.cuts[0]).toBe(0);
-    expect(view.cuts.length).toBe(1 + match.kills.filter((k) => k.round === 1 && k.tick <= match.rounds[0]!.end_tick).length);
+    const r = match.rounds[0]!;
+    const ticks = new Set(match.kills.filter((k) => k.round === 1 && k.tick > r.freeze_end_tick && k.tick <= r.end_tick).map((k) => k.tick));
+    expect(view.cuts.length).toBe(1 + ticks.size);
+  });
+
+  it("makes one moment per tick, from freeze end on", () => {
+    const m: PulseMatch = {
+      match: { map: "de_test", tick_rate: 64 },
+      players: [0, 1, 2, 3].map((idx) => ({ idx, team: idx < 2 ? ("A" as const) : ("B" as const) })),
+      rounds: [{ n: 1, start_tick: 0, freeze_end_tick: 100, end_tick: 900, winner: "A", reason: "elimination", side_a: "CT" }],
+      kills: [
+        { round: 1, tick: 50, attacker: 0, victim: 2, weapon: "ak47", headshot: false }, // during freeze time
+        { round: 1, tick: 100, attacker: 1, victim: 3, weapon: "awp", headshot: false }, // at freeze end
+        { round: 1, tick: 400, attacker: 2, victim: 0, weapon: "ak47", headshot: false },
+        { round: 1, tick: 400, attacker: 3, victim: 1, weapon: "ak47", headshot: false }, // same tick
+        { round: 1, tick: 950, attacker: 0, victim: 1, weapon: "ak47", headshot: false }, // after the end
+      ],
+    };
+    const v = new RoundView(m, 1, null);
+    expect(v.cuts.map((i) => v.events[i]!.tick)).toEqual([100, 400]);
+    expect(v.events[v.cuts[1]!]!.alive).toEqual({ CT: 0, T: 0 });
   });
 
   it("describes a moment with the clock, the alive count and HP words", () => {
