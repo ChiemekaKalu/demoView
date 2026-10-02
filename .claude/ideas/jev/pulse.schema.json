@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:demoview:schema:pulse:v1",
+  "title": "demoView pulse.json (pulse_version 1), PROPOSAL",
+  "description": "Proposal, not landed: parser owns schema/ and lands it. One per parse, written by the Worker's pulse consumer to parsed/{id}/{parse_id}/pulse.json after the match is ready. Jev's win probabilities and round judgments, plus the facts code computes beside them. Rounds and ticks refer to that parse's match.json; players never appear. Versioned on its own, independent of schema_version. Cross-field rules (round numbers exist in match.json, moment ticks increase and fall inside the round, swing_tick is one of the moment ticks) belong in validate.mjs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pulse_version", "model", "state_version", "parse_id", "calibration", "rounds", "worth_watching"],
+  "properties": {
+    "pulse_version": {
+      "description": "Goes up on any breaking change to this file.",
+      "const": 1
+    },
+    "model": {
+      "description": "The model id Jev reported in its responses, e.g. jev-1.13.0, or fallback-logit-v1 when Jev was unavailable and the fallback model drew the line. A fallback file has highlight 0, share 0 and headline null in every round, and is left out of worth_watching. A change of model re-runs Pulse.",
+      "type": "string",
+      "minLength": 1
+    },
+    "state_version": {
+      "description": "Version of the state builder and question set. Goes up when either changes, so answers from different prompts are never mixed.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "parse_id": {
+      "description": "The parse this file belongs to; the same prefix it is stored under.",
+      "type": "string",
+      "minLength": 1
+    },
+    "calibration": {
+      "description": "The recalibration applied to Jev's raw win probabilities: p_ct = sigmoid(logit(p_raw) / temperature). 1 means none.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["temperature"],
+      "properties": {
+        "temperature": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "rounds": {
+      "description": "One entry per match.json round that has moments. A round that ended in freeze time, such as a surrender, has none and is left out.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/round" }
+    },
+    "worth_watching": {
+      "description": "Up to three round numbers, highest highlight first.",
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "type": "integer", "minimum": 1 }
+    }
+  },
+  "$defs": {
+    "probability": { "type": "number", "minimum": 0, "maximum": 1 },
+    "moment": {
+      "description": "Jev's read at one moment: the round start (freeze end) first, then each in-round kill.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tick", "p_ct", "p_raw", "tension"],
+      "properties": {
+        "tick": { "description": "Demo tick of the moment.", "type": "integer", "minimum": 0 },
+        "p_ct": { "description": "Calibrated chance the CT side wins from here. The viewer draws this.", "$ref": "#/$defs/probability" },
+        "p_raw": { "description": "Jev's raw noul answer, kept for self-grading.", "$ref": "#/$defs/probability" },
+        "tension": { "description": "Jev's tension score: 0 decided, 1 leaning, 2 open, 3 knife-edge.", "type": "number", "minimum": 0, "maximum": 3 }
+      }
+    },
+    "round": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "moments", "swing_tick", "highlight", "share", "headline", "facts"],
+      "properties": {
+        "n": { "description": "The n of this round in match.json rounds.", "type": "integer", "minimum": 1 },
+        "moments": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/moment" } },
+        "swing_tick": {
+          "description": "Tick of the moment with the largest change in p_ct, computed in code. Null when the round has a single moment.",
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "highlight": { "description": "Jev's highlight score: 0 routine to 4 instant highlight.", "type": "number", "minimum": 0, "maximum": 4 },
+        "share": { "description": "Jev's chance that a player would share a clip of the round.", "$ref": "#/$defs/probability" },
+        "headline": {
+          "description": "Jev's headline template, or null when code rejected it because its deterministic check failed.",
+          "type": ["string", "null"],
+          "enum": ["ace", "clutch_big", "clutch_1v1", "flawless", "comeback", "retake", "post_plant", "eco_upset", "awp_show", "trade_war", "fast_win", null]
+        },
+        "facts": {
+          "description": "Computed in code from match.json and the narrative log, never asked of Jev.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["clutch", "multikill", "comeback", "how_won"],
+          "properties": {
+            "clutch": {
+              "description": "The winning side's clutch, as 1vN at its largest, or null.",
+              "type": ["string", "null"],
+              "pattern": "^1v[1-5]$"
+            },
+            "multikill": { "description": "Most enemy kills by one player in the round.", "type": "integer", "minimum": 0, "maximum": 5 },
+            "comeback": { "description": "The winning side was down by two or more players alive at some point.", "type": "boolean" },
+            "how_won": {
+              "type": "string",
+              "enum": ["t_post_plant", "ct_retake", "t_before_plant", "ct_hold", "ct_time", "surrender"]
+            }
+          }
+        }
+      }
+    }
+  }
+}
