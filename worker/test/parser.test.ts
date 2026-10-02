@@ -41,14 +41,20 @@ describe("httpParser", () => {
     expect((await parser.parse(JOB)).kind).toBe("transient");
   });
 
-  it("treats 422 as a rejected demo and keeps the parser's error", async () => {
+  it("treats 422 as a rejected demo and keeps the parser's code and error", async () => {
+    const body = { code: "demo_not_found", error: "no such demo" };
+    const { parser } = parserReturning(Response.json(body, { status: 422 }));
+    expect(await parser.parse(JOB)).toEqual({ kind: "rejected", status: 422, ...body });
+  });
+
+  it("calls a 422 without a code bad_demo", async () => {
     const { parser } = parserReturning(Response.json({ error: "not a CS2 demo" }, { status: 422 }));
-    expect(await parser.parse(JOB)).toEqual({ kind: "rejected", status: 422, error: "not a CS2 demo" });
+    expect(await parser.parse(JOB)).toMatchObject({ code: "bad_demo", error: "not a CS2 demo" });
   });
 
   it("uses the raw body when a 422 is not JSON", async () => {
     const { parser } = parserReturning(new Response("bad magic", { status: 422 }));
-    expect(await parser.parse(JOB)).toEqual({ kind: "rejected", status: 422, error: "bad magic" });
+    expect(await parser.parse(JOB)).toEqual({ kind: "rejected", status: 422, code: "bad_demo", error: "bad magic" });
   });
 
   it.each([500, 503, 401, 404])("treats %i as transient", async (status) => {

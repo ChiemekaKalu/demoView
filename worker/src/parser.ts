@@ -9,8 +9,8 @@ export interface ParseRequest {
 export type ParseResult =
   // 200: the body is match.json and the round files are already in R2.
   | { kind: "ok"; status: number; body: unknown }
-  // 422: the demo is bad. Don't retry.
-  | { kind: "rejected"; status: number; error: string }
+  // 422: the demo is bad. Don't retry. code says why, e.g. bad_demo.
+  | { kind: "rejected"; status: number; code: string; error: string }
   // Anything else. Let the queue retry.
   | { kind: "transient"; status?: number; error: string };
 
@@ -60,9 +60,14 @@ export function httpParser(baseUrl: string, secret: string, fetcher: Fetcher): P
           return { kind: "transient", status: 200, error: "parser response was not valid JSON" };
         }
       }
-      const detail = await errorDetail(res);
+      const { code, detail } = await errorBody(res);
       if (res.status === 422) {
-        return { kind: "rejected", status: 422, error: detail ?? "the parser rejected the demo" };
+        return {
+          kind: "rejected",
+          status: 422,
+          code: code ?? "bad_demo",
+          error: detail ?? "the parser rejected the demo",
+        };
       }
       return {
         kind: "transient",
@@ -73,14 +78,17 @@ export function httpParser(baseUrl: string, secret: string, fetcher: Fetcher): P
   };
 }
 
-// The `error` field of a JSON error body, else the start of the body text.
-async function errorDetail(res: Response): Promise<string | undefined> {
+// The `error` and `code` fields of a JSON error body. Without JSON, the
+// detail is the start of the body text.
+async function errorBody(res: Response): Promise<{ code?: string; detail?: string }> {
   const text = (await res.text().catch(() => "")).slice(0, 1000);
   try {
-    const error: unknown = JSON.parse(text)?.error;
-    if (typeof error === "string") return error;
+    const { error, code }: { error?: unknown; code?: unknown } = JSON.parse(text) ?? {};
+    if (typeof error === "string") {
+      return { detail: error, code: typeof code === "string" && /^[a-z_]{1,32}$/.test(code) ? code : undefined };
+    }
   } catch {
     // Not JSON; fall through to the raw text.
   }
-  return text || undefined;
+  return { detail: text || undefined };
 }

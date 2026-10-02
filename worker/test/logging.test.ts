@@ -53,10 +53,10 @@ describe("match_status", () => {
       },
     ]);
 
-    await consume({ kind: "rejected", status: 422, error: "bad magic" }, 3);
+    await consume({ kind: "rejected", status: 422, code: "bad_demo", error: "bad magic" }, 3);
     expect(events("match_status").at(-1)).toEqual({
       level: "error",
-      entry: { event: "match_status", match_id: ID, status: "failed", attempt: 3, error: "bad magic" },
+      entry: { event: "match_status", match_id: ID, status: "failed", attempt: 3, error: "bad_demo: bad magic" },
     });
   });
 });

@@ -146,9 +146,9 @@ describe("parse queue consumer", () => {
 
   it("fails the match without retrying on 422", async () => {
     await insertMatch(ID, "queued");
-    const result = await parse(stubParser({ kind: "rejected", status: 422, error: "not a CS2 demo" }));
+    const result = await parse(stubParser({ kind: "rejected", status: 422, code: "bad_demo", error: "not a CS2 demo" }));
     expect(result).toEqual({ acked: true, retried: false });
-    expect(await matchRow(ID)).toMatchObject({ status: "failed", error: "not a CS2 demo" });
+    expect(await matchRow(ID)).toMatchObject({ status: "failed", error: "bad_demo: not a CS2 demo" });
   });
 
   it("fails the match without retrying when match.json is malformed", async () => {
@@ -157,7 +157,7 @@ describe("parse queue consumer", () => {
     expect(result).toEqual({ acked: true, retried: false });
     expect(await matchRow(ID)).toMatchObject({
       status: "failed",
-      error: "bad parser output: match.json has schema_version 2, expected 1",
+      error: "bad_output: match.json has schema_version 2, expected 1",
     });
   });
 
@@ -217,7 +217,7 @@ describe("dead letter consumer", () => {
     expect(await deadLetter()).toEqual({ acked: true, retried: false });
     expect(await matchRow(ID)).toMatchObject({
       status: "failed",
-      error: "parse failed after 3 attempts: parser returned 503",
+      error: "parse_failed: failed after 3 attempts: parser returned 503",
     });
   });
 
@@ -226,7 +226,7 @@ describe("dead letter consumer", () => {
     await deadLetter();
     expect(await matchRow(ID)).toMatchObject({
       status: "failed",
-      error: "parse failed after 3 attempts: unknown error",
+      error: "parse_failed: failed after 3 attempts: unknown error",
     });
   });
 
@@ -265,7 +265,7 @@ describe("Worker queue handler", () => {
     const [url, init] = fetch.mock.calls[0] ?? [];
     expect(String(url)).toBe("http://parser/parse");
     expect(new Headers(init?.headers).get("x-parse-secret")).toBe("test-parse-secret");
-    expect(await matchRow(ID)).toMatchObject({ status: "failed", error: "truncated demo" });
+    expect(await matchRow(ID)).toMatchObject({ status: "failed", error: "bad_demo: truncated demo" });
   });
 
   it("routes the dead letter queue to the dead letter consumer", async () => {

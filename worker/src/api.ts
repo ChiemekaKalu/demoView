@@ -10,7 +10,15 @@ import {
   roundKey,
 } from "./keys";
 import { errorStack, errorText } from "./log";
-import { claimUpload, deleteUploadedMatch, getMatch, getMatchPage, insertMatch, setStatus } from "./matches";
+import {
+  claimUpload,
+  deleteUploadedMatch,
+  failure,
+  getMatch,
+  getMatchPage,
+  insertMatch,
+  setStatus,
+} from "./matches";
 import { presignUpload, UPLOAD_URL_TTL_SECONDS } from "./presign";
 import { parseRadar } from "./radar";
 
@@ -98,7 +106,7 @@ async function confirmUpload(request: Request, env: Env, [id = ""]: string[]): P
     await object.body.cancel();
     const message = "demo is larger than 1 GB";
     await env.BUCKET.delete(match.demo_key);
-    await setStatus(env.DB, id, "failed", { error: message, from: ["uploaded"], log: size });
+    await setStatus(env.DB, id, "failed", { error: failure("too_large", message), from: ["uploaded"], log: size });
     return error(413, message);
   }
 

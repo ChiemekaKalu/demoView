@@ -198,6 +198,13 @@ export async function saveParsedMatch(
   });
 }
 
+// A failed match's error is "<code>: <detail>", so the match page can explain
+// each code. The parser's 422 codes (bad_demo, demo_not_found) pass through;
+// the Worker adds too_large, bad_output and parse_failed.
+export function failure(code: string, detail: string): string {
+  return `${code}: ${detail}`;
+}
+
 export interface StatusChange {
   // Written to the error column. Left unchanged when undefined.
   error?: string | null;

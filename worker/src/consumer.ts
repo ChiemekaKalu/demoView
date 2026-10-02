@@ -5,7 +5,7 @@ import type { ParseJob } from "./api";
 import { isMatchId } from "./keys";
 import { errorStack, errorText } from "./log";
 import { asMatchFile, type MatchFile } from "./match-file";
-import { getMatch, saveParsedMatch, setStatus } from "./matches";
+import { failure, getMatch, saveParsedMatch, setStatus } from "./matches";
 import type { Parser } from "./parser";
 
 // Must match max_retries + 1 in wrangler.jsonc.
@@ -87,7 +87,7 @@ async function handleParseJob(message: Message<ParseJob>, env: Env, parser: Pars
       } catch (err) {
         // Retrying would get the same output back, so this is final.
         await setStatus(env.DB, id, "failed", {
-          error: `bad parser output: ${errorText(err)}`,
+          error: failure("bad_output", errorText(err)),
           log: { attempt },
         });
         message.ack();
@@ -98,7 +98,7 @@ async function handleParseJob(message: Message<ParseJob>, env: Env, parser: Pars
       return;
     }
     case "rejected":
-      await setStatus(env.DB, id, "failed", { error: result.error, log: { attempt } });
+      await setStatus(env.DB, id, "failed", { error: failure(result.code, result.error), log: { attempt } });
       message.ack();
       return;
     case "transient":
@@ -128,7 +128,7 @@ export async function handleDeadLetters(batch: MessageBatch<ParseJob>, env: Env)
     if (match) {
       const reason = match.error ?? "unknown error";
       await setStatus(env.DB, match.id, "failed", {
-        error: `parse failed after ${MAX_ATTEMPTS} attempts: ${reason}`,
+        error: failure("parse_failed", `failed after ${MAX_ATTEMPTS} attempts: ${reason}`),
         from: ["queued", "parsing"],
       });
     }
