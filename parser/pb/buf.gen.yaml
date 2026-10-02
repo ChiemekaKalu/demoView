@@ -16,10 +16,15 @@ plugins:
     out: .
     opt:
       - paths=source_relative
+      - Mcstrike15_gcmessages.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Mcstrike15_usermessages.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
       - Mdemo.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Mengine_gcmessages.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
       - Mgameevents.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Mgcsdk_gcmessages.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
       - Mnetmessages.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
       - Mnetwork_connection.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
       - Mnetworkbasetypes.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
       - Msource2_steam_stats.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Msteammessages.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
       - Mvalveextensions.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb

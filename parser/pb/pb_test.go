@@ -65,6 +65,9 @@ func TestMessageTypes(t *testing.T) {
 		// gameevents.proto
 		"CMsgSource1LegacyGameEventList": &CMsgSource1LegacyGameEventList{},
 		"CMsgSource1LegacyGameEvent":     &CMsgSource1LegacyGameEvent{},
+		// cstrike15_usermessages.proto
+		"CCSUsrMsg_EndOfMatchAllPlayersData":            &CCSUsrMsg_EndOfMatchAllPlayersData{},
+		"CCSUsrMsg_EndOfMatchAllPlayersData.PlayerData": &CCSUsrMsg_EndOfMatchAllPlayersData_PlayerData{},
 	}
 	for want, m := range msgs {
 		if got := string(m.ProtoReflect().Descriptor().FullName()); got != want {
@@ -118,10 +121,35 @@ func TestEnumValues(t *testing.T) {
 		// gameevents.proto: EBaseGameEvents
 		{"GE_Source1LegacyGameEventList", int32(EBaseGameEvents_GE_Source1LegacyGameEventList), 205},
 		{"GE_Source1LegacyGameEvent", int32(EBaseGameEvents_GE_Source1LegacyGameEvent), 207},
+
+		// cstrike15_usermessages.proto: ECstrike15UserMessages
+		{"CS_UM_EndOfMatchAllPlayersData", int32(ECstrike15UserMessages_CS_UM_EndOfMatchAllPlayersData), 375},
 	}
 	for _, tt := range tests {
 		if tt.got != tt.want {
 			t.Errorf("%s = %d, want %d", tt.name, tt.got, tt.want)
+		}
+	}
+}
+
+// TestPacketMessageIDsDisjoint checks that the enums whose ids appear as
+// packet message types don't share any id, so one type number names one
+// message.
+func TestPacketMessageIDsDisjoint(t *testing.T) {
+	enums := map[string]map[int32]string{
+		"NET_Messages":           NET_Messages_name,
+		"Bidirectional_Messages": Bidirectional_Messages_name,
+		"SVC_Messages":           SVC_Messages_name,
+		"EBaseGameEvents":        EBaseGameEvents_name,
+		"ECstrike15UserMessages": ECstrike15UserMessages_name,
+	}
+	owner := map[int32]string{}
+	for enum, names := range enums {
+		for id, name := range names {
+			if prev, ok := owner[id]; ok {
+				t.Errorf("id %d is both %s and %s.%s", id, prev, enum, name)
+			}
+			owner[id] = enum + "." + name
 		}
 	}
 }

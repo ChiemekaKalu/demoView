@@ -16,13 +16,20 @@ Go types generated from Valve's CS2 protobuf definitions. The `.proto` files are
 | `netmessages.proto` | Packet messages: `SVC_Messages`, `CSVCMsg_ServerInfo`, `CSVCMsg_CreateStringTable`, `CSVCMsg_UpdateStringTable`, `CSVCMsg_PacketEntities`, `CSVCMsg_FlattenedSerializer` |
 | `networkbasetypes.proto` | `NET_Messages`, `CNETMsg_Tick`, `CMsgPlayerInfo` (userinfo string table) |
 | `gameevents.proto` | `EBaseGameEvents`, `CMsgSource1LegacyGameEventList`, `CMsgSource1LegacyGameEvent` |
+| `cstrike15_usermessages.proto` | CS2 user messages: `ECstrike15UserMessages`, `CCSUsrMsg_EndOfMatchAllPlayersData` (slot, xuid, name and team of every player at match end; used by `parser/players`) |
 | `source2_steam_stats.proto` | Imported by `netmessages.proto` |
 | `network_connection.proto` | Imported by `networkbasetypes.proto` |
 | `valveextensions.proto` | Imported by `networkbasetypes.proto` |
+| `cstrike15_gcmessages.proto` | Imported by `cstrike15_usermessages.proto`, for `CEconItemPreviewDataBlock` |
+| `steammessages.proto` | Imported by `cstrike15_gcmessages.proto` and `gcsdk_gcmessages.proto` |
+| `engine_gcmessages.proto` | Imported by `cstrike15_gcmessages.proto` |
+| `gcsdk_gcmessages.proto` | Imported by `cstrike15_gcmessages.proto` |
 
 `google/protobuf/descriptor.proto` is also imported; it is a well-known type that buf supplies and that maps to `descriptorpb`.
 
-Each vendored file is byte-identical to the upstream blob at the pinned commit. **No edits.** None of these files declares a `package`, `syntax` or `go_package`. They compile as proto2 in the empty package, and `buf.gen.yaml` maps each one to this Go package with protoc-gen-go `M` options. The seven files define no duplicate names.
+Each vendored file is byte-identical to the upstream blob at the pinned commit. **No edits.** None of these files declares a `package`, `syntax` or `go_package`. They compile as proto2 in the empty package, and `buf.gen.yaml` maps each one to this Go package with protoc-gen-go `M` options. The twelve files define no duplicate names or extension numbers.
+
+The last four files are Game Coordinator messages that the parser never reads. They are here only because `cstrike15_usermessages.proto` imports them, and they make up most of the generated code: `cstrike15_gcmessages.pb.go` alone is about 570 KB. Together they add about 1.1 MB to a binary that imports this package.
 
 ## Regenerate
 
@@ -48,4 +55,5 @@ To add a file, also add its transitive imports, and add an `M<file>.proto=github
 - Messages are registered under bare names, such as `CDemoFileHeader`, with no proto package prefix.
 - The files are proto2, so scalar fields are pointers. Use the `GetX()` accessors.
 - `CDemoFileHeader.demo_file_stamp` is `required`. A plain `proto.Unmarshal` returns an error if it is missing, unless you use `proto.UnmarshalOptions{AllowPartial: true}`.
+- User messages, such as `CS_UM_EndOfMatchAllPlayersData` (375), arrive as packet messages like any other, with ids from `ECstrike15UserMessages` (301 and up). Their ids don't overlap those of `NET_Messages`, `SVC_Messages` or `EBaseGameEvents`.
 - An enum field holding a value that the vendored file doesn't define still decodes. The Go runtime keeps the raw number in the field, so check it against the generated constants rather than trusting it. Wire ids read straight from the bitstream (command types, message types) are plain integers, so map them yourself.
