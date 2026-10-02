@@ -4,6 +4,14 @@ Running log of decisions, progress and findings. Newest first. Keep entries shor
 
 ## 2026-10-02
 
+- **Narrative log: the user approved all six decisions in `logging.md`.**
+  - The log is a new parse output, under `parsed/{id}/log/{parser_version}/` with its manifest written last.
+  - It has its own `schema/log.schema.json` and `log_version`.
+  - It stores fields only, and a narrator function renders the text.
+  - The default is `--log full`.
+  - Parser hooks in `events/` and `matchlogic/` are allowed.
+  - The D1 pipeline timeline table is approved. The user wants it because they're building a pipeline run ledger at work.
+  - The timing doesn't change: the groundwork lands in M4, and the log output is v1.2.
 - **v1.1 sign-offs from the user:**
   - The versioned R2 layout (`parsed/{id}/{parse_id}/` with `manifest.json` last) and its D1 columns are approved: `live_parse_id`, the last attempted build, `status_changed_at`, `reparse_error` and `reparse_build`.
   - The reparse cron is approved: hourly, 5 matches a batch, pausing at 80% of the monthly container allowance, and on in prod.

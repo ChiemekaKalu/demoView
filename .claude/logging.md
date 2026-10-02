@@ -1,6 +1,6 @@
 # Narrative log: proposal
 
-Status: **proposal, awaiting the user's decisions** (listed at the end). Nothing here is built. It merges three design reports from 2026-10-02: event taxonomy, storage and transport, and parser integration.
+Status: **design approved by the user on 2026-10-02** (all six decisions below). The `parser/eventlog` groundwork lands in M4. The log output, its schema and the story pane are v1.2. It merges three design reports from 2026-10-02: event taxonomy, storage and transport, and parser integration.
 
 ## Goal
 
@@ -98,7 +98,7 @@ Line envelope:
 5. Pipeline (M2): R2 upload, manifest commit, `GET /api/matches/:id/log/...`, observability, one Analytics Engine point per parse.
 6. Viewer (M3): story and replay panes.
 
-## Decisions for the user
+## Decisions (all approved 2026-10-02)
 
 1. Approve the log as a new output, with the R2 layout above. This is a spec addition.
 2. Approve a new `schema/log.schema.json` with its own `log_version`, independent of `schema_version`.
