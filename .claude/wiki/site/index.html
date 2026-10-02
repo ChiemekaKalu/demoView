@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>demoView wiki</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='3' fill='%233F6B55'/%3E%3Cpath d='M8 8 L12 5.5' stroke='%23EFE9D6' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <script>
+      // Set the theme before first paint: the saved choice, else the system's.
+      (function () {
+        var t;
+        try { t = (JSON.parse(localStorage.getItem('demoview-wiki') || '{}') || {}).theme; } catch (e) {}
+        // ?theme=dark or ?theme=light previews a theme on this load only.
+        var q = new URLSearchParams(location.search).get('theme');
+        if (q === 'light' || q === 'dark') t = q;
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <nav>
+        <a class="logo" href="#/">demoView<span class="logo-sub">wiki</span></a>
+        <div class="links" id="tabs"></div>
+        <button type="button" class="theme-toggle" id="theme" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <span class="moon">&#9790;</span><span class="sun">&#9788;</span>
+        </button>
+      </nav>
+      <div class="progress" id="progress" hidden><div id="progress-bar"></div></div>
+    </header>
+    <main id="page"></main>
+    <footer class="site-footer">
+      <span id="updated" class="footer-note"></span>
+      <span class="footer-note">Source: <span class="mono">.claude/wiki</span></span>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
