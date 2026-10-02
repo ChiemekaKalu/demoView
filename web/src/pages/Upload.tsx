@@ -113,7 +113,8 @@ export function Upload() {
         )}
       </form>
       <p>
-        Or open the <Link href={`/m/${SAMPLE_ID}`}>sample match</Link>.
+        Or open the <Link href={`/m/${SAMPLE_ID}`}>sample match</Link>, or read{' '}
+        <Link href="/findings">what decides a round</Link> in 541 pro matches.
       </p>
     </main>
   )
