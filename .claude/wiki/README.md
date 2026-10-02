@@ -19,6 +19,46 @@ You hand over a CS2 demo. You get back a scoreboard and a scrubbable 2D replay o
 
 ```mermaid
 flowchart LR
+    U[Browser] -- presigned PUT --> R2[(R2)]
+    U -- confirm --> W[Worker API]
+    W -- enqueue --> Q[[Queue]]
+    Q --> C[Consumer]
+    C -- POST /parse --> P[Parser container]
+    P -- stream demo --> R2
+    P -- match.json + rounds --> R2
+    C -- summary rows --> D[(D1)]
+    U -- poll + fetch --> W
+    W --> D
+    W --> R2
+```
+
+## Where to start
+
+| If you want to... | Read |
+| ----------------- | ---- |
+| See the whole system and follow one upload | [big-picture](big-picture.md) |
+| Understand what's inside a `.dem` file | [demo-format](demo-format.md) |
+| Walk through the Go parser, stage by stage | [parser](parser.md) |
+| Learn how rounds, sides and winners are worked out | [match-logic](match-logic.md) |
+| Know what `match.json` and round files contain | [schema](schema.md) |
+| Understand the API, queue and status machine | [worker](worker.md) |
+| See how the replay canvas works | [viewer](viewer.md) |
+| See how we know the parser is right | [testing](testing.md) |
+| Find cloud, CI and deploy details | [infra](infra.md) |
+| Work with maps and radars | [maps](maps.md) |
+| See where files live, and the proposed versioned layout | [r2-layout](r2-layout.md) |
+| Reparse matches after a parser change | [runbook-reparse](runbook-reparse.md) |
+| Diagnose a stuck or failed match | [runbook-stuck-matches](runbook-stuck-matches.md) |
+| Find out why something is the way it is | [decisions](decisions.md) |
+| Look up a term (tick, slot, oracle, DLQ) | [glossary](glossary.md) |
+| See what changed lately | [changelog](changelog.md) |
+
+## Status
+
+Snapshot as of **2026-10-02**. The plan is canonical, so check `../plan.md` if this looks stale.
+
+```mermaid
+flowchart LR
     M0[M0 schema and fixtures<br/>done] --> M1[M1 v0 parser<br/>done]
     M1 --> M2[M2 cloud pipeline<br/>done: dev and prod live]
     M2 --> M3[M3 viewer<br/>built, on real parses next]
@@ -37,7 +77,7 @@ flowchart LR
 - **The viewer on a real parse.** It has only been run against the synthetic samples so far.
 - **CI diff on fixtures.** Optional: set the read-only fixtures secrets so that job runs instead of skipping.
 - **Fetching your own demos from Valve.** Decided for v1.2, along with two-floor maps (Nuke, Vertigo). The design is in `plan.md`, and nothing is started.
-- **v1.1.** The agreed set is reuse of a duplicate upload by demo hash, a reparse path for older parser versions, and more single-level maps. A fuller draft is being worked out and is not in the spec yet.
+- **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The versioned R2 layout is waiting for the user's sign-off, and none of it is built yet.
 - **Narrative log.** Only the groundwork (`parser/eventlog`, with tests, no output) is approved. The rest of `../logging.md` waits for later.
 
 ## The learning center

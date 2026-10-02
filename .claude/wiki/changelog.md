@@ -2,6 +2,12 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, night: v1.1 is final, and four new pages
+
+- **v1.1 is final in the spec** (`6d603ba`): M5 "every map and safe reparse" and M6 "trusted and hardened", with v1.2 as the Valve fetch, two-floor maps and the narrative log build. It adds D1 columns and changes the R2 layout, but `schema_version` stays 1. Wiki: [decisions](decisions.md), [README](README.md).
+- **New pages:** [maps](maps.md), [R2 layout](r2-layout.md) (marked pending the user's sign-off on the versioned layout), [reparse runbook](runbook-reparse.md) and [stuck-match runbook](runbook-stuck-matches.md). Each says plainly which parts are specified and not yet built. The learning center lists them under a new "Operations" group.
+- **Fix:** an earlier edit had dropped the README's system diagram, its "Where to start" table and the Status heading. They are restored, with rows for the new pages.
+
 ## 2026-10-02, evening: scope decisions and viewer polish
 
 - **Decided by the user** (`74fc4c0`, `6e71214`): keep Steam ids in public match data. v1.1 is duplicate-upload reuse, a reparse path and more single-level maps. The Valve fetch and two-floor maps move to v1.2. The narrative log gets groundwork only (`parser/eventlog`, no output). Wiki: [decisions](decisions.md), [schema](schema.md), [worker](worker.md), [parser](parser.md).
