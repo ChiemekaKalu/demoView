@@ -200,7 +200,11 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
     - The server now runs the oracle with GOMEMLIMIT=400MiB (fe09822). So the full v1 path fits the budget.
   - *Our own full path:* 3.4 s and 108 MiB with round files, 0.58 s and 17 MiB events-only. **Within budget.**
 - [ ] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit: a synthetic unknown-field test.
-- [ ] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
+- [x] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
+  - *Passed (2026-10-02):* dev ships our own round files (`PARSER_ROUNDS=parser`, e439244), with the shadow compare saved as `shadow.json` next to each parse (ad0f9d3). Container output never reaches `wrangler tail`.
+  - All three dev matches were reparsed. Each `shadow.json` reads `result: match`, `round_source: parser`, `mismatches: 0`, over 19 + 10 + 19 rounds.
+  - An independent diff of the deployed files against local oracle exports, with `parser/diff`, also found 0 mismatches.
+  - The oracle re-run takes 15–63 s on the `basic` instance, after the response. Dev's `sleepAfter` is 2 minutes, so it finishes.
 - [ ] **6.7 CI diff gates deploys** (pipeline). Needs the fixtures bucket secrets.
 - [x] **6.8 Fault-flag recovery** (pipeline). 20 uploads each end `ready` or `failed` with a coded error, and none sits past 30 minutes. The flag is dev-only.
   - *Passed on dev (2026-10-02)* with `FAULT=fail`, so every attempt failed transiently. All 20 went through 3 attempts and the dead letter queue, and ended `failed` with `parse_failed: failed after 3 attempts: fault injected`.
