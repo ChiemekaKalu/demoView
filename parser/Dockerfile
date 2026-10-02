@@ -9,10 +9,8 @@
 #
 #   docker build -f parser/Dockerfile -t demoview-parser .
 #
-# BuildKit trims the context with parser/Dockerfile.dockerignore.
-#
-# Unverified: no image has been built from this file yet. Treat it as a draft
-# until CI builds it.
+# BuildKit trims the context with parser/Dockerfile.dockerignore. CI builds it
+# on every check (.github/workflows/ci.yml), and wrangler builds it on deploy.
 
 FROM golang:1.27 AS build
 WORKDIR /src
