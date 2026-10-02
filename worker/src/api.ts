@@ -10,7 +10,7 @@ import {
   roundKey,
 } from "./keys";
 import { errorStack, errorText } from "./log";
-import { getMatch, getMatchPage, insertMatch, setStatus } from "./matches";
+import { claimUpload, deleteUploadedMatch, getMatch, getMatchPage, insertMatch, setStatus } from "./matches";
 import { presignUpload, UPLOAD_URL_TTL_SECONDS } from "./presign";
 import { parseRadar } from "./radar";
 
@@ -87,7 +87,7 @@ async function confirmUpload(request: Request, env: Env, [id = ""]: string[]): P
     return json({ error: `match is already ${match.status}`, status: match.status }, 409);
   }
 
-  const object = await env.BUCKET.head(match.demo_key);
+  const object = await env.BUCKET.get(match.demo_key);
   // The only sign on this side that the browser's PUT to R2 failed.
   if (!object) {
     confirmRejected(id, "demo_missing");
@@ -95,14 +95,26 @@ async function confirmUpload(request: Request, env: Env, [id = ""]: string[]): P
   }
   const size = { size_bytes: object.size };
   if (object.size > MAX_DEMO_BYTES) {
+    await object.body.cancel();
     const message = "demo is larger than 1 GB";
     await env.BUCKET.delete(match.demo_key);
     await setStatus(env.DB, id, "failed", { error: message, from: ["uploaded"], log: size });
     return error(413, message);
   }
 
-  // Claim the match before enqueueing, so two confirms can't enqueue twice.
-  if (!(await setStatus(env.DB, id, "queued", { from: ["uploaded"], log: size }))) {
+  // Claim the match before enqueueing, so two confirms can't enqueue twice,
+  // and reuse the match that already has this demo instead of parsing it again.
+  const claim = await claimUpload(env.DB, id, await sha256Hex(object.body), size);
+  if (claim.kind === "duplicate") {
+    const original = claim.match;
+    await env.BUCKET.delete(match.demo_key);
+    await deleteUploadedMatch(env.DB, id);
+    console.log(
+      JSON.stringify({ event: "duplicate_upload", match_id: id, duplicate_of: original.id, status: original.status }),
+    );
+    return json({ id: original.id, status: original.status, duplicate: true }, 200);
+  }
+  if (claim.kind === "lost") {
     confirmRejected(id, "concurrent");
     return error(409, "match was confirmed concurrently");
   }
@@ -212,6 +224,13 @@ async function serveObject(
   // R2 returns the object without a body when If-None-Match matched.
   if (!("body" in object)) return new Response(null, { status: 304, headers });
   return new Response(object.body, { headers });
+}
+
+// A stream's SHA-256 as lowercase hex, without holding it in memory.
+async function sha256Hex(stream: ReadableStream): Promise<string> {
+  const digest = new crypto.DigestStream("SHA-256");
+  await stream.pipeTo(digest);
+  return [...new Uint8Array(await digest.digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function confirmRejected(id: string, reason: string, fields: Record<string, unknown> = {}): void {

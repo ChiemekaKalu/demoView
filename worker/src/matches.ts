@@ -51,6 +51,48 @@ export async function insertMatch(
   logStatus(id, "uploaded");
 }
 
+export type Claim =
+  | { kind: "claimed" }
+  // Another match that hasn't failed already has this demo.
+  | { kind: "duplicate"; match: MatchRow }
+  // The match left `uploaded` first, through a concurrent confirm.
+  | { kind: "lost" };
+
+// Moves an uploaded match to queued and stores its demo's hash, unless a match
+// that hasn't failed already has the same demo. It's one statement, so of two
+// confirms of the same demo, only one can claim it.
+export async function claimUpload(
+  db: D1Database,
+  id: string,
+  sha256: string,
+  log: Record<string, unknown> = {},
+): Promise<Claim> {
+  const claimed = await db
+    .prepare(
+      `UPDATE matches SET status = 'queued', demo_sha256 = ?2
+       WHERE id = ?1 AND status = 'uploaded' AND NOT EXISTS (
+         SELECT 1 FROM matches WHERE demo_sha256 = ?2 AND status != 'failed' AND id != ?1)`,
+    )
+    .bind(id, sha256)
+    .run();
+  if (claimed.meta.changes > 0) {
+    logStatus(id, "queued", log);
+    return { kind: "claimed" };
+  }
+  const original = await db
+    .prepare(
+      "SELECT * FROM matches WHERE demo_sha256 = ? AND status != 'failed' AND id != ? ORDER BY created_at LIMIT 1",
+    )
+    .bind(sha256, id)
+    .first<MatchRow>();
+  return original ? { kind: "duplicate", match: original } : { kind: "lost" };
+}
+
+// Removes a match that never got past `uploaded`.
+export async function deleteUploadedMatch(db: D1Database, id: string): Promise<void> {
+  await db.prepare("DELETE FROM matches WHERE id = ? AND status = 'uploaded'").bind(id).run();
+}
+
 export function getMatch(db: D1Database, id: string): Promise<MatchRow | null> {
   return db.prepare("SELECT * FROM matches WHERE id = ?").bind(id).first<MatchRow>();
 }

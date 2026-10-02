@@ -25,7 +25,7 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | Route | Success | Errors |
 | ----- | ------- | ------ |
 | `POST /api/matches` | `201 { id, upload_url, upload_expires_in }`. PUT the demo to `upload_url` within `upload_expires_in` seconds. | 401 |
-| `POST /api/matches/:id/uploaded` | `202 { id, status: "queued" }` | 401, 404, 409 (not uploaded yet, or not in `uploaded` any more: the body has `status`), 413 (over 1 GB; the demo is deleted and the match fails) |
+| `POST /api/matches/:id/uploaded` | `202 { id, status: "queued" }`, or `200 { id, status, duplicate: true }` when a match that hasn't failed already has the same demo (by SHA-256): `id` is that match, and the new upload and its match are deleted | 401, 404, 409 (not uploaded yet, or not in `uploaded` any more: the body has `status`), 413 (over 1 GB; the demo is deleted and the match fails) |
 | `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, players, rounds }`, `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them), cached 5 minutes with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
 | `GET /api/matches/:id/rounds/:n` | `200` round file, immutable for a year, with an ETag (304 on `If-None-Match`) | 404 |
