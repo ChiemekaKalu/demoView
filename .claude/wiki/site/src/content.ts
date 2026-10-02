@@ -32,6 +32,7 @@ const PATH: [slug: string, group: string][] = [
   ['decisions', 'Reference'],
   ['glossary', 'Reference'],
   ['changelog', 'Reference'],
+  ['pickup', 'Reference'],
 ]
 
 // The first plain paragraph after the title, stripped of markdown, for list rows.
