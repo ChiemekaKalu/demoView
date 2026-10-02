@@ -7,7 +7,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
+	"math"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/match"
@@ -37,14 +41,22 @@ func Run(ctx context.Context, r io.Reader) (match.File, error) {
 	return match.File{
 		SchemaVersion: match.SchemaVersion,
 		ParserVersion: Version,
-		Match:         match.Info{DemoSHA256: hex.EncodeToString(sum.Sum(nil))},
+		Match: match.Info{
+			Map:        p.mapName,
+			TickRate:   p.tickRate,
+			DemoSHA256: hex.EncodeToString(sum.Sum(nil)),
+		},
 	}, nil
 }
 
-// parser holds what the stages extract while the demo streams past. Later
-// stages keep their state here, in the order they land: game events, then
-// string tables and player identity, then match logic.
-type parser struct{}
+// parser holds what the stages extract while the demo streams past.
+type parser struct {
+	mapName  string // from the first FileHeader
+	tickRate int    // from the first svc_ServerInfo
+
+	// Later stages keep their state here, in the order they land: game
+	// events, then string tables and player identity, then match logic.
+}
 
 // walk feeds every frame from d, and every message in its packets, to the
 // stages.
@@ -65,7 +77,7 @@ func (p *parser) walk(ctx context.Context, d *demo.Decoder) error {
 		}
 		switch f.Cmd {
 		case demo.CmdFileHeader:
-			err = f.Unmarshal(new(pb.CDemoFileHeader))
+			err = p.fileHeader(f)
 		case demo.CmdFileInfo:
 			err = f.Unmarshal(new(pb.CDemoFileInfo))
 		case demo.CmdPacket, demo.CmdSignonPacket, demo.CmdFullPacket:
@@ -75,6 +87,17 @@ func (p *parser) walk(ctx context.Context, d *demo.Decoder) error {
 			return err
 		}
 	}
+}
+
+func (p *parser) fileHeader(f demo.Frame) error {
+	var h pb.CDemoFileHeader
+	if err := f.Unmarshal(&h); err != nil {
+		return err
+	}
+	if p.mapName == "" {
+		p.mapName = h.GetMapName()
+	}
+	return nil
 }
 
 func (p *parser) packet(mr *demo.MessageReader, f demo.Frame) error {
@@ -98,6 +121,33 @@ func (p *parser) packet(mr *demo.MessageReader, f demo.Frame) error {
 // message hands one packet message to the stage that wants it. This is where
 // later stages plug in: game events next (GE_Source1LegacyGameEventList, 205,
 // and GE_Source1LegacyGameEvent, 207), then string tables.
-func (p *parser) message(demo.Message) error {
+func (p *parser) message(m demo.Message) error {
+	switch m.Type {
+	case demo.MsgType(pb.SVC_Messages_svc_ServerInfo):
+		return p.serverInfo(m)
+	}
+	return nil
+}
+
+func (p *parser) serverInfo(m demo.Message) error {
+	var info pb.CSVCMsg_ServerInfo
+	if err := unmarshal(m, &info); err != nil {
+		return err
+	}
+	if p.tickRate == 0 && info.GetTickInterval() > 0 {
+		p.tickRate = int(math.Round(1 / float64(info.GetTickInterval())))
+	}
+	return nil
+}
+
+// unmarshalOpts matches package demo's: AllowPartial skips proto2's
+// required-field check, but malformed wire data is still an error.
+var unmarshalOpts = proto.UnmarshalOptions{AllowPartial: true}
+
+// unmarshal decodes m's body into v. A malformed body is a bad demo.
+func unmarshal(m demo.Message, v proto.Message) error {
+	if err := unmarshalOpts.Unmarshal(m.Body, v); err != nil {
+		return fmt.Errorf("%w: %s body: %v", demo.ErrBadDemo, m.Type, err)
+	}
 	return nil
 }

@@ -71,7 +71,7 @@ var (
 	// testSignon and testPacket are the messages of testDemo's two
 	// non-empty packets.
 	testSignon = []testMsg{
-		{uint32(pb.SVC_Messages_svc_ServerInfo), []byte("server info")},
+		{uint32(pb.SVC_Messages_svc_ServerInfo), pbBytes(&pb.CSVCMsg_ServerInfo{TickInterval: proto.Float32(1.0 / 64)})},
 		{uint32(pb.NET_Messages_net_Tick), tickBody},
 	}
 	testPacket = []testMsg{

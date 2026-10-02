@@ -96,8 +96,8 @@ func TestParseWritesMatchJSON(t *testing.T) {
 		"schema_version": 1.0,
 		"parser_version": "0.1.0",
 		"match": map[string]any{
-			"map":         "",
-			"tick_rate":   0.0,
+			"map":         "de_mirage",
+			"tick_rate":   64.0,
 			"demo_sha256": hex.EncodeToString(sum[:]),
 		},
 		"players":    []any{},

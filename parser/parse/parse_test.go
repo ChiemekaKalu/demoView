@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,19 +55,33 @@ func TestRun(t *testing.T) {
 	want := match.File{
 		SchemaVersion: match.SchemaVersion,
 		ParserVersion: Version,
-		Match:         match.Info{DemoSHA256: hex.EncodeToString(sum[:])},
+		Match:         match.Info{Map: "de_mirage", TickRate: 64, DemoSHA256: hex.EncodeToString(sum[:])},
 	}
 	if got.SchemaVersion != want.SchemaVersion || got.ParserVersion != want.ParserVersion || got.Match != want.Match {
 		t.Errorf("Run = %+v, want %+v", got, want)
 	}
 }
 
+func TestRunWithoutHeaderOrServerInfo(t *testing.T) {
+	got, err := Run(context.Background(), bytes.NewReader(parsetest.Build(
+		parsetest.Frame{Cmd: demo.CmdPacket, Tick: 1, Payload: parsetest.Packet(tick)},
+	)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Match.Map != "" || got.Match.TickRate != 0 {
+		t.Errorf("Match = %+v, want no map or tick rate", got.Match)
+	}
+}
+
 func TestRunBadDemo(t *testing.T) {
+	badInfo := parsetest.Msg{Type: serverInfo.Type, Body: []byte{0x6A, 0x09, 'x'}} // field 13 length-delimited, truncated
 	tests := map[string][]byte{
 		"bad magic":        []byte("HL2DEMO\x00 not a cs2 demo"),
 		"short preamble":   []byte("PBDEMS2"),
 		"truncated frame":  goodDemo[:len(goodDemo)-3],
 		"bad header proto": parsetest.Build(parsetest.Frame{Cmd: demo.CmdFileHeader, Payload: []byte{0x2A, 0x09, 'd'}}),
+		"bad server info":  parsetest.Build(parsetest.Frame{Cmd: demo.CmdSignonPacket, Payload: parsetest.Packet(badInfo)}),
 	}
 	for name, data := range tests {
 		_, err := Run(context.Background(), bytes.NewReader(data))
@@ -128,7 +143,10 @@ func TestRealDemos(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			t.Logf("sha256=%s in %v", got.Match.DemoSHA256, time.Since(start))
+			t.Logf("map=%s tick_rate=%d sha256=%s in %v", got.Match.Map, got.Match.TickRate, got.Match.DemoSHA256, time.Since(start))
+			if !strings.HasPrefix(got.Match.Map, "de_") || got.Match.TickRate != 64 {
+				t.Errorf("Match = %+v, want a de_ map at 64 ticks", got.Match)
+			}
 		})
 	}
 }
