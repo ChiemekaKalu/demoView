@@ -122,6 +122,7 @@ v1.1 changes no `match.json` or round-file schema, so `schema_version` stays 1. 
 - The Steam/Valve auto-fetch. The design is in `plan.md`.
 - Two-floor maps (Nuke, Vertigo), with a `z` or level column and a layer toggle. This is a `schema_version` bump.
 - The narrative log's output, schema, derived events (opening kills, trades, clutches, buy types) and story pane, built on the M4 groundwork.
+- Match Pulse: a calibrated win-probability line under each round's scrubber, with kill marks sized by swing and a "rounds worth watching" shelf. It comes from the Jev model on Workers AI (`.claude/ideas/jev/spec.md`) and runs on its own queue after a match is ready, writing a new `pulse.json` with its own schema. A self-grading loop scores every match against known outcomes, and a CI eval job tracks quality and drift.
 
 ### Out of scope through v1.1
 

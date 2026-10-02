@@ -4,6 +4,13 @@ Running log of decisions, progress and findings. Newest first. Keep entries shor
 
 ## 2026-10-02
 
+- **Match Pulse (Jev), approved by the user for v1.2:**
+  - The proposal is in `.claude/ideas/jev/` (158d192).
+  - A new `pulse.json` output with its own schema is approved.
+  - aiguy may evaluate on the user's 8 matches, locally only.
+  - The AI Gateway spend limit is the $25 already loaded. The user is happy for it to be used.
+  - A CI eval job is approved, with `CLOUDFLARE_JEV` as its token.
+  - v1.1 still comes first.
 - **Narrative log: the user approved all six decisions in `logging.md`.**
   - The log is a new parse output, under `parsed/{id}/log/{parser_version}/` with its manifest written last.
   - It has its own `schema/log.schema.json` and `log_version`.
