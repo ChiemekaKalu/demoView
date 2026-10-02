@@ -105,6 +105,47 @@ The CTs' chance to win after a kill, no bomb planted:
 - **Site matters most on Train:** an A plant holds 86% of the time, a B plant 59%.
 - **Overpass B is the strongest plant in the sample:** 90%.
 
+## Clutches
+
+Each side's first 1vN of a round, counted once, and how often the lone player's side won it (analyze-only run 37051653572):
+
+| Situation | Lone CT wins | Lone T wins |
+| --- | --- | --- |
+| 1v1 | 60% (n=205) | 70% (n=157) |
+| 1v2 | 14% (n=278) | 22% (n=300) |
+| 1v3 or worse | 2% (n=706) | 2% (n=1,092) |
+
+- **The lone T clutches better.** The likely reason, not split out here, is that many T clutches come after a plant, where the clock works for them.
+- **A 1v3 is effectively lost:** 2 in 100.
+
+## Plant timing
+
+T win rate after the plant, by when it went down (round clock from freeze end):
+
+| Plant time | T win |
+| --- | --- |
+| Early (before 0:45) | 79% (n=165) |
+| Mid (0:45–1:15) | 80% (n=473) |
+| Late (after 1:15) | 74% (n=738) |
+
+Late plants hold a little worse. Plausible reasons, not yet tested: the CTs have had time to rotate, and a late plant often comes from a T side that's already lost players.
+
+## Where the first duel happens
+
+The victim's callout for each map's opening kill, and how often the side that won that duel took the round. Spots with at least 12 openings; all maps together average 71%.
+
+| Map | Most common opening | Share of openings | Round won | Notable |
+| --- | --- | --- | --- | --- |
+| Inferno | Banana, won by CT | 22% | 59% | The weakest opening anywhere: winning the Banana fight barely helps the CTs |
+| Nuke | Outside, won by CT | 19% | 79% | Outside picks are decisive for both sides (T 74%) |
+| Ancient | Middle, won by CT | 14% | 77% | Winning Middle as T is worth much less (61%) |
+| Anubis | Canal, won by CT | 13% | 60% | A T opener on B is worth 77% |
+| Train | A site, won by T | 13% | 68% | A CT opener on B wins only 47% |
+| Vertigo | Bridge, won by CT | 11% | 67% | A T opener on A is worth 87% |
+| Dust2 | Long Doors, won by CT | 10% | 77% | A CT pick on B site is worth 81% |
+| Mirage | Top of Mid, won by CT | 10% | 76% | A T opener on A site is worth only 56% |
+| Overpass | Lower Park, won by CT | 10% | 65% | CT picks at Fountain (90%) and Canal (87%) nearly end the round |
+
 ## Economy
 
 | Map | Eco beats full | Force beats full | Pistol winner wins the next round |
@@ -167,9 +208,7 @@ A logistic model trained on four demo groups and tested on the fifth. Brier scor
 
 ## Next
 
-- A parser-only workflow mode, so parser fixes are checked in the cloud on all 132 demos.
-- **More analysis, re-run from the stored facts with no re-download:**
-  - where opening duels happen on each map, and how much each spot decides
-  - plant timing
-  - clutch odds by map
-- Optionally, Jev on a pro sample, to see whether its calibration (T = 0.54, fitted on matchmaking) holds for pro play.
+- **Parser mode is live** on the research branch: `demo` is built from any ref and diffed against the oracle in the cloud. Parser's fix (`parser/pro-rounds`) is being swept first on 10 repro and control demos, then on all 132.
+- **Jev on a pro sample** (24 demos, from the stored facts) tests whether its calibration (T = 0.54, fitted on matchmaking) holds for pro play.
+- **A full pass** over all ~545 usable demos in the dataset, for per-map statistics with tighter intervals.
+- **Interactive page:** a private claude.ai page, Round Odds, shows these results.
