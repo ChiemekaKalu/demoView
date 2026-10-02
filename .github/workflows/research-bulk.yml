@@ -128,7 +128,7 @@ jobs:
 
   aggregate:
     needs: [plan, shard]
-    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.mode != 'models' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -156,6 +156,47 @@ jobs:
         with:
           name: report
           path: report
+
+  models:
+    needs: plan
+    if: needs.plan.outputs.mode == 'models'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [compare, embed]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Collect stored facts
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bash "$BULK/collect.sh" "${{ needs.plan.outputs.source }}" .
+      - name: Install the Anthropic SDK and numpy in a throwaway venv
+        run: python3 -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install -q anthropic numpy
+      - name: Run ${{ matrix.job }}
+        env:
+          CLOUDFLARE_JEV: ${{ secrets.CLOUDFLARE_JEV }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          script=models.py; [ "${{ matrix.job }}" = embed ] && script=embed.py
+          "$RUNNER_TEMP/venv/bin/python" "$BULK/$script" in plan.json "$BULK/config.json" out
+      - name: Store the report in dev R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          for f in out/*.json out/*.md; do bash "$BULK/r2put.sh" "${{ github.run_id }}/$(basename "$f")" "$f"; done
+          cat out/*.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: models-${{ matrix.job }}
+          path: out
 
   jev:
     needs: [plan, shard]
