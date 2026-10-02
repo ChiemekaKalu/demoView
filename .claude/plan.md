@@ -121,36 +121,40 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
   - Against the oracle on all 10 demos: players and kill events have zero mismatches. Grenades differ only where the oracle departs from plan.md: fire end (we end at `inferno_expire`, the flame-out; it ends at entity removal, about 13 s later), its `[0,0]` fire last point, and one undetonated decoy.
   - Byte-identical across runs.
   - An entity-stage error stops only that stage: `match.json` stays complete, and the CLI exits 1 with `unknown_entity`.
-- [ ] **Pro-demo robustness (found 2026-10-02 by aiguy's bulk run).** 132 public pro GOTV demos (HF `skkwowee/chimera-cs2` @ 69b9cba, builds 9842–10847): no crashes, p95 1.6 s, max 61 MB. But:
-  - Round segmentation collapses to 1 round on 113.
-  - 2 are "no live rounds" bad_demo.
-  - 9 have teams swapped (mostly build 9842).
-  - A few have minor round-1 and ADR differences.
-  - *Prod today:* the oracle guard ships the oracle's match.json for the collapsed and swapped cases, so they're correct. The 2 "no live rounds" demos fail with a 422.
-  - **The swap-in default stays `oracle` until the pro sample passes.** Then: a pinned pro set in CI (pipeline), downloaded from HF at test time, never rehosted.
-  - **Rule: no external demos on the user's machine.** Iterate only through aiguy's GitHub Actions research workflow in "parser" mode: push branch `parser/pro-rounds` (tell cloud first), then send aiguy the `parser_ref` directly.
-  - *Fixed so far:*
-    - 68a02cf: tournament GOTV fires no restart event in play, so `round_officially_ended` splits the rounds. This fixed the collapse (sweep 37051718863).
-    - 53df3af: round 1 keeps the spawns and team changes before `begin_new_match`, and its start is clamped to the demo's first frame tick.
-    - 0108c53: unknown `E*` enum fields decode as varints, and a projectile class missing from the build is skipped (build 9842: `EGrenadeThrowState`, `CFlashbangProjectile`).
-    - 1dd244c: the CLI diff still compares match.json when the round files fail.
-    - 76e0708: unknown types named like enums (`DecalMode_t`, any `…_t`) decode as varints. This covers 13 of the 21 `unknown_entity` failures, all `CWorld.m_nDecalMode`. A wrong guess between integer kinds still keeps the bitstream in step.
-    - 4a3d389: sides are read at each round's freeze end, as the reference does. On build 9842 the halftime swap fires before the event that ends round 12.
-    - ca49811: `demo inspect --events` prints game-event counts and a round-structure timeline (event names and ticks only, so it's safe to keep from any demo).
-  - *Full-132 on 68a02cf (run 37054367353):*
-    - 46 still collapse to 1 round: none of the four boundary events qualifies on them. The cause is unknown until the timelines come back.
-    - 37 have a boundary or reason difference.
-    - 21 fail with `unknown_entity`.
-    - 14 have a clean match.json.
-    - Parse p50 is 3.5 s, max 7.4 s and 219 MB.
-  - *Repro on 1dd244c (run 37055026405):* 4 of the 10 have a clean match.json; the 9842 halftime and round-1 cases are left.
-    - In the two round-1 cases, 9 or 10 of 10 players have no round-1 spawn. `begin_new_match` is at tick -1, so the recording probably starts after round 1's spawns.
-    - The fix waits on the timelines rather than a guess.
-  - *Not ours:* the 2 "no live rounds" demos also fail in the reference parser ("no live rounds in the demo"), so there's nothing to fall back to. Prod returns a 422, as it would with the reference parser alone.
-  - *Now:* aiguy is running the `inspect --events` timelines on 11 demos (collapsed, round-1, no-live-rounds, plus checks), then the full 132 on ca49811.
-  - `demo diff` shows only the first 40 mismatches, so sweep kind counts are from the truncated text.
+- [ ] **Pro-demo robustness (found 2026-10-02 by aiguy's bulk run).** 132 public pro GOTV demos (HF `skkwowee/chimera-cs2` @ 69b9cba, builds 9842–10847).
+  - **Gate for the prod flip to `PARSER_ROUNDS=parser` (agreed with cloud):** a full-132 sweep where no demo with a reference differs in round count, boundaries, winner, reason, side_a, team or kills. Allowed exceptions:
+    - reference-side differences: its `unknown` weapons, and its ADR on partial recordings;
+    - the 2 demos the reference can't parse;
+    - ADR-only diffs, since the reference uses the game's damage counter, which includes rounds before the recording.
+  - **Rule: no external demos on the user's machine.** Iterate through aiguy's research workflow in "parser" mode: push branch `parser/pro-rounds` (tell cloud first), then send aiguy the `parser_ref`. `demo inspect --events` gives each demo's name-free event timeline.
+  - *Progress by gate run:*
+
+    | Run | Collapsed to 1 round | Clean | Blocking |
+    | --- | --- | --- | --- |
+    | 68a02cf | 46 | 14 | — |
+    | 84f7bf8 | 0 | 100 | — |
+    | 91268ae | 0 | 105 | 12 |
+    | main 243de41 | 0 | 106 | 11 |
+
+  - *Tournament quirks, now handled in the timeline stage (`matchlogic/timeline.go`, d4c824e):*
+    - **Restart events:**
+      - `round_officially_ended` as the boundary (68a02cf).
+      - `cs_pre_restart` as the boundary, 19 ticks before the spawns (84f7bf8).
+    - **Recordings that start late:**
+      - recordings that start in round 1's freeze time, with no `begin_new_match` and no round-1 spawns; round 2's players stand in (84f7bf8);
+      - recordings that start mid-round 1 (0c5941a).
+    - **Restarts the match never plays:**
+      - a `begin_new_match` only at the end (84f7bf8);
+      - restarts the demo ends in (91268ae).
+    - **Backup restores,** where everyone dies and respawns on one tick: they replay the round rather than start one (4e2858a).
+    - **Sides:**
+      - halftime sides read at the freeze end (4a3d389);
+      - sides from bomb plants and defuses when nothing else shows them (37e41c6).
+    - **Entity decoding:** unknown enum-like types read as varints (0108c53, 76e0708).
+  - *Server:* when the reference fails on a demo our parser accepts, our plausible match ships as `fallback_reason=oracle_failed` (a40a665).
+  - *Now:* aiguy is gate-sweeping 37e41c6. It targets all of main's 11 blocking demos; 2 of them are reference-side and tagged.
 - [ ] **Swap-in** (1587e55, de2ff27). The code is done and tested: `PARSER_ROUNDS=parser` (opt-in) ships our round files, falling back to the oracle on `entity_error` (6.5, tested) or `implausible_match`. `PARSER_SHADOW=oracle` diffs after a flushed response (6.6); a Mirage smoke run was a full match, 10 rounds and 0 mismatches.
-  - *Remaining:* pipeline sets dev envVars (`PARSER_ROUNDS=parser`, `PARSER_SHADOW=oracle`); dev shadow lines come back clean; the pro sweep passes (parser/pro-rounds); then prod flips to `parser`. Never pass an empty `PARSER_ROUNDS` in prod.
+  - *Remaining:* pipeline sets dev envVars (`PARSER_ROUNDS=parser`, `PARSER_SHADOW=oracle`); dev shadow lines come back clean; the gate sweep passes; then prod flips to `parser`. Never pass an empty `PARSER_ROUNDS` in prod.
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
 
 ## M5: every map and safe reparse (v1.1)
