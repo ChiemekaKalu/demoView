@@ -83,6 +83,9 @@
       { "queue": "demoview-dev-parse-dlq" }
     ]
   },
+  // The stuck-match sweeper, the hourly reparse batch and the daily cleanup
+  // (src/cron.ts, whose cron strings must match these).
+  "triggers": { "crons": ["*/10 * * * *", "0 * * * *", "30 4 * * *"] },
   "env": {
     "prod": {
       "name": "demoview-api",
@@ -137,7 +140,9 @@
           },
           { "queue": "demoview-prod-parse-dlq" }
         ]
-      }
+      },
+      // Off until the reparse exit checks pass on dev.
+      "triggers": { "crons": [] }
     }
   }
 }

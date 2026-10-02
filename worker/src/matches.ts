@@ -235,7 +235,7 @@ export async function setReparseError(db: D1Database, id: string, error: string,
 
 // A failed match's error is "<code>: <detail>", so the match page can explain
 // each code. The parser's 422 codes (bad_demo, demo_not_found) pass through;
-// the Worker adds too_large, bad_output and parse_failed.
+// the Worker adds too_large, bad_output, parse_failed and stuck.
 export function failure(code: string, detail: string): string {
   return `${code}: ${detail}`;
 }

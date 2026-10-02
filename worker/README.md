@@ -36,13 +36,24 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 
 `players` rows are `{ idx, name, team, kills, deaths, assists, adr, hs_pct }`, ordered by `idx`. Steam ids stay out; `match.json` has them. `rounds` rows are `{ n, winner, reason, side_a }`, ordered by `n`. Timestamps are Unix milliseconds.
 
-A failed match's `error` starts with a code, `"<code>: <detail>"`: `bad_demo` or `demo_not_found` from the parser, or `too_large`, `bad_output` or `parse_failed` from the Worker. Errors from before codes, and the last error of a pending retry, have none.
+A failed match's `error` starts with a code, `"<code>: <detail>"`: `bad_demo` or `demo_not_found` from the parser, or `too_large`, `bad_output`, `parse_failed` or `stuck` from the Worker. Errors from before codes, and the last error of a pending retry, have none.
 
 ## Parses
 
 Every parse attempt writes under its own prefix, `parsed/{id}/{parse_id}/`, with `manifest.json` last. Once the parser answers 200, the consumer points the match's `live_parse_id` at it and replaces its D1 rows in one batch, but only if the pointer hasn't moved since the attempt started, so a slower parse can never replace a newer one. The viewer asks for files with `?v=<parse_id>` from the summary. Matches parsed before parse ids have a null `live_parse_id`, and their files sit straight under `parsed/{id}/`.
 
 A reparse job (`{ match_id, reparse: true }`) parses a `ready` match again without leaving `ready`. If it fails, the match keeps its live parse, and `reparse_error` and `reparse_build` say why and with which build. `attempted_build` is the `PARSER_BUILD` of the latest attempt, which CI sets at deploy from the git trees of `parser/` and `tools/oracle/`.
+
+## Scheduled jobs
+
+Three crons (`triggers` in `wrangler.jsonc`, `src/cron.ts`). Prod's are off until the reparse exit checks pass on dev.
+
+- **Every 10 minutes, the sweeper.** A match 30 minutes in `queued` since its last status change has lost its queue message, so it is queued again. One 30 minutes in `parsing` has nothing left to finish it, so it fails with `stuck`. Matches in any other status are never touched.
+- **Hourly, the reparse batch.** Up to 5 `ready` matches whose `attempted_build` isn't the deployed `PARSER_BUILD` get reparse jobs, oldest first, so each match is tried once per build. It waits while anything is `queued` or `parsing`, so an upload waits behind at most one batch. It stops for the month once `container_usage` reaches 80% of the 25 instance-hours the plan includes, and does nothing on a deploy without a build id (`dev`).
+- **Daily at 04:30 UTC, cleanup.**
+  - It deletes the prefixes of parses that aren't live and started over 7 days ago, found through the attempts in `match_events`.
+  - A reparsed v1 match's files go once its live parse is 7 days old. They are deleted by key (`match.json`, plus what is under `rounds/`), never by listing `parsed/{id}/`, which holds every parse.
+  - Uploads still unconfirmed after a day go too, with their demo.
 
 ## Viewer
 

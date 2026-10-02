@@ -1,12 +1,16 @@
 import { getContainer } from "@cloudflare/containers";
 import { handleRequest, type ParseJob } from "./api";
 import { handleDeadLetters, handleParseBatch } from "./consumer";
+import { runCron } from "./cron";
 import { httpParser } from "./parser";
 
 export { ParserContainer } from "./container";
 
 export default {
   fetch: (request, env) => handleRequest(request, env),
+
+  // The sweeper, reparse batch and cleanup, by cron (triggers in wrangler.jsonc).
+  scheduled: (controller, env) => runCron(controller.cron, env, controller.scheduledTime),
 
   // One Worker consumes both queues. Dead letter queue names end in -dlq.
   async queue(batch, env) {
