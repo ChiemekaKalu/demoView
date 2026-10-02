@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/parse"
 	"github.com/ChiemekaKalu/demoview/parser/roundfile"
 	"github.com/ChiemekaKalu/demoview/parser/store"
@@ -200,6 +201,7 @@ func TestOracleDisagreeShipsTheOracles(t *testing.T) {
 	})
 }
 
+// An oracle failure is a 500 when our match is implausible (one round).
 func TestOracleCrashIs500(t *testing.T) {
 	h := newOracleHarness(t, "crash")
 	h.putDemo(testDemo)
@@ -221,6 +223,28 @@ func TestOracleCrashIs500(t *testing.T) {
 	if msg := fmt.Sprint(entry["error"]); !strings.Contains(msg, "demoinfocs: boom") {
 		t.Errorf("log error = %q, want the oracle's message", msg)
 	}
+}
+
+// When the oracle fails on a demo our parser accepts, and ours is a
+// plausible match, our match.json and round files ship, and say why.
+func TestOracleFailureShipsOurs(t *testing.T) {
+	h := newHarness(t, parseWithRounds, "")
+	h.srv.oracle = fakeOracle("crash")
+	h.putDemo(twoRounds)
+
+	status, body := h.parse()
+	if status != http.StatusOK {
+		t.Fatalf("status %d, body %s", status, body)
+	}
+	m, names := h.readManifest()
+	if want := []string{"rounds/01.json", "rounds/02.json", match.FileName}; !slices.Equal(names, want) {
+		t.Errorf("manifest lists %q, want %q", names, want)
+	}
+	if m.MatchSource != "parser" || m.RoundSource != "parser" || m.Fallback != "oracle_failed" {
+		t.Errorf("manifest sources %q and %q, fallback %q; want parser, parser and oracle_failed", m.MatchSource, m.RoundSource, m.Fallback)
+	}
+	checkLog(t, h.logLine("oracle failed; shipping our files"), map[string]any{"severity": "WARNING", "fallback_reason": "oracle_failed"})
+	checkLog(t, h.lastLog(), map[string]any{"result": "ok", "match_source": "parser", "round_source": "parser", "fallback_reason": "oracle_failed"})
 }
 
 func TestOracleNotRunForABadDemo(t *testing.T) {

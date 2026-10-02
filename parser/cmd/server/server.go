@@ -190,6 +190,7 @@ type runResult struct {
 	matchJSON   []byte
 	source      string // whose match.json shipped: "parser", "oracle" or "stub"
 	roundSource string // whose round files shipped: "parser", "oracle", "stub" or "none"
+	fallback    string // why the configured round source didn't ship, or ""
 	rounds      []outFile
 	manifestSHA string
 	demoSize    int64
@@ -251,6 +252,12 @@ func (s *server) run(ctx context.Context, req parseRequest, res *runResult) erro
 // PARSER_ROUNDS=oracle ships the oracle's. PARSER_ROUNDS=parser ships ours
 // unless fallbackReason finds a reason not to, which a warning names; then
 // the oracle's ship if there is an oracle, and none if not.
+//
+// When the oracle fails on a demo our parser accepted in oracle mode, as it
+// does on a recording that never finishes a match, ours ship instead if
+// they pass fallbackReason, as "oracle_failed": there is nothing to check
+// them against, and a partial match beats none. That takes one more parse,
+// with round files. Otherwise the oracle's error stands.
 func (s *server) roundFiles(ctx context.Context, st store.Store, req parseRequest, res *runResult, out parse.Output) ([]outFile, error) {
 	if s.parserRounds {
 		reason := fallbackReason(out, s.oracle != nil)
@@ -258,6 +265,7 @@ func (s *server) roundFiles(ctx context.Context, st store.Store, req parseReques
 			res.roundSource = "parser"
 			return encodeRounds(out.Rounds)
 		}
+		res.fallback = reason
 		source := "none"
 		if s.oracle != nil {
 			source = "oracle"
@@ -273,11 +281,32 @@ func (s *server) roundFiles(ctx context.Context, st store.Store, req parseReques
 		return nil, nil
 	}
 	rounds, err := s.oracleRounds(ctx, st, req, res)
-	if err != nil {
+	switch {
+	case err == nil:
+		res.roundSource = "oracle"
+		return rounds, nil
+	case res.fallback != "" || ctx.Err() != nil:
 		return nil, err
 	}
-	res.roundSource = "oracle"
-	return rounds, nil
+	full, perr := s.parseWithRounds(ctx, st, req.DemoKey)
+	if perr != nil || fallbackReason(full, true) != "" {
+		return nil, err
+	}
+	res.fallback, res.roundSource = "oracle_failed", "parser"
+	s.log.Warn("oracle failed; shipping our files", "match_id", req.MatchID, "parse_id", req.ParseID,
+		"fallback_reason", res.fallback, "error", err.Error())
+	return encodeRounds(full.Rounds)
+}
+
+// parseWithRounds parses the demo at key again, with round files.
+func (s *server) parseWithRounds(ctx context.Context, st store.Store, key string) (parse.Output, error) {
+	rc, _, err := st.Open(ctx, key)
+	if err != nil {
+		return parse.Output{}, err
+	}
+	defer rc.Close()
+	out, _, err := s.parse(ctx, rc, parse.Options{Rounds: true})
+	return out, err
 }
 
 // fallbackReason says why our round files must not ship, or "" if they
@@ -329,6 +358,7 @@ func (s *server) write(ctx context.Context, st store.Store, req parseRequest, re
 		SchemaVersion: facts.SchemaVersion,
 		MatchSource:   res.source,
 		RoundSource:   res.roundSource,
+		Fallback:      res.fallback,
 	})
 	res.manifestSHA = sum
 	return err
@@ -434,7 +464,8 @@ type manifest struct {
 	SchemaVersion int            `json:"schema_version"`
 	MatchSource   string         `json:"match_source"`
 	RoundSource   string         `json:"round_source"`
-	Files         []manifestFile `json:"files"` // in write order
+	Fallback      string         `json:"fallback_reason,omitempty"` // why RoundSource isn't the configured one
+	Files         []manifestFile `json:"files"`                     // in write order
 }
 
 type manifestFile struct {

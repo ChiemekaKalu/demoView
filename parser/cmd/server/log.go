@@ -86,6 +86,7 @@ func (s *server) summary(start time.Time, status int, result string, err error, 
 	return append(attrs, nonzero(
 		slog.String("match_source", res.source),
 		slog.String("round_source", res.roundSource),
+		slog.String("fallback_reason", res.fallback),
 		slog.String("match_parser_version", m.ParserVersion),
 		slog.String("map", m.Match.Map),
 		slog.String("demo_sha256", m.Match.DemoSHA256),

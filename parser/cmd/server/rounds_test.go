@@ -237,7 +237,10 @@ func TestImplausibleMatchFallsBackToOracle(t *testing.T) {
 		"kills":           float64(1),
 		"entity_error":    nil,
 	})
-	checkLog(t, h.lastLog(), map[string]any{"result": "ok", "match_source": "parser", "round_source": "oracle", "put_objects": float64(4)})
+	checkLog(t, h.lastLog(), map[string]any{"result": "ok", "match_source": "parser", "round_source": "oracle", "fallback_reason": "implausible_match", "put_objects": float64(4)})
+	if m, _ := h.readManifest(); m.Fallback != "implausible_match" {
+		t.Errorf("manifest fallback_reason %q, want implausible_match", m.Fallback)
+	}
 }
 
 // Without an oracle, a fallback ships match.json alone, and the parse
