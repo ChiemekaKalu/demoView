@@ -194,12 +194,12 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
 - [x] **6.2 Fuzz targets** (parser). `bitread`, `FuzzFrames`, `FuzzApply` (string tables), `FuzzFieldPaths` and `FuzzApply` (entities, 1a5a988). 60 s runs crash-free, with 10-minute run lines in the doc comments.
   - Reading the code turned up two entity bugs: a dynamic-array write past its length, and an unbounded baseline cache, a memory-exhaustion risk from crafted demos. Both are being fixed in the M4 stage 4–5 work.
 - [x] **6.3 Run-twice identity** (parser). Byte-identical `match.json` on all 10 local demos, from separate processes.
-- [ ] **6.4 Budget** (parser). `TestBudget` passes events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB with `GOMAXPROCS=1`.
+- [x] **6.4 Budget** (parser). `TestBudget` passes events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB with `GOMAXPROCS=1`.
   - *Full path (2026-10-02), largest fixture with GOMAXPROCS=1:* the oracle's 64 Hz export first peaked at 640 MiB, over budget.
     - pipeline's 23e232c brought it to **8.3 s and 270 MiB**, with byte-identical output, by compacting per-tick samples and freeing each round once built.
     - The server now runs the oracle with GOMEMLIMIT=400MiB (fe09822). So the full v1 path fits the budget.
   - *Our own full path:* 3.4 s and 108 MiB with round files, 0.58 s and 17 MiB events-only. **Within budget.**
-- [ ] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit: a synthetic unknown-field test.
+- [x] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit met: `TestEntityErrorFallsBackToOracle` (cmd/server).
 - [x] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
   - *Passed (2026-10-02):* dev ships our own round files (`PARSER_ROUNDS=parser`, e439244), with the shadow compare saved as `shadow.json` next to each parse (ad0f9d3). Container output never reaches `wrangler tail`.
   - All three dev matches were reparsed. Each `shadow.json` reads `result: match`, `round_source: parser`, `mismatches: 0`, over 19 + 10 + 19 rounds.
