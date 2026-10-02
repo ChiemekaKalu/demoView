@@ -241,3 +241,41 @@ describe("GET /api/matches/:id/rounds/:n", () => {
     expect(res.headers.get("etag")).toBe(etag);
   });
 });
+
+describe("GET /api/matches/:id/match.json", () => {
+  const path = `/api/matches/${ID}/match.json`;
+  const get = (headers: Record<string, string> = {}) => handleRequest(request("GET", path, { headers }), env);
+  const matchFile = JSON.stringify({ schema_version: 1, kills: [] });
+
+  it("returns 404 for unknown or malformed ids", async () => {
+    expect((await get()).status).toBe(404);
+    expect((await handleRequest(request("GET", "/api/matches/x/match.json"), env)).status).toBe(404);
+  });
+
+  it("returns 404 until the match is ready, even if the object exists", async () => {
+    await insertMatch(ID, "parsing");
+    await env.BUCKET.put(`parsed/${ID}/match.json`, matchFile);
+    const res = await get();
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "match is parsing, not ready" });
+  });
+
+  it("returns 404 when a ready match has no match.json", async () => {
+    await insertMatch(ID, "ready");
+    expect((await get()).status).toBe(404);
+  });
+
+  it("streams match.json with a short cache and an ETag", async () => {
+    await insertMatch(ID, "ready");
+    await env.BUCKET.put(`parsed/${ID}/match.json`, matchFile);
+    const res = await get();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/json");
+    expect(res.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(await res.text()).toBe(matchFile);
+
+    const etag = res.headers.get("etag") ?? "";
+    expect(etag).toBeTruthy();
+    expect((await get({ "if-none-match": etag })).status).toBe(304);
+  });
+});

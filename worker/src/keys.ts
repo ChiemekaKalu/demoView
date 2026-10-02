@@ -23,6 +23,10 @@ export function demoKey(matchId: string): string {
   return `demos/${matchId}.dem`;
 }
 
+export function matchFileKey(matchId: string): string {
+  return `parsed/${matchId}/match.json`;
+}
+
 export function roundKey(matchId: string, n: number): string {
   return `parsed/${matchId}/rounds/${String(n).padStart(2, "0")}.json`;
 }

@@ -1,5 +1,5 @@
 import { hasUploadToken } from "./auth";
-import { demoKey, isMatchId, newMatchId, roundKey } from "./keys";
+import { demoKey, isMatchId, matchFileKey, newMatchId, roundKey } from "./keys";
 import { getMatch, getMatchPage, insertMatch, setStatus } from "./matches";
 import { presignUpload, UPLOAD_URL_TTL_SECONDS } from "./presign";
 
@@ -13,12 +13,17 @@ export const MAX_DEMO_BYTES = 1024 ** 3;
 // Round files never change for a given parse, so browsers may keep them.
 const ROUND_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
+// match.json lives at a fixed key that a reparse overwrites, so it is only
+// cached briefly; the ETag makes revalidating it cheap.
+const MATCH_FILE_CACHE_CONTROL = "public, max-age=300";
+
 type Handler = (request: Request, env: Env, params: string[]) => Promise<Response>;
 
 const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
   { method: "POST", pattern: /^\/api\/matches$/, handler: createMatch },
   { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/uploaded$/, handler: confirmUpload },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)$/, handler: getMatchSummary },
+  { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/match\.json$/, handler: getMatchFile },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/rounds\/([^/]+)$/, handler: getRoundFile },
 ];
 
@@ -117,14 +122,41 @@ async function getRoundFile(
   [id = "", n = ""]: string[],
 ): Promise<Response> {
   if (!isMatchId(id) || !/^[1-9]\d{0,2}$/.test(n)) return error(404, "round not found");
-  const object = await env.BUCKET.get(roundKey(id, Number(n)), { onlyIf: request.headers });
-  if (!object) return error(404, "round not found");
+  return (
+    (await serveObject(request, env, roundKey(id, Number(n)), ROUND_CACHE_CONTROL)) ??
+    error(404, "round not found")
+  );
+}
+
+// GET /api/matches/:id/match.json: the parser's full match.json, for what
+// D1 doesn't hold (kills with assisters and stable indexes, names).
+async function getMatchFile(request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
+  const match = isMatchId(id) ? await getMatch(env.DB, id) : null;
+  if (!match) return error(404, "match not found");
+  // Before ready the object is missing, or is a reparse's half-written state.
+  if (match.status !== "ready") return error(404, `match is ${match.status}, not ready`);
+  return (
+    (await serveObject(request, env, matchFileKey(id), MATCH_FILE_CACHE_CONTROL)) ??
+    error(404, "match.json not found")
+  );
+}
+
+// serveObject streams an R2 object with its ETag, or answers 304 when the
+// request's If-None-Match matches. It returns null when the key is missing.
+async function serveObject(
+  request: Request,
+  env: Env,
+  key: string,
+  cacheControl: string,
+): Promise<Response | null> {
+  const object = await env.BUCKET.get(key, { onlyIf: request.headers });
+  if (!object) return null;
 
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   if (!headers.has("content-type")) headers.set("content-type", "application/json");
   headers.set("etag", object.httpEtag);
-  headers.set("cache-control", ROUND_CACHE_CONTROL);
+  headers.set("cache-control", cacheControl);
   // R2 returns the object without a body when If-None-Match matched.
   if (!("body" in object)) return new Response(null, { status: 304, headers });
   return new Response(object.body, { headers });
