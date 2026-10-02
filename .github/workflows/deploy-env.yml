@@ -45,6 +45,11 @@ jobs:
       # deploy:<env> builds the viewer, then wrangler builds the parser image
       # from parser/Dockerfile with the runner's Docker, pushes it to
       # Cloudflare's registry and rolls the container out with the Worker.
+      # PARSER_BUILD hashes the git trees of the parser's code, so only a change
+      # there makes the reparse cron parse every match again.
       - name: Deploy the Worker, viewer and parser container
         working-directory: worker
-        run: npm run "deploy:${ENV_NAME}"
+        run: |
+          build="$(git rev-parse HEAD:parser HEAD:tools/oracle | sha256sum | cut -c1-12)"
+          echo "PARSER_BUILD=${build}"
+          npm run "deploy:${ENV_NAME}" -- --var "PARSER_BUILD:${build}"
