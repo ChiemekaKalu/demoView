@@ -21,7 +21,7 @@ const OUT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SEED = 20261002;
 
 const TICK_RATE = 64;
-const HZ = 32;
+const HZ = 64;
 const TICKS_PER_FRAME = TICK_RATE / HZ;
 const FREEZE_S = 15;
 const POST_ROUND_S = 7;
