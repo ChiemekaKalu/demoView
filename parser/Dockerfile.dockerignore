@@ -1,7 +1,8 @@
-# The build context is the repo root. Send only the parser module and the
-# stub fixtures, and never demos.
+# The build context is the repo root. Send only the parser and oracle
+# modules and the stub fixtures, and never demos.
 *
 !parser
+!tools/oracle
 !schema/samples
 parser/testdata
 parser/bin
