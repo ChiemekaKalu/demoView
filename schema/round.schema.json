@@ -12,7 +12,7 @@
       "const": 1
     },
     "round": { "description": "The n of this round in match.json rounds.", "type": "integer", "minimum": 1 },
-    "hz": { "description": "Frames per second (16 in v1).", "type": "integer", "minimum": 1 },
+    "hz": { "description": "Frames per second. v1 writes 32.", "type": "integer", "minimum": 1 },
     "start_tick": { "description": "Demo tick of frame 0.", "type": "integer", "minimum": 0 },
     "frames": { "description": "Number of frames; the length of every per-player column.", "type": "integer", "minimum": 1 },
     "players": {

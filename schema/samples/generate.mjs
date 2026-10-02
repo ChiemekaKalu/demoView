@@ -21,14 +21,15 @@ const OUT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SEED = 20261002;
 
 const TICK_RATE = 64;
-const HZ = 16;
+const HZ = 32;
 const TICKS_PER_FRAME = TICK_RATE / HZ;
 const FREEZE_S = 15;
 const POST_ROUND_S = 7;
 const HALFTIME_S = 15;
 const ROUND_TIME_S = 115;
 const BOMB_TIMER_S = 40;
-const SIM_FRAMES = 2100; // longer than any round
+const DUELS_PER_S = 0.72; // chance per second that players in range start a duel
+const SIM_FRAMES = 132 * HZ; // longer than any round
 const FIRST_ROUND_START_TICK = 11563; // after warmup
 const ROUND_FILES = [1, 2, 16, 21];
 
@@ -299,11 +300,11 @@ const CT_NADES = {
     { role: "rotator2", type: "smoke", at: 16, to: [-1720, 560], tiers: ["smg", "rifle"] },
   ],
 };
-// Frames from throw to detonation, and from detonation to the end of the effect.
-const FUSE_FRAMES = { flash: 26, he: 26 };
+// Seconds from throw to detonation, and from detonation to the end of the effect.
+const FUSE_S = { flash: 1.625, he: 1.625 };
 const FLIGHT_SPEED = { smoke: 650, molotov: 700, incendiary: 700, decoy: 650 };
-const SETTLE_FRAMES = { smoke: 10, molotov: 2, incendiary: 2, decoy: 8 };
-const EFFECT_FRAMES = { smoke: 290, molotov: 112, incendiary: 112, decoy: 240, flash: 0, he: 0 };
+const SETTLE_S = { smoke: 0.625, molotov: 0.125, incendiary: 0.125, decoy: 0.5 };
+const EFFECT_S = { smoke: 18.125, molotov: 7, incendiary: 7, decoy: 15, flash: 0, he: 0 };
 
 // ------------------------------------------------------------------ helpers
 
@@ -468,7 +469,7 @@ function simulateRound(n, winner, reason, history, startTick) {
     const t = tracks.get(thrower);
     const from = [t.x[throwFrame], t.y[throwFrame]];
     const to = [g.to[0] + rng.float(-25, 25), g.to[1] + rng.float(-25, 25)];
-    const flight = FUSE_FRAMES[g.type] ?? Math.max(8, Math.ceil((dist(from, to) / FLIGHT_SPEED[g.type]) * HZ) + SETTLE_FRAMES[g.type]);
+    const flight = g.type in FUSE_S ? Math.round(FUSE_S[g.type] * HZ) : Math.max(HZ / 2, Math.ceil((dist(from, to) / FLIGHT_SPEED[g.type]) * HZ) + Math.round(SETTLE_S[g.type] * HZ));
     const detonateFrame = throwFrame + flight;
     if (detonateFrame >= frames) continue;
     const pathPts = [];
@@ -481,7 +482,7 @@ function simulateRound(n, winner, reason, history, startTick) {
       thrower,
       throw_frame: throwFrame,
       detonate_frame: detonateFrame,
-      end_frame: Math.min(detonateFrame + EFFECT_FRAMES[g.type], frames - 1),
+      end_frame: Math.min(detonateFrame + Math.round(EFFECT_S[g.type] * HZ), frames - 1),
       path: pathPts,
       _yawTarget: to,
     });
@@ -516,7 +517,7 @@ function simulateRound(n, winner, reason, history, startTick) {
   for (const p of PLAYERS) {
     if (deathFrame.get(p.idx) !== Infinity || !rng.chance(0.35)) continue;
     const mySide = tracks.get(p.idx).side;
-    for (let f = rng.int(160, 400); f < frames - POST_ROUND_S * HZ; f += 8) {
+    for (let f = rng.int(10 * HZ, 25 * HZ); f < frames - POST_ROUND_S * HZ; f += HZ / 2) {
       const enemy = PLAYERS.find((e) => tracks.get(e.idx).side !== mySide && aliveAt(e.idx, f) && dist(at(e.idx, f), at(p.idx, f)) < 1200);
       if (enemy) {
         hits.push({ tick: freezeEndTick + f * TICKS_PER_FRAME - rng.int(0, 3), attacker: enemy.idx, victim: p.idx, amount: rng.int(8, 70) });
@@ -628,7 +629,7 @@ function scheduleKills(rng, tracks, budget, { planter, plantFrame, deadlineFrame
   for (let guard = 0; guard < 200 && (left.T > 0 || left.CT > 0); guard++) {
     let found = null;
     for (let f = cursor; f <= deadlineFrame && !found; f++) {
-      if (range < 5000 && !rng.chance(0.045)) continue;
+      if (range < 5000 && !rng.chance(DUELS_PER_S / HZ)) continue;
       const pairs = [];
       for (const t of ts) {
         if (!alive.get(t.idx)) continue;
@@ -649,7 +650,7 @@ function scheduleKills(rng, tracks, budget, { planter, plantFrame, deadlineFrame
     }
     if (!found) {
       range *= 1.6;
-      cursor = kills.length ? Math.min(kills[kills.length - 1].frame + 8, deadlineFrame) : cursor;
+      cursor = kills.length ? Math.min(kills[kills.length - 1].frame + HZ / 2, deadlineFrame) : cursor;
       continue;
     }
     const { f, t, ct, tCanWin, ctCanWin } = found;
