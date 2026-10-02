@@ -2,6 +2,7 @@
 // caller sets the canvas backing store to CSS size x device pixel ratio.
 
 import { clamp, playerAt, yawToCanvas, type PlayerState } from '../lib/interp'
+import { placeLabels, type LabelSpot } from '../lib/labels'
 import { radarToWorld, worldToRadar, type MapInfo } from '../lib/maps'
 import type { FeedKill } from '../lib/timeline'
 import type { Grenade, RoundFile, Side } from '../lib/types'
@@ -74,10 +75,21 @@ export class Renderer {
     for (const s of states) if (!s.alive) this.drawDead(ctx, s, pt, r)
     for (const s of states) if (s.alive) this.drawWedge(ctx, s, pt, r)
     for (const s of states) if (s.alive) this.drawDot(ctx, s, pt, r)
-    ctx.font = `600 ${Math.round(clamp(size / 62, 10, 13))}px system-ui, sans-serif`
+    const fontPx = Math.round(clamp(size / 62, 10, 13))
+    ctx.font = `600 ${fontPx}px system-ui, sans-serif`
     ctx.textBaseline = 'middle'
     ctx.lineJoin = 'round'
-    for (const s of states) if (s.alive) this.drawLabel(ctx, s, pt, r)
+    const living = states.filter((s) => s.alive)
+    const names = living.map((s) => shorten(this.scene.names.get(s.idx) ?? `#${s.idx}`))
+    const spots = placeLabels(
+      living.map((s, i) => {
+        const [x, y] = pt(s.x, s.y)
+        return { x, y, width: ctx.measureText(names[i]).width }
+      }),
+      r,
+      fontPx,
+    )
+    spots.forEach((spot, i) => drawLabel(ctx, names[i], spot))
 
     // A ring where someone just died.
     for (const kill of kills) {
@@ -150,16 +162,6 @@ export class Renderer {
       ctx.closePath()
       ctx.fill()
     }
-  }
-
-  private drawLabel(ctx: CanvasRenderingContext2D, s: PlayerState, pt: Pt, r: number) {
-    const [x, y] = pt(s.x, s.y)
-    const name = shorten(this.scene.names.get(s.idx) ?? `#${s.idx}`)
-    ctx.lineWidth = 3
-    ctx.strokeStyle = 'rgba(0,0,0,0.8)'
-    ctx.strokeText(name, x + r + 3, y)
-    ctx.fillStyle = '#eef1f5'
-    ctx.fillText(name, x + r + 3, y)
   }
 
   // The radar image, or the placeholder, drawn once per size.
@@ -248,6 +250,15 @@ function line(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y
   g.moveTo(x0 === x1 ? snap(x0) : x0, y0 === y1 ? snap(y0) : y0)
   g.lineTo(x0 === x1 ? snap(x1) : x1, y0 === y1 ? snap(y1) : y1)
   g.stroke()
+}
+
+function drawLabel(ctx: CanvasRenderingContext2D, name: string, { x, y, align }: LabelSpot) {
+  ctx.textAlign = align
+  ctx.lineWidth = 3
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)'
+  ctx.strokeText(name, x, y)
+  ctx.fillStyle = '#eef1f5'
+  ctx.fillText(name, x, y)
 }
 
 function shorten(name: string): string {
