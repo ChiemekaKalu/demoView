@@ -61,7 +61,8 @@ const (
 )
 
 // MatchFrames returns the frames of a one-round 1v1 with no FileHeader or
-// ServerInfo: the CT player kills the T player at tick 300.
+// ServerInfo: the CT player kills the T player at tick 300. The last frame
+// is Stop, at tick 400.
 func MatchFrames() []Frame {
 	cvars := Msg{Type: uint32(pb.NET_Messages_net_SetConVar), Body: Marshal(&pb.CNETMsg_SetConVar{
 		Convars: &pb.CMsg_CVars{Cvars: []*pb.CMsg_CVars_CVar{{Name: proto.String("mp_roundtime_defuse"), Value: proto.String("1.92")}}},
@@ -84,6 +85,7 @@ func MatchFrames() []Frame {
 		{Cmd: demo.CmdPacket, Tick: 200, Payload: Packet(GameEvent("round_freeze_end"))},
 		{Cmd: demo.CmdPacket, Tick: 300, Payload: Packet(GameEvent("player_death", 0x101, 0x100), endOfMatch)},
 		{Cmd: demo.CmdPacket, Tick: 400, Payload: Packet(GameEvent("cs_win_panel_match"))},
+		{Cmd: demo.CmdStop, Tick: 400},
 	}
 }
 

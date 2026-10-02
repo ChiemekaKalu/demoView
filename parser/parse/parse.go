@@ -26,6 +26,11 @@ const Version = "0.1.0"
 // checkEvery is how many frames pass between checks for cancellation.
 const checkEvery = 4096
 
+// ErrNoStop means the demo ended cleanly between frames, but before its Stop
+// frame: an upload or recording that was cut short. It wraps
+// demo.ErrBadDemo.
+var ErrNoStop = fmt.Errorf("%w: truncated: no Stop frame", demo.ErrBadDemo)
+
 // Stats says how far a parse got and where its time went.
 type Stats struct {
 	BytesRead int64         // demo bytes read from the input
@@ -38,8 +43,9 @@ type Stats struct {
 
 // Run reads the demo from r to the end and returns its match.json. It
 // decodes every frame and every packet message, so a malformed demo fails
-// with an error wrapping demo.ErrBadDemo. Errors from r are returned as they
-// are, and so is ctx's error if it is cancelled.
+// with an error wrapping demo.ErrBadDemo, and so does one without a Stop
+// frame (ErrNoStop). Errors from r are returned as they are, and so is ctx's
+// error if it is cancelled.
 func Run(ctx context.Context, r io.Reader) (match.File, error) {
 	f, _, err := RunStats(ctx, r)
 	return f, err
@@ -97,7 +103,8 @@ type parser struct {
 }
 
 // walk feeds every frame of the demo in r, and every message in its
-// packets, to the stages, counting frames and ticks in st.
+// packets, to the stages, counting frames and ticks in st. It reads past
+// Stop to the end of the input, but the input must hold a Stop.
 func (p *parser) walk(ctx context.Context, r io.Reader, st *Stats) error {
 	dr, err := demo.NewReader(r)
 	if err != nil {
@@ -105,6 +112,7 @@ func (p *parser) walk(ctx context.Context, r io.Reader, st *Stats) error {
 	}
 	d := demo.NewDecoder(dr)
 	var mr demo.MessageReader
+	stopped := false
 	for n := 0; ; n++ {
 		if n%checkEvery == 0 {
 			if err := ctx.Err(); err != nil {
@@ -113,6 +121,9 @@ func (p *parser) walk(ctx context.Context, r io.Reader, st *Stats) error {
 		}
 		f, err := d.Next()
 		if err == io.EOF {
+			if !stopped {
+				return ErrNoStop
+			}
 			return nil
 		}
 		if err != nil {
@@ -121,6 +132,8 @@ func (p *parser) walk(ctx context.Context, r io.Reader, st *Stats) error {
 		st.Frames++
 		st.LastTick = max(st.LastTick, f.Tick)
 		switch f.Cmd {
+		case demo.CmdStop:
+			stopped = true
 		case demo.CmdFileHeader:
 			err = p.fileHeader(f)
 		case demo.CmdFileInfo:

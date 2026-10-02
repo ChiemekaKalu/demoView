@@ -141,6 +141,8 @@ func TestRunErrors(t *testing.T) {
 	good := writeTemp(t, "good.dem", testDemo)
 	badMagic := writeTemp(t, "magic.dem", []byte("HL2DEMO\x00 not a cs2 demo"))
 	truncated := writeTemp(t, "trunc.dem", testDemo[:len(testDemo)-5])
+	frames := parsetest.MatchFrames()
+	noStop := writeTemp(t, "nostop.dem", parsetest.Build(frames[:len(frames)-1]...))
 	missing := filepath.Join(t.TempDir(), "missing.dem")
 	out := filepath.Join(t.TempDir(), "out")
 
@@ -159,6 +161,7 @@ func TestRunErrors(t *testing.T) {
 		{[]string{"inspect"}, 2, "usage"},
 		{[]string{"parse", badMagic, "--out", out}, 1, "bad_demo"},
 		{[]string{"parse", truncated, "--out", out}, 1, "bad_demo"},
+		{[]string{"parse", noStop, "--out", out}, 1, "bad_demo"},
 		{[]string{"inspect", truncated}, 1, "bad_demo"},
 		{[]string{"parse", missing, "--out", out}, 3, "internal"},
 	}

@@ -129,19 +129,37 @@ func TestRunStats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.BytesRead != int64(len(data)) || st.Frames != 8 || st.LastTick != 400 {
-		t.Errorf("stats = %+v, want all %d bytes, 8 frames, last tick 400", st, len(data))
+	if st.BytesRead != int64(len(data)) || st.Frames != 9 || st.LastTick != 400 {
+		t.Errorf("stats = %+v, want all %d bytes, 9 frames, last tick 400", st, len(data))
 	}
 
-	// A failed parse reports how far it got.
+	// A failed parse reports how far it got: here, into the Stop frame.
 	cut := data[:len(data)-3]
 	_, st, err = RunStats(context.Background(), bytes.NewReader(cut))
-	if !errors.Is(err, demo.ErrBadDemo) || st.BytesRead != int64(len(cut)) || st.Frames != 7 || st.LastTick != 300 {
-		t.Errorf("truncated: error %v, stats %+v; want 7 frames to tick 300", err, st)
+	if !errors.Is(err, demo.ErrBadDemo) || st.BytesRead != int64(len(cut)) || st.Frames != 8 || st.LastTick != 400 {
+		t.Errorf("truncated: error %v, stats %+v; want 8 frames to tick 400", err, st)
 	}
-	noRounds := parsetest.Build(parsetest.Frame{Cmd: demo.CmdSignonPacket, Tick: -1, Payload: parsetest.Packet(parsetest.EventList())})
-	if _, st, err = RunStats(context.Background(), bytes.NewReader(noRounds)); err == nil || len(st.Notes) == 0 {
+	if _, st, err = RunStats(context.Background(), bytes.NewReader(noRoundsDemo)); err == nil || len(st.Notes) == 0 {
 		t.Errorf("no live rounds: error %v, notes %q; want match logic's notes", err, st.Notes)
+	}
+}
+
+// A demo that ends cleanly between frames, but before Stop, was cut short.
+// Frames after Stop, such as the FileInfo real demos end with, are fine.
+func TestRunNoStop(t *testing.T) {
+	frames := parsetest.MatchFrames()
+	cut := parsetest.Build(frames[:len(frames)-1]...)
+	_, st, err := RunStats(context.Background(), bytes.NewReader(cut))
+	if !errors.Is(err, ErrNoStop) || !errors.Is(err, demo.ErrBadDemo) || !strings.HasSuffix(err.Error(), "truncated: no Stop frame") {
+		t.Errorf("error = %v, want ErrNoStop", err)
+	}
+	if st.Frames != len(frames)-1 || st.LastTick != 400 {
+		t.Errorf("stats = %+v, want %d frames to tick 400", st, len(frames)-1)
+	}
+
+	info := parsetest.Frame{Cmd: demo.CmdFileInfo, Tick: 400, Payload: parsetest.Marshal(&pb.CDemoFileInfo{PlaybackTicks: proto.Int32(400)})}
+	if _, err := Run(context.Background(), bytes.NewReader(parsetest.Build(append(frames, info)...))); err != nil {
+		t.Errorf("FileInfo after Stop: %v", err)
 	}
 }
 

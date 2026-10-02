@@ -57,10 +57,16 @@ func TestRunBadEventNamesFrame(t *testing.T) {
 	}
 }
 
+// noRoundsDemo is a complete demo with no live round in it.
+var noRoundsDemo = parsetest.Build(
+	parsetest.Frame{Cmd: demo.CmdSignonPacket, Tick: -1, Payload: parsetest.Packet(parsetest.EventList())},
+	parsetest.Frame{Cmd: demo.CmdStop},
+)
+
 // A demo with no live round has nothing to show, so it is a bad demo.
 func TestRunNoLiveRounds(t *testing.T) {
-	data := parsetest.Build(parsetest.Frame{Cmd: demo.CmdSignonPacket, Tick: -1, Payload: parsetest.Packet(parsetest.EventList())})
-	if _, err := Run(context.Background(), bytes.NewReader(data)); !errors.Is(err, demo.ErrBadDemo) {
-		t.Errorf("error = %v, want ErrBadDemo", err)
+	_, err := Run(context.Background(), bytes.NewReader(noRoundsDemo))
+	if !errors.Is(err, demo.ErrBadDemo) || !strings.Contains(err.Error(), "no live rounds") {
+		t.Errorf("error = %v, want ErrBadDemo for no live rounds", err)
 	}
 }
