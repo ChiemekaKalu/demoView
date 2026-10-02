@@ -18,7 +18,7 @@ import (
 // rule).
 type oracle struct {
 	argv []string // the command and any leading arguments
-	env  []string // added to the inherited environment
+	env  []string // added to the minimal environment the oracle gets
 }
 
 // oracleOutput is one oracle export: its match.json and round files.
@@ -26,6 +26,7 @@ type oracleOutput struct {
 	matchJSON []byte
 	rounds    []outFile // rounds/NN.json, in name order
 	peakMem   int64     // the subprocess's peak RSS, or 0 where unknown
+	stderr    string    // the tail of its stderr
 }
 
 type outFile struct {
@@ -34,44 +35,58 @@ type outFile struct {
 }
 
 // export streams demo into `oracle export - --out <tmp>` and reads back what
-// it wrote. The demo is never written to disk; the output is a few MB.
-func (o *oracle) export(ctx context.Context, demo io.Reader) (*oracleOutput, error) {
+// it wrote. The demo is never written to disk; the output is a few MB. The
+// output's peakMem and stderr are set even when it fails.
+func (o *oracle) export(ctx context.Context, demo io.Reader) (oracleOutput, error) {
+	var out oracleOutput
 	dir, err := os.MkdirTemp("", "oracle-")
 	if err != nil {
-		return nil, err
+		return out, err
 	}
 	defer os.RemoveAll(dir)
 
 	args := append(append([]string{}, o.argv[1:]...), "export", "-", "--out", dir)
 	cmd := exec.CommandContext(ctx, o.argv[0], args...)
-	cmd.Env = append(os.Environ(), o.env...)
+	cmd.Env = o.environ()
 	cmd.Stdin = demo
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
+	err = cmd.Run()
+	out.peakMem = childPeakMemory(cmd.ProcessState)
+	out.stderr = tail(strings.TrimSpace(stderr.String()), 500)
+	if err != nil {
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return out, ctx.Err()
 		}
-		return nil, fmt.Errorf("oracle: %v: %s", err, oracleError(stderr.Bytes()))
+		return out, fmt.Errorf("oracle: %v: %s", err, oracleError(stderr.Bytes()))
 	}
 
-	out := &oracleOutput{peakMem: childPeakMemory(cmd.ProcessState)}
 	if out.matchJSON, err = os.ReadFile(filepath.Join(dir, "match.json")); err != nil {
-		return nil, fmt.Errorf("oracle: %w", err)
+		return out, fmt.Errorf("oracle: %w", err)
 	}
 	names, err := filepath.Glob(filepath.Join(dir, "rounds", "*.json"))
 	if err != nil {
-		return nil, err
+		return out, err
 	}
 	sort.Strings(names)
 	for _, p := range names {
 		data, err := os.ReadFile(p)
 		if err != nil {
-			return nil, fmt.Errorf("oracle: %w", err)
+			return out, fmt.Errorf("oracle: %w", err)
 		}
 		out.rounds = append(out.rounds, outFile{name: filepath.Base(p), data: data})
 	}
 	return out, nil
+}
+
+// environ is all of the environment the oracle sees: enough to run, and
+// none of the server's secrets.
+func (o *oracle) environ() []string {
+	return append([]string{
+		"PATH=" + os.Getenv("PATH"),
+		"TMPDIR=" + os.TempDir(),
+		"HOME=" + os.TempDir(),
+	}, o.env...)
 }
 
 // oracleError is the message from the oracle's JSON error line on stderr,
@@ -83,10 +98,12 @@ func oracleError(stderr []byte) string {
 	if json.Unmarshal([]byte(last), &e) == nil && e.Error != "" {
 		return e.Error
 	}
-	if len(last) > 500 {
-		last = last[len(last)-500:]
-	}
-	return last
+	return tail(last, 500)
+}
+
+// tail is the last n bytes of s.
+func tail(s string, n int) string {
+	return s[max(len(s)-n, 0):]
 }
 
 // guardView is the part of match.json that round files depend on: they
@@ -163,13 +180,4 @@ func firstMismatch(ours, theirs []byte) string {
 		}
 	}
 	return ""
-}
-
-// parserVersionOf reads parser_version from a match.json.
-func parserVersionOf(matchJSON []byte) string {
-	var v struct {
-		ParserVersion string `json:"parser_version"`
-	}
-	json.Unmarshal(matchJSON, &v)
-	return v.ParserVersion
 }

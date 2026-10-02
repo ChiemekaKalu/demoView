@@ -8,11 +8,11 @@ import (
 )
 
 // resetPeakMemory restarts the VmHWM high-water mark, so the next
-// peakMemory covers one parse rather than the life of the instance. It is
-// best effort: where /proc/self/clear_refs is missing or read-only, VmHWM
-// keeps counting from process start.
-func resetPeakMemory() {
-	_ = os.WriteFile("/proc/self/clear_refs", []byte("5"), 0)
+// peakMemory covers one parse rather than the life of the process. It
+// reports whether that worked: where /proc/self/clear_refs is missing or
+// read-only, VmHWM keeps counting from process start.
+func resetPeakMemory() bool {
+	return os.WriteFile("/proc/self/clear_refs", []byte("5"), 0) == nil
 }
 
 // peakMemory reports the process's peak resident set size in bytes. On Linux

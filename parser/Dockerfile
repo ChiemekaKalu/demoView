@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 
-# The parser's Cloud Run image: cmd/server on distroless, with tools/oracle
-# beside it to write the v1 round files (the spec's fallback rule).
+# The parser's container image, for Cloudflare Containers or Cloud Run:
+# cmd/server on distroless, with tools/oracle beside it to write the v1 round
+# files (the spec's fallback rule).
 #
 # Build from the repo root, so tools/oracle and the stub fixtures in
 # schema/samples are in the build context:

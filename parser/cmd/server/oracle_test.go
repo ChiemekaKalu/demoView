@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -59,11 +60,20 @@ func TestHelperOracle(t *testing.T) {
 	var match bytes.Buffer
 	json.NewEncoder(&match).Encode(file)
 	os.WriteFile(filepath.Join(out, "match.json"), match.Bytes(), 0o644)
-	// Round files record how much of the demo arrived on stdin.
+	// Round files record how much of the demo arrived on stdin, and the
+	// environment the oracle got.
 	for _, name := range []string{"01.json", "02.json"} {
-		os.WriteFile(filepath.Join(out, "rounds", name), []byte(fmt.Sprintf(`{"round":%q,"stdin_bytes":%d}`, name, len(stdin))), 0o644)
+		rf, _ := json.Marshal(helperRound{Round: name, StdinBytes: len(stdin), Env: os.Environ()})
+		os.WriteFile(filepath.Join(out, "rounds", name), rf, 0o644)
 	}
 	os.Exit(0)
+}
+
+// helperRound is a round file from the fake oracle.
+type helperRound struct {
+	Round      string   `json:"round"`
+	StdinBytes int      `json:"stdin_bytes"`
+	Env        []string `json:"env"`
 }
 
 // fakeOracle runs TestHelperOracle in the given mode.
@@ -75,23 +85,9 @@ func fakeOracle(mode string) *oracle {
 }
 
 func newOracleHarness(t *testing.T, mode string) *harness {
-	h := newHarness(t, parse.Run, "")
+	h := newHarness(t, parse.RunStats, "")
 	h.srv.oracle = fakeOracle(mode)
 	return h
-}
-
-// logs returns every log line decoded.
-func (h *harness) logLines() []map[string]any {
-	h.t.Helper()
-	var out []map[string]any
-	for _, line := range strings.Split(strings.TrimSpace(h.logs.String()), "\n") {
-		var m map[string]any
-		if err := json.Unmarshal([]byte(line), &m); err != nil {
-			h.t.Fatalf("log line %q: %v", line, err)
-		}
-		out = append(out, m)
-	}
-	return out
 }
 
 func TestOracleAgreeShipsOurMatchJSON(t *testing.T) {
@@ -102,7 +98,7 @@ func TestOracleAgreeShipsOurMatchJSON(t *testing.T) {
 	if status != http.StatusOK {
 		t.Fatalf("status %d, body %s", status, body)
 	}
-	if v := parserVersionOf(body); v != parse.Version {
+	if v := factsOf(body).ParserVersion; v != parse.Version {
 		t.Errorf("shipped parser_version %q, want ours (%s)", v, parse.Version)
 	}
 	if stored := h.stored("parsed/" + matchID + "/match.json"); !bytes.Equal(stored, body) {
@@ -110,20 +106,46 @@ func TestOracleAgreeShipsOurMatchJSON(t *testing.T) {
 	}
 	// The demo was streamed to the oracle in full, and its round files shipped.
 	for _, name := range []string{"01.json", "02.json"} {
-		var rf struct {
-			StdinBytes int `json:"stdin_bytes"`
-		}
+		var rf helperRound
 		json.Unmarshal(h.stored("parsed/"+matchID+"/rounds/"+name), &rf)
 		if rf.StdinBytes != len(testDemo) {
 			t.Errorf("%s: oracle read %d bytes of stdin, want %d", name, rf.StdinBytes, len(testDemo))
 		}
 	}
 	entry := h.lastLog()
-	if entry["match_source"] != "parser" || entry["parser_version"] != parse.Version {
-		t.Errorf("log = %v", entry)
+	checkLog(t, entry, map[string]any{
+		"match_source":         "parser",
+		"parser_version":       parse.Version,
+		"match_parser_version": nil,
+		"put_objects":          float64(3),
+		"oracle_stderr":        nil,
+	})
+	if _, ok := entry["oracle_ms"].(float64); !ok {
+		t.Errorf("log oracle_ms = %v, want a number", entry["oracle_ms"])
 	}
-	if len(h.logLines()) != 1 {
-		t.Errorf("want only the parse line, got:\n%s", h.logs)
+	if slices.ContainsFunc(h.messages(), func(m string) bool { return strings.Contains(m, "disagrees") }) {
+		t.Errorf("logged a disagreement:\n%s", h.logs)
+	}
+}
+
+// The oracle sees none of the server's secrets.
+func TestOracleEnvironment(t *testing.T) {
+	t.Setenv("PARSE_SECRET", "sentinel-parse-secret")
+	t.Setenv("R2_SECRET_ACCESS_KEY", "sentinel-r2-secret")
+	h := newOracleHarness(t, "agree")
+	h.putDemo(testDemo)
+	if status, body := h.parse(); status != http.StatusOK {
+		t.Fatalf("status %d, body %s", status, body)
+	}
+	var rf helperRound
+	json.Unmarshal(h.stored("parsed/"+matchID+"/rounds/01.json"), &rf)
+	if !slices.Contains(rf.Env, "ORACLE_HELPER=agree") || !slices.ContainsFunc(rf.Env, func(v string) bool { return strings.HasPrefix(v, "PATH=") }) {
+		t.Errorf("oracle environment %q lacks PATH or its own variable", rf.Env)
+	}
+	for _, v := range rf.Env {
+		if strings.Contains(v, "sentinel") {
+			t.Errorf("oracle environment has %s", v)
+		}
 	}
 }
 
@@ -135,7 +157,7 @@ func TestOracleDisagreeShipsTheOracles(t *testing.T) {
 	if status != http.StatusOK {
 		t.Fatalf("status %d, body %s", status, body)
 	}
-	if v := parserVersionOf(body); v != "9.9.9-oracle" {
+	if v := factsOf(body).ParserVersion; v != "9.9.9-oracle" {
 		t.Errorf("shipped parser_version %q, want the oracle's", v)
 	}
 	if stored := h.stored("parsed/" + matchID + "/match.json"); !bytes.Equal(stored, body) {
@@ -144,15 +166,19 @@ func TestOracleDisagreeShipsTheOracles(t *testing.T) {
 	h.stored("parsed/" + matchID + "/rounds/01.json")
 
 	lines := h.logLines()
-	if len(lines) != 2 {
-		t.Fatalf("want a warning and the parse line, got:\n%s", h.logs)
+	i := slices.IndexFunc(lines, func(l map[string]any) bool { return l["mismatch"] != nil })
+	if i < 0 {
+		t.Fatalf("no mismatch warning in:\n%s", h.logs)
 	}
-	if w := lines[0]; w["severity"] != "WARNING" || !strings.HasPrefix(fmt.Sprint(w["mismatch"]), "players[0]: ") || w["match_id"] != matchID {
+	if w := lines[i]; w["severity"] != "WARNING" || !strings.HasPrefix(fmt.Sprint(w["mismatch"]), "players[0]: ") || w["match_id"] != matchID {
 		t.Errorf("warning = %v", w)
 	}
-	if p := lines[1]; p["match_source"] != "oracle" || p["parser_version"] != "9.9.9-oracle" || p["result"] != "ok" {
-		t.Errorf("parse log = %v", p)
-	}
+	checkLog(t, h.lastLog(), map[string]any{
+		"result":               "ok",
+		"match_source":         "oracle",
+		"parser_version":       parse.Version,
+		"match_parser_version": "9.9.9-oracle",
+	})
 }
 
 func TestOracleCrashIs500(t *testing.T) {
@@ -163,16 +189,18 @@ func TestOracleCrashIs500(t *testing.T) {
 	if status != http.StatusInternalServerError {
 		t.Fatalf("status %d, want 500", status)
 	}
-	if msg := errorBody(t, body); !strings.Contains(msg, "demoinfocs: boom") {
-		t.Errorf("error = %q, want the oracle's message", msg)
+	if msg := errorBody(t, body); strings.Contains(msg, "boom") {
+		t.Errorf("body error = %q, want the oracle's message in the log only", msg)
 	}
 	for _, key := range []string{"match.json", "rounds/01.json"} {
 		if _, _, err := h.store.Open(context.Background(), "parsed/"+matchID+"/"+key); !errors.Is(err, store.ErrNotFound) {
 			t.Errorf("%s was written after the oracle failed", key)
 		}
 	}
-	if entry := h.lastLog(); entry["result"] != "error" || entry["match_source"] != nil {
-		t.Errorf("log = %v", entry)
+	entry := h.lastLog()
+	checkLog(t, entry, map[string]any{"result": "error", "match_source": nil, "oracle_stderr": `{"error":"demoinfocs: boom"}`})
+	if msg := fmt.Sprint(entry["error"]); !strings.Contains(msg, "demoinfocs: boom") {
+		t.Errorf("log error = %q, want the oracle's message", msg)
 	}
 }
 
@@ -300,7 +328,7 @@ func TestRealDemosWithOracle(t *testing.T) {
 
 	for _, p := range demos {
 		t.Run(filepath.Base(p), func(t *testing.T) {
-			h := newHarness(t, parse.Run, "")
+			h := newHarness(t, parse.RunStats, "")
 			h.store = demoStore{Store: h.store, key: demoKey, path: p}
 			h.srv.store = h.store
 			h.srv.oracle = &oracle{argv: []string{bin}}
@@ -319,7 +347,7 @@ func TestRealDemosWithOracle(t *testing.T) {
 				h.stored(fmt.Sprintf("parsed/%s/rounds/%02d.json", matchID, r.N))
 			}
 			entry := h.lastLog()
-			t.Logf("source=%v duration_ms=%v oracle_ms=%v rounds=%d", entry["match_source"], entry["duration_ms"], entry["oracle_ms"], len(shipped.Rounds))
+			t.Logf("source=%v duration_ms=%v walk_ms=%v oracle_ms=%v rounds=%v", entry["match_source"], entry["duration_ms"], entry["walk_ms"], entry["oracle_ms"], entry["rounds"])
 		})
 	}
 }

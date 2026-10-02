@@ -1,11 +1,14 @@
-// Command server is the parser's Cloud Run service. The Worker's queue
-// consumer calls POST /parse with {match_id, demo_key}; the server streams
-// the demo from R2, parses it, writes parsed/{match_id}/... back to R2 and
-// returns match.json. 422 means the demo is bad; 5xx means retry.
+// Command server is the parser's HTTP service, run as a container on
+// Cloudflare Containers or Cloud Run. The Worker's queue consumer calls POST
+// /parse with {match_id, demo_key}; the server streams the demo from R2,
+// parses it, writes parsed/{match_id}/... back to R2 and returns match.json.
+// 422 means the demo is bad; 5xx means retry.
+//
+// It logs JSON lines to stdout, with one summary line per parse.
 //
 // Environment:
 //
-//	PORT                  listen port (default 8080; Cloud Run sets it)
+//	PORT                  listen port (default 8080)
 //	PARSE_SECRET          required; callers send it as X-Parse-Secret
 //	R2_ACCOUNT_ID         R2 account; the endpoint is <id>.r2.cloudflarestorage.com
 //	R2_ACCESS_KEY_ID      R2 API token, S3 credentials
@@ -22,15 +25,17 @@
 package main
 
 import (
+	"cmp"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -38,19 +43,25 @@ import (
 	"github.com/ChiemekaKalu/demoview/parser/store"
 )
 
+// drainTimeout bounds the wait for in-flight parses at shutdown. Cloudflare
+// Containers sends SIGKILL 15 minutes after SIGTERM. Cloud Run kills sooner,
+// at its own grace period, which only cuts the drain short.
+const drainTimeout = 14 * time.Minute
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := run(ctx, os.Getenv, os.Stdout); err != nil {
-		line, _ := json.Marshal(map[string]string{"severity": "ERROR", "message": err.Error()})
-		fmt.Fprintln(os.Stderr, string(line))
+	context.AfterFunc(ctx, stop) // a second signal kills without waiting for the drain
+	logger := newLogger(os.Stdout)
+	if err := run(ctx, os.Getenv, logger); err != nil {
+		logger.Error("exiting", "error", err)
 		os.Exit(1)
 	}
 }
 
-// run serves until ctx is done, then shuts down gracefully. Cloud Run sends
-// SIGTERM and allows 10 seconds before killing the instance.
-func run(ctx context.Context, getenv func(string) string, log io.Writer) error {
+// run serves until ctx is done, then waits up to drainTimeout for in-flight
+// parses to finish.
+func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) error {
 	secret := getenv("PARSE_SECRET")
 	if secret == "" {
 		return errors.New("PARSE_SECRET is required")
@@ -59,40 +70,46 @@ func run(ctx context.Context, getenv func(string) string, log io.Writer) error {
 	if err != nil {
 		return err
 	}
-	port := getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	s := newServer(st, secret, parse.Run, getenv("PARSER_STUB_DIR"), log)
+	s := newServer(st, secret, parse.RunStats, getenv("PARSER_STUB_DIR"), logger)
 	if s.oracle, err = oracleFromEnv(getenv); err != nil {
 		return err
 	}
+	ln, err := net.Listen("tcp", ":"+cmp.Or(getenv("PORT"), "8080"))
+	if err != nil {
+		return err
+	}
 	srv := &http.Server{
-		Addr:              ":" + port,
 		Handler:           s.routes(),
+		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		ReadHeaderTimeout: 10 * time.Second,
-		// No write timeout: a parse can take minutes, and Cloud Run enforces
-		// the request timeout itself.
+		// No write timeout: a parse can take minutes, and the platform
+		// enforces its own request timeout.
 	}
 	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	s.writeLog(map[string]any{
-		"severity":       "INFO",
-		"message":        "listening",
-		"port":           port,
-		"parser_version": parse.Version,
-		"stub":           s.stubDir != "",
-	})
+	go func() { errc <- srv.Serve(ln) }()
+	logger.Info("listening",
+		"port", ln.Addr().(*net.TCPAddr).Port,
+		"parser_version", parse.Version,
+		"store", storeKind(st),
+		"rounds", cmp.Or(getenv("PARSER_ROUNDS"), "none"),
+		"stub", s.stubDir != "",
+		"gomaxprocs", runtime.GOMAXPROCS(0),
+		"peak_reset", s.resetPeak(),
+	)
 
 	select {
 	case err := <-errc:
 		return err
 	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
-		defer cancel()
-		return srv.Shutdown(shutdownCtx)
 	}
+	logger.Info("shutdown", "in_flight", s.inFlight.Load())
+	drainCtx, cancel := context.WithTimeout(context.Background(), drainTimeout)
+	defer cancel()
+	if err := srv.Shutdown(drainCtx); err != nil {
+		logger.Error("shutdown timed out, abandoning in-flight parses", "in_flight", s.inFlight.Load(), "error", err)
+	}
+	logger.Info("stopped")
+	return nil
 }
 
 // storeFromEnv uses PARSER_STORE_DIR when set and R2 otherwise.
@@ -105,6 +122,15 @@ func storeFromEnv(getenv func(string) string) (store.Store, error) {
 		return nil, fmt.Errorf("%w (or set PARSER_STORE_DIR for a local directory)", err)
 	}
 	return store.NewR2(cfg), nil
+}
+
+// storeKind names the store for the startup line, which never logs the
+// endpoint or credentials.
+func storeKind(st store.Store) string {
+	if _, ok := st.(*store.Dir); ok {
+		return "dir"
+	}
+	return "r2"
 }
 
 // oracleFromEnv returns the round file producer PARSER_ROUNDS asks for: nil
