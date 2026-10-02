@@ -62,7 +62,7 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 - [ ] The rest of M2. Remaining per `worker/README.md` and `.github/README.md`:
   - R2 buckets with CORS (PUT from the Worker origin)
   - queues
-  - Cloud Run and its `PARSER_URL`
+  - the parser runtime on Cloudflare Containers: a stub test of a multi-minute request first, then the Worker binding and the deploy.yml rework
   - 4 secrets per env
   - CI, which needs a GitHub remote; there isn't one yet
 
@@ -88,6 +88,12 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - **Exact values** come with entity decoding (game rules proxy, `m_iTeamNum`), which goes at the front of M4. The diff test flags mismatches until then.
 - **Public demos as interim fixtures (decided 2026-10-02):** yes, until the user's own demos arrive.
 - **Wrangler account and D1 ids in git (approved by the user 2026-10-02, in the `terminal` session):** committed in `worker/wrangler.jsonc`.
+- **Parser runtime: Cloudflare Containers, not Cloud Run (decided by the user 2026-10-02, in the `cloud` session).** $5/mo and simpler; Cloud Run only if the project grows. This deliberately departs from the spec, and the spec text changes after a stub test of a multi-minute request passes.
+  - GCP setup is on hold.
+  - Cloud Run pieces already built stay until the Containers design is confirmed: the deploy.yml steps and the `PARSER_URL` call.
+  - The image and server (`$PORT`, env config) carry over.
+- **Map data in R2 (decided by the user 2026-10-02):** only what the viewer needs: `maps/radars/*`, `maps/radar_info/*`, `maps/available.json` and `maps/manifest.json`, in both buckets, private. No thumbs or icons.
+- **Narrative logging:** the `cloud` session is running a separate design effort for structured, tick-stamped parser events. It will come as a proposal; don't build logging into the parser before then.
 
 ### Oracle conventions (built in `tools/oracle`; 1.7 matches them so the diff lines up)
 
