@@ -45,13 +45,20 @@ func TestHelperOracle(t *testing.T) {
 		fmt.Fprintln(os.Stderr, `{"error":"demoinfocs: boom"}`)
 		os.Exit(1)
 	}
-	players := `[]`
-	if mode == "disagree" {
-		players = `[{"idx":0,"steam_id":"76561198000000000","name":"x","team":"A"}]`
+	// The fake reads the demo as the parser does, so "agree" really agrees.
+	file, err := parse.Run(context.Background(), bytes.NewReader(stdin))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, `{"error":%q}`+"\n", err.Error())
+		os.Exit(1)
 	}
-	match := fmt.Sprintf(`{"schema_version":1,"parser_version":"9.9.9-oracle","match":{"map":"de_mirage","tick_rate":64,"demo_sha256":""},"players":%s,"rounds":[],"kills":[],"scoreboard":[]}`, players)
+	file.ParserVersion = "9.9.9-oracle"
+	if mode == "disagree" {
+		file.Players[0].SteamID = "76561198000000000"
+	}
 	os.MkdirAll(filepath.Join(out, "rounds"), 0o755)
-	os.WriteFile(filepath.Join(out, "match.json"), []byte(match), 0o644)
+	var match bytes.Buffer
+	json.NewEncoder(&match).Encode(file)
+	os.WriteFile(filepath.Join(out, "match.json"), match.Bytes(), 0o644)
 	// Round files record how much of the demo arrived on stdin.
 	for _, name := range []string{"01.json", "02.json"} {
 		os.WriteFile(filepath.Join(out, "rounds", name), []byte(fmt.Sprintf(`{"round":%q,"stdin_bytes":%d}`, name, len(stdin))), 0o644)
@@ -89,7 +96,7 @@ func (h *harness) logLines() []map[string]any {
 
 func TestOracleAgreeShipsOurMatchJSON(t *testing.T) {
 	h := newOracleHarness(t, "agree")
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 
 	status, body := h.parse()
 	if status != http.StatusOK {
@@ -107,8 +114,8 @@ func TestOracleAgreeShipsOurMatchJSON(t *testing.T) {
 			StdinBytes int `json:"stdin_bytes"`
 		}
 		json.Unmarshal(h.stored("parsed/"+matchID+"/rounds/"+name), &rf)
-		if rf.StdinBytes != len(emptyDemo) {
-			t.Errorf("%s: oracle read %d bytes of stdin, want %d", name, rf.StdinBytes, len(emptyDemo))
+		if rf.StdinBytes != len(testDemo) {
+			t.Errorf("%s: oracle read %d bytes of stdin, want %d", name, rf.StdinBytes, len(testDemo))
 		}
 	}
 	entry := h.lastLog()
@@ -122,7 +129,7 @@ func TestOracleAgreeShipsOurMatchJSON(t *testing.T) {
 
 func TestOracleDisagreeShipsTheOracles(t *testing.T) {
 	h := newOracleHarness(t, "disagree")
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 
 	status, body := h.parse()
 	if status != http.StatusOK {
@@ -140,7 +147,7 @@ func TestOracleDisagreeShipsTheOracles(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("want a warning and the parse line, got:\n%s", h.logs)
 	}
-	if w := lines[0]; w["severity"] != "WARNING" || w["mismatch"] != "players: 0 vs 1" || w["match_id"] != matchID {
+	if w := lines[0]; w["severity"] != "WARNING" || !strings.HasPrefix(fmt.Sprint(w["mismatch"]), "players[0]: ") || w["match_id"] != matchID {
 		t.Errorf("warning = %v", w)
 	}
 	if p := lines[1]; p["match_source"] != "oracle" || p["parser_version"] != "9.9.9-oracle" || p["result"] != "ok" {
@@ -150,7 +157,7 @@ func TestOracleDisagreeShipsTheOracles(t *testing.T) {
 
 func TestOracleCrashIs500(t *testing.T) {
 	h := newOracleHarness(t, "crash")
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 
 	status, body := h.parse()
 	if status != http.StatusInternalServerError {

@@ -19,6 +19,7 @@ import (
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/parse"
+	"github.com/ChiemekaKalu/demoview/parser/parse/parsetest"
 	"github.com/ChiemekaKalu/demoview/parser/store"
 )
 
@@ -28,8 +29,8 @@ const (
 	demoKey = "demos/0123456789abc.dem"
 )
 
-// emptyDemo is a valid demo with no frames: the preamble alone.
-var emptyDemo = append([]byte("PBDEMS2\x00"), make([]byte, 8)...)
+// testDemo is a valid one-round demo.
+var testDemo = parsetest.Match()
 
 type harness struct {
 	t     *testing.T
@@ -114,7 +115,7 @@ func neverParse(t *testing.T) ParseFunc {
 func TestAuth(t *testing.T) {
 	for _, header := range []string{"", "wrong", secret + "x"} {
 		h := newHarness(t, neverParse(t), "")
-		h.putDemo(emptyDemo)
+		h.putDemo(testDemo)
 		status, body := h.post(header, fmt.Sprintf(`{"match_id":%q,"demo_key":%q}`, matchID, demoKey))
 		if status != http.StatusUnauthorized {
 			t.Errorf("secret %q: status %d, want 401", header, status)
@@ -142,7 +143,7 @@ func TestBadRequest(t *testing.T) {
 
 func TestParseOK(t *testing.T) {
 	h := newHarness(t, parse.Run, "")
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 
 	status, body := h.parse()
 	if status != http.StatusOK {
@@ -152,7 +153,7 @@ func TestParseOK(t *testing.T) {
 	if err := json.Unmarshal(body, &file); err != nil {
 		t.Fatal(err)
 	}
-	sum := sha256.Sum256(emptyDemo)
+	sum := sha256.Sum256(testDemo)
 	if file.Match.DemoSHA256 != hex.EncodeToString(sum[:]) || file.SchemaVersion != 1 || file.ParserVersion != parse.Version {
 		t.Errorf("match.json = %+v", file)
 	}
@@ -168,7 +169,7 @@ func TestParseOK(t *testing.T) {
 
 func TestParseLogLine(t *testing.T) {
 	h := newHarness(t, parse.Run, "")
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 	h.parse()
 
 	entry := h.lastLog()
@@ -177,7 +178,7 @@ func TestParseLogLine(t *testing.T) {
 		"message":           "parse",
 		"match_id":          matchID,
 		"demo_key":          demoKey,
-		"demo_size":         float64(len(emptyDemo)),
+		"demo_size":         float64(len(testDemo)),
 		"peak_memory_bytes": float64(123 << 20),
 		"parser_version":    parse.Version,
 		"result":            "ok",
@@ -223,7 +224,7 @@ func TestParseBadDemo(t *testing.T) {
 func TestParseTruncatedDemo(t *testing.T) {
 	h := newHarness(t, parse.Run, "")
 	// A preamble, then a frame header that promises more bytes than follow.
-	h.putDemo(append(append([]byte{}, emptyDemo...), 0x01, 0x00, 0x7f, 'x'))
+	h.putDemo(append(append([]byte{}, testDemo...), 0x01, 0x00, 0x7f, 'x'))
 	if status, body := h.parse(); status != http.StatusUnprocessableEntity {
 		t.Errorf("status %d, want 422; body %s", status, body)
 	}
@@ -268,7 +269,7 @@ func (f *failingStore) Put(ctx context.Context, key string, data []byte) error {
 func TestStoreFailureIs500(t *testing.T) {
 	for _, fs := range []*failingStore{{failOpen: true}, {failPut: true}} {
 		h := newHarness(t, parse.Run, "")
-		h.putDemo(emptyDemo)
+		h.putDemo(testDemo)
 		fs.Store = h.store
 		h.srv.store = fs
 
@@ -287,7 +288,7 @@ func TestParserErrorIs500(t *testing.T) {
 	h := newHarness(t, func(context.Context, io.Reader) (match.File, error) {
 		return match.File{}, errors.New("decoder bug")
 	}, "")
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 	if status, _ := h.parse(); status != http.StatusInternalServerError {
 		t.Errorf("status %d, want 500", status)
 	}
@@ -297,7 +298,7 @@ func TestParserBadDemoErrorIs422(t *testing.T) {
 	h := newHarness(t, func(context.Context, io.Reader) (match.File, error) {
 		return match.File{}, fmt.Errorf("frame 9: %w", demo.ErrBadDemo)
 	}, "")
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 	if status, _ := h.parse(); status != http.StatusUnprocessableEntity {
 		t.Errorf("status %d, want 422", status)
 	}
@@ -323,7 +324,7 @@ func TestStubMode(t *testing.T) {
 		t.Errorf("stub with no demo: status %d, want 422", status)
 	}
 
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 	status, body := h.parse()
 	if status != http.StatusOK || string(body) != fixture["match.json"] {
 		t.Fatalf("status %d, body %s", status, body)
@@ -340,7 +341,7 @@ func TestStubMode(t *testing.T) {
 
 func TestStubModeMissingFixtureIs500(t *testing.T) {
 	h := newHarness(t, neverParse(t), t.TempDir())
-	h.putDemo(emptyDemo)
+	h.putDemo(testDemo)
 	if status, _ := h.parse(); status != http.StatusInternalServerError {
 		t.Errorf("status %d, want 500", status)
 	}

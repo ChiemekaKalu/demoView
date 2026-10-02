@@ -46,6 +46,9 @@ func run(ctx context.Context, r io.Reader) (match.File, []string, error) {
 		return match.File{}, nil, err
 	}
 	res := matchlogic.Build(p.rec.Log(), matchlogic.Options{Map: p.mapName, TickRate: p.tickRate})
+	if len(res.Rounds) == 0 {
+		return match.File{}, res.Notes, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
+	}
 	return match.File{
 		SchemaVersion: match.SchemaVersion,
 		ParserVersion: Version,

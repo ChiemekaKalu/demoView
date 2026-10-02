@@ -8,12 +8,14 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
-	"reflect"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
+	"github.com/ChiemekaKalu/demoview/parser/match"
+	"github.com/ChiemekaKalu/demoview/parser/parse"
+	"github.com/ChiemekaKalu/demoview/parser/parse/parsetest"
 	"github.com/ChiemekaKalu/demoview/parser/pb"
 )
 
@@ -51,8 +53,11 @@ func checkErrLine(t *testing.T, stderr, code string) {
 	}
 }
 
+// matchDemo is a valid one-round demo that parse can turn into a match.
+var matchDemo = parsetest.Match()
+
 func TestParseFlagOrder(t *testing.T) {
-	file := writeTemp(t, "x.dem", testDemo)
+	file := writeTemp(t, "x.dem", matchDemo)
 	orders := [][]string{
 		{"parse", file, "--out", "DIR"},
 		{"parse", "--out", "DIR", file},
@@ -77,7 +82,7 @@ func TestParseFlagOrder(t *testing.T) {
 }
 
 func TestParseWritesMatchJSON(t *testing.T) {
-	file := writeTemp(t, "x.dem", testDemo)
+	file := writeTemp(t, "x.dem", matchDemo)
 	dir := filepath.Join(t.TempDir(), "nested", "out")
 	code, stdout, stderr := runCLI("parse", file, "--out", dir)
 	if code != 0 || stdout != "" || stderr != "" {
@@ -87,25 +92,14 @@ func TestParseWritesMatchJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var got any
+	var got match.File
 	if err := json.Unmarshal(b, &got); err != nil {
 		t.Fatal(err)
 	}
-	sum := sha256.Sum256(testDemo)
-	want := map[string]any{
-		"schema_version": 1.0,
-		"parser_version": "0.1.0",
-		"match": map[string]any{
-			"map":         "de_mirage",
-			"tick_rate":   64.0,
-			"demo_sha256": hex.EncodeToString(sum[:]),
-		},
-		"players":    []any{},
-		"rounds":     []any{},
-		"kills":      []any{},
-		"scoreboard": []any{},
-	}
-	if !reflect.DeepEqual(got, want) {
+	sum := sha256.Sum256(matchDemo)
+	want := match.Info{Map: "de_mirage", TickRate: 64, DemoSHA256: hex.EncodeToString(sum[:])}
+	if got.SchemaVersion != 1 || got.ParserVersion != parse.Version || got.Match != want ||
+		len(got.Players) != 2 || len(got.Rounds) != 1 || len(got.Kills) != 1 || len(got.Scoreboard) != 2 {
 		t.Fatalf("match.json:\n%s", b)
 	}
 }

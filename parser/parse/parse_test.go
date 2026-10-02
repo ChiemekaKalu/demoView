@@ -50,11 +50,12 @@ var goodDemo = parsetest.Build(
 )
 
 func TestRun(t *testing.T) {
-	got, err := Run(context.Background(), bytes.NewReader(goodDemo))
+	data := parsetest.Match()
+	got, err := Run(context.Background(), bytes.NewReader(data))
 	if err != nil {
 		t.Fatal(err)
 	}
-	sum := sha256.Sum256(goodDemo)
+	sum := sha256.Sum256(data)
 	want := match.File{
 		SchemaVersion: match.SchemaVersion,
 		ParserVersion: Version,
@@ -66,9 +67,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunWithoutHeaderOrServerInfo(t *testing.T) {
-	got, err := Run(context.Background(), bytes.NewReader(parsetest.Build(
-		parsetest.Frame{Cmd: demo.CmdPacket, Tick: 1, Payload: parsetest.Packet(tick)},
-	)))
+	got, err := Run(context.Background(), bytes.NewReader(parsetest.Build(parsetest.MatchFrames()...)))
 	if err != nil {
 		t.Fatal(err)
 	}
