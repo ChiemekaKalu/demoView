@@ -93,7 +93,7 @@ func RunStats(ctx context.Context, r io.Reader) (match.File, Stats, error) {
 func Parse(ctx context.Context, r io.Reader, opt Options) (Output, Stats, error) {
 	var st Stats
 	sum := sha256.New()
-	p := parser{rec: matchlogic.NewRecorder()}
+	p := parser{rec: matchlogic.NewRecorder(), firstTick: -1}
 	if opt.Rounds {
 		p.ent = &entityStage{}
 	}
@@ -105,7 +105,7 @@ func Parse(ctx context.Context, r io.Reader, opt Options) (Output, Stats, error)
 	}
 
 	start = time.Now()
-	res := matchlogic.Build(p.rec.Log(), matchlogic.Options{Map: p.mapName, TickRate: p.tickRate})
+	res := matchlogic.Build(p.rec.Log(), matchlogic.Options{Map: p.mapName, TickRate: p.tickRate, FirstTick: p.firstTick})
 	st.Build, st.Notes = time.Since(start), res.Notes
 	if len(res.Rounds) == 0 {
 		return Output{}, st, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
@@ -147,8 +147,9 @@ func (c counter) Write(p []byte) (int, error) {
 
 // parser holds what the stages extract while the demo streams past.
 type parser struct {
-	mapName  string // from the first FileHeader
-	tickRate int    // from the first svc_ServerInfo
+	mapName   string // from the first FileHeader
+	tickRate  int    // from the first svc_ServerInfo
+	firstTick int32  // the first frame tick past the signon's -1, or -1
 
 	events events.Decoder       // game event descriptors
 	rec    *matchlogic.Recorder // the events, players and cvars match logic needs
@@ -202,6 +203,9 @@ func (p *parser) walk(ctx context.Context, r io.Reader, st *Stats) error {
 		}
 		st.Frames++
 		st.LastTick = max(st.LastTick, f.Tick)
+		if p.firstTick < 0 && f.Tick >= 0 {
+			p.firstTick = f.Tick
+		}
 		if p.ent != nil {
 			p.ent.sampleTo(f.Tick - 1)
 		}

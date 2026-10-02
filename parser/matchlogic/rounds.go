@@ -56,6 +56,9 @@ func segmentRounds(log *Log, w window, n *notes) []span {
 		return nil
 	}
 	boundary := boundaryKind(log, w)
+	// Round 1 starts at the restart before begin_new_match. With no restart
+	// event there (tournament GOTV), it still takes the spawns and team
+	// changes just before begin_new_match, which belong to it.
 	first := w.start
 backward:
 	for i := w.start - 1; i >= 0; i-- {
@@ -65,6 +68,8 @@ backward:
 			break backward
 		case RoundFreezeEnd, RoundEnd, RoundOfficiallyEnded, PlayerDeath, PlayerHurt:
 			break backward // reached the warmup or knife round's play
+		case PlayerSpawn, PlayerTeam:
+			first = i
 		}
 	}
 	starts := []int{first}

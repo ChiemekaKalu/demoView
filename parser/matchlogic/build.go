@@ -10,6 +10,9 @@ import (
 type Options struct {
 	Map      string // map name; bomb maps (de_*) time rounds with mp_roundtime_defuse
 	TickRate int    // ticks per second
+	// FirstTick is the demo's first frame tick past the signon. No round
+	// starts before it.
+	FirstTick int32
 }
 
 // Result is the part of match.json that match logic fills in.
@@ -38,6 +41,7 @@ func Build(log *Log, opt Options) Result {
 		n.add("no rounds in the match")
 		return Result{Notes: n}
 	}
+	spans[0].startTick = max(spans[0].startTick, opt.FirstTick)
 	swap := halftimes(log, spans, w, &n)
 	s := assignSides(log, spans, swap, &n)
 	outs := decideRounds(log, spans, s, opt, &n)

@@ -79,6 +79,27 @@ func TestSegmentRounds(t *testing.T) {
 			kills: 6,
 		},
 		{
+			// Tournament GOTV again, with the round 1 spawns before
+			// begin_new_match: round 1 still holds them, so its CTs are
+			// alive and eliminated rather than the round timing out. Its
+			// start is clamped to the first tick (0 here, the default).
+			name: "round 1 spawns before begin_new_match",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.spawn(-1, a, b, c, d).ev(-1, BeginNewMatch).ev(100, RoundFreezeEnd)
+				l.kill(200, c, a).kill(300, d, b)
+				l.ev(748, RoundOfficiallyEnded).spawn(748, a, b, c, d).ev(1000, RoundFreezeEnd)
+				l.kill(1100, a, c).kill(1200, a, d)
+				l.ev(1300, WinPanelMatch)
+				return l
+			},
+			rounds: []string{
+				"1:0-100-300 B CT elimination",
+				"2:748-1000-1200 A CT elimination",
+			},
+			kills: 4,
+		},
+		{
 			// A restart with nothing in it joins the round before it.
 			name: "empty restart",
 			build: func() *testLog {
