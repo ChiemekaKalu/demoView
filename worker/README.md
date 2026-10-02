@@ -43,7 +43,7 @@ A failed match's `error` starts with a code, `"<code>: <detail>"`: `bad_demo` or
 
 Every parse attempt writes under its own prefix, `parsed/{id}/{parse_id}/`, with `manifest.json` last. Once the parser answers 200, the consumer points the match's `live_parse_id` at it and replaces its D1 rows in one batch, but only if the pointer hasn't moved since the attempt started, so a slower parse can never replace a newer one. The viewer asks for files with `?v=<parse_id>` from the summary. Matches parsed before parse ids have a null `live_parse_id`, and their files sit straight under `parsed/{id}/`.
 
-A reparse job (`{ match_id, reparse: true }`) parses a `ready` match again without leaving `ready`. If it fails, the match keeps its live parse, and `reparse_error` and `reparse_build` say why and with which build. `attempted_build` is the `PARSER_BUILD` of the latest attempt, which CI sets at deploy from the git trees of `parser/` and `tools/oracle/`.
+A reparse job (`{ match_id, reparse: true }`) parses a `ready` match again without leaving `ready`. If it fails, the match keeps its live parse, and `reparse_error` and `reparse_build` say why and with which build. `attempted_build` is the build of the latest attempt: `PARSER_BUILD`, which CI sets at deploy from the git trees of `parser/` and `tools/oracle/`, plus `PARSER_ROUNDS` when it's set (e.g. `9f5be622def2+parser`). So switching whose round files ship reparses every match, the same as a code change.
 
 ## Scheduled jobs
 

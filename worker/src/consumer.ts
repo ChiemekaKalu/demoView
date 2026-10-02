@@ -14,7 +14,7 @@ import {
   setReparseError,
   setStatus,
 } from "./matches";
-import type { Parser, ParseResult } from "./parser";
+import { parserBuild, type Parser, type ParseResult } from "./parser";
 import { addContainerTime } from "./usage";
 
 // Must match max_retries + 1 in wrangler.jsonc.
@@ -69,7 +69,7 @@ async function handleParseJob(message: Message<ParseJob>, env: Env, parser: Pars
   }
 
   const attempt = message.attempts;
-  const build = env.PARSER_BUILD;
+  const build = parserBuild(env);
   // A new prefix for every attempt, so no two attempts write the same files.
   const parse = { id: newParseId(), from: match.live_parse_id };
   const log = { attempt, ...(reparse ? { reparse } : {}) };
@@ -172,7 +172,7 @@ export async function handleDeadLetters(batch: MessageBatch<ParseJob>, env: Env)
     if (match) {
       const error = failure("parse_failed", `failed after ${MAX_ATTEMPTS} attempts: ${lastError ?? "unknown error"}`);
       if (reparse) {
-        await setReparseError(env.DB, match.id, error, env.PARSER_BUILD);
+        await setReparseError(env.DB, match.id, error, parserBuild(env));
         await addEvent(env.DB, match.id, { kind: "reparse", msg: `gave up: ${error}` });
       } else {
         await setStatus(env.DB, match.id, "failed", { error, from: ["queued", "parsing"] });

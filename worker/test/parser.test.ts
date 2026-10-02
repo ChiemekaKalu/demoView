@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { httpParser, withFault, type Fetcher, type Parser } from "../src/parser";
+import { env } from "cloudflare:workers";
+import { httpParser, parserBuild, withFault, type Fetcher, type Parser } from "../src/parser";
 
 const JOB = { match_id: "0123456789abc", demo_key: "demos/0123456789abc.dem", parse_id: "01k6gq3m1abcdefg" };
 
@@ -105,5 +106,16 @@ describe("withFault", () => {
 
   it.each([undefined, "", "other"])("leaves the parser alone for %j", (fault) => {
     expect(withFault(real, fault)).toBe(real);
+  });
+});
+
+describe("parserBuild", () => {
+  it("adds whose round files ship, so switching them reparses every match", () => {
+    expect(parserBuild({ ...env, PARSER_BUILD: "abc123", PARSER_ROUNDS: "parser" })).toBe("abc123+parser");
+    expect(parserBuild({ ...env, PARSER_BUILD: "abc123", PARSER_ROUNDS: "oracle" })).toBe("abc123+oracle");
+  });
+
+  it("is the code's build alone when the round mode is the image default", () => {
+    expect(parserBuild({ ...env, PARSER_BUILD: "abc123", PARSER_ROUNDS: "" })).toBe("abc123");
   });
 });

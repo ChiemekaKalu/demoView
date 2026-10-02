@@ -28,6 +28,13 @@ export interface Parser {
   parse(request: ParseRequest, attempt?: ParseAttempt): Promise<ParseResult>;
 }
 
+// The build a parse's output comes from: the parser's code, and whose round
+// files ship. A change to either makes the reparse cron parse every match
+// again, so switching PARSER_ROUNDS needs no hand step.
+export function parserBuild(env: Env): string {
+  return env.PARSER_ROUNDS ? `${env.PARSER_BUILD}+${env.PARSER_ROUNDS}` : env.PARSER_BUILD;
+}
+
 // A dev-only fault flag for the recovery checks, standing in for a broken
 // parser build: FAULT=reject answers every parse as a bad demo, FAULT=fail
 // as a transient failure. The prod deploy refuses to run with it set.

@@ -17,6 +17,8 @@ export default defineConfig({
           R2_ACCOUNT_ID: "testaccount",
           R2_BUCKET: "demoview-test",
           PARSER_BUILD: "test-build",
+          // The image default, so builds in the tests are just PARSER_BUILD.
+          PARSER_ROUNDS: "",
         },
       },
     })),

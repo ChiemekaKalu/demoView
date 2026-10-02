@@ -5,6 +5,7 @@ import type { ParseJob } from "./api";
 import { addEvent } from "./events";
 import { isParseId, matchFileKey, parsedPrefix, parseIdTime } from "./keys";
 import { deleteUploadedMatch, failure, setStatus } from "./matches";
+import { parserBuild } from "./parser";
 import { CONTAINER_MS_PER_MONTH, containerTime } from "./usage";
 
 export const SWEEP_CRON = "*/10 * * * *";
@@ -75,11 +76,11 @@ export async function sweep(env: Env, now: number): Promise<void> {
 // queued or parsing, so an upload waits behind at most one batch, and stops
 // for the month at the container cap.
 export async function reparseBatch(env: Env, now: number): Promise<void> {
-  const build = env.PARSER_BUILD;
+  const build = parserBuild(env);
   const skip = (reason: string, fields: Record<string, unknown> = {}) =>
     console.log(JSON.stringify({ event: "reparse_batch", build, skipped: reason, ...fields }));
   // A deploy without CI's build id can't tell old parses from new.
-  if (build === "dev") return skip("no build id");
+  if (env.PARSER_BUILD === "dev") return skip("no build id");
 
   const busy = await env.DB.prepare("SELECT count(*) AS n FROM matches WHERE status IN ('queued', 'parsing')").first<number>(
     "n",
