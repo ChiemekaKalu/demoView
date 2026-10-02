@@ -3,11 +3,11 @@
 //
 // Usage:
 //
-//	oracle export <file.dem> --out <dir> [--hz 16]
+//	oracle export <file.dem | -> --out <dir> [--hz 16]
 //
-// It writes <dir>/match.json and <dir>/rounds/NN.json, then prints one JSON
-// summary line on stdout. On failure it prints one JSON error line on stderr
-// and exits 1.
+// "-" reads the demo from stdin. It writes <dir>/match.json and
+// <dir>/rounds/NN.json, then prints one JSON summary line on stdout. On
+// failure it prints one JSON error line on stderr and exits 1.
 package main
 
 import (
@@ -23,7 +23,7 @@ import (
 	"github.com/ChiemekaKalu/demoview/tools/oracle/export"
 )
 
-const usage = "usage: oracle export <file.dem> --out <dir> [--hz 16]"
+const usage = "usage: oracle export <file.dem | -> --out <dir> [--hz 16]"
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout); err != nil {
@@ -59,12 +59,18 @@ func run(args []string, stdout io.Writer) error {
 	}
 
 	start := time.Now()
-	f, err := os.Open(files[0])
-	if err != nil {
-		return err
+	// "-" reads the demo from stdin, so the parse server can stream it in
+	// without a temporary copy. demoinfocs reads it front to back.
+	in := os.Stdin
+	if files[0] != "-" {
+		f, err := os.Open(files[0])
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		in = f
 	}
-	defer f.Close()
-	res, err := export.Run(f, *hz)
+	res, err := export.Run(in, *hz)
 	if err != nil {
 		return err
 	}
