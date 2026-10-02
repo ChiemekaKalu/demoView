@@ -2,6 +2,10 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, stopping point: a pickup page
+
+- **New page:** [pickup](pickup.md), a prompt for whoever takes over the wiki and the learning-center site. It covers how both are organised, how current they are, how to restart the site, how to do an upkeep pass, and what to update next. The README's status block was brought current at the same time: the viewer runs on real parses, and v1's only open item is the user's own desktop scrub check.
+
 ## 2026-10-02, the small hours after: M4's exit is met
 
 - **M4's exit check is met** (`3176bd6`): prod's match reparsed with our own round files and no fallback in 7.2 s, against 12.7 s with the oracle also running. Dev's shadow verdicts were clean over 3 matches and 48 round files. Wiki: [parser](parser.md).

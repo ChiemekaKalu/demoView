@@ -50,6 +50,7 @@ flowchart LR
 | Reparse matches after a parser change | [runbook-reparse](runbook-reparse.md) |
 | Diagnose a stuck or failed match | [runbook-stuck-matches](runbook-stuck-matches.md) |
 | Read about Match Pulse, the win-probability line | [pulse](pulse.md) |
+| Take over the wiki and the learning-center site | [pickup](pickup.md) |
 | Find out why something is the way it is | [decisions](decisions.md) |
 | Look up a term (tick, slot, oracle, DLQ) | [glossary](glossary.md) |
 | See what changed lately | [changelog](changelog.md) |
@@ -62,7 +63,7 @@ Snapshot as of **2026-10-02**. The plan is canonical, so check `../plan.md` if t
 flowchart LR
     M0[M0 schema and fixtures<br/>done] --> M1[M1 v0 parser<br/>done]
     M1 --> M2[M2 cloud pipeline<br/>done: dev and prod live, M5 exit checks closed]
-    M2 --> M3[M3 viewer<br/>built, on real parses next]
+    M2 --> M3[M3 viewer<br/>built and running on real parses]
     M3 --> M4[M4 entity decoding<br/>done: prod ships our round files]
 ```
 
@@ -70,15 +71,15 @@ flowchart LR
 - **Round files:** 64 Hz, every tick, in the spec, the oracle and the samples.
 - **Cloud:** the first green CI deploy put dev and prod live (run `36994672034`), which met M2's exit (`1244395`). The first real end-to-end parse took about 48 s, of which the parse was 31.6 s. See [infra](infra.md).
 - **Entity decoding:** M4 is done. Our own 64 Hz round files match the oracle on all 10 local demos, and the gate on 132 public tournament demos passed (0 blocking, 115 clean). **Prod now ships our own round files** (`93000d4`, deployed in run `37064251547`; prod's manifest shows `match_source=parser`, `round_source=parser`, no fallback), and the hourly reparse moves every match across. The oracle stays as the fallback. With M4 done, everything in v1 is built except the user's own desktop scrub check of the viewer.
-- **Viewer:** upload, match and replay pages are built against synthetic fixtures, with the Mirage radar in.
+- **Viewer:** upload, match and replay pages run against real parses on dev and prod, with map radars loaded through the API and per-match pipeline history on the match page. The one v1 item left is the user's own desktop scrub check.
 - **Fixtures:** the two public demos plus 8 of the user's own MM/Premier demos, one of which has overtime. The shared fixtures bucket holds the two public ones only.
 
 ### Open items worth knowing
 
-- **The viewer on a real parse.** It has only been run against the synthetic samples so far.
+- **The desktop scrub check.** The user's own check that a replay opens and scrubs smoothly on a desktop browser. It is the last v1 done-when.
 - **CI diff on fixtures.** A deploy can now require it, once the read-only fixtures secrets exist and the `REQUIRE_FIXTURE_DIFF` variable is set. Until then it skips.
 - **Fetching your own demos from Valve.** Decided for v1.2, along with two-floor maps (Nuke, Vertigo). The design is in `plan.md`, and nothing is started.
-- **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The user has approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, paused at 80% of the monthly allowance, on in prod). Nearly all of M5 and the parser half of M6 are committed: maps, duplicate reuse, coded errors, the alignment tool, the versioned parse prefix with its pointer swap, the reparse route and hourly cron, the stuck-match sweeper, the rate limit, pipeline history in D1, the no-Stop rule, fuzzing, byte-identical parses and per-map diffs. **The crons are on in prod** (`6e305d0`) after the dev exit checks passed. Left: the R2 lifecycle rule for orphaned demos, the CI diff gate, and the shadow compare. The unknown-entity fallback exists in the parser and waits on the swap-in.
+- **v1.1.** M5 is closed (maps, duplicate reuse, safe reparse, self-recovery) and M6's parser-side hardening and dev shadow compare are done. Details are on [worker](worker.md), [r2-layout](r2-layout.md), [maps](maps.md) and the two runbooks.
 - **ADR on pro demos.** The one follow-up from the tournament sweep: 5 full recordings show 2 to 11% ADR gaps for a few players, cause unknown. It blocks nothing. See [match-logic](match-logic.md#tournament-gotv-demos-the-gate-passed).
 - **Narrative log.** The design is approved in full and the `parser/eventlog` groundwork is done. The output, schema and story pane are v1.2.
 - **Match Pulse.** Approved for v1.2, and its back end is already built behind a flag on dev: a win-probability model on its own queue, a new `pulse.json`, a logistic fallback and a CI eval. The viewer side isn't recorded as built. See [pulse](pulse.md).
