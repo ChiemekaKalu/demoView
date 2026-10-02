@@ -2,10 +2,8 @@
 // `wrangler deploy` never touch prod. Prod is `wrangler deploy --env prod`.
 // Bindings and vars are not inherited by environments, so prod repeats them.
 //
-// Placeholders to fill in before the first deploy (see README.md):
-//   database_id   from `wrangler d1 create`
-//   R2_ACCOUNT_ID the Cloudflare account id
-//   PARSER_URL    the Cloud Run service URL
+// The account, D1 databases, R2 buckets and queues exist. Still a
+// placeholder: PARSER_URL, the Cloud Run service URL (see README.md).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "demoview-api-dev",
@@ -14,14 +12,14 @@
   "observability": { "enabled": true },
   "vars": {
     "PARSER_URL": "https://demoview-parser-dev.example.run.app",
-    "R2_ACCOUNT_ID": "REPLACE_WITH_ACCOUNT_ID",
+    "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
     "R2_BUCKET": "demoview-dev"
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "demoview-dev",
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "046adf1e-1124-484e-b9de-24cb974621d4"
     }
   ],
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "demoview-dev" }],
@@ -47,14 +45,14 @@
       "name": "demoview-api",
       "vars": {
         "PARSER_URL": "https://demoview-parser.example.run.app",
-        "R2_ACCOUNT_ID": "REPLACE_WITH_ACCOUNT_ID",
+        "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
         "R2_BUCKET": "demoview-prod"
       },
       "d1_databases": [
         {
           "binding": "DB",
           "database_name": "demoview-prod",
-          "database_id": "00000000-0000-0000-0000-000000000000"
+          "database_id": "65265646-d943-4ab9-94ed-6204619b8d6a"
         }
       ],
       "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "demoview-prod" }],
