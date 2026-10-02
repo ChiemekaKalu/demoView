@@ -14,8 +14,7 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -25,11 +24,8 @@ import (
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/match"
-	"github.com/ChiemekaKalu/demoview/parser/pb"
+	"github.com/ChiemekaKalu/demoview/parser/parse"
 )
-
-// parserVersion is recorded in every match.json.
-const parserVersion = "0.1.0"
 
 const (
 	parseSynopsis   = "demo parse <file.dem> --out <dir> [--events-only]"
@@ -111,64 +107,23 @@ func cmdParse(args []string, stdout io.Writer) error {
 	case *out == "":
 		return usagef("parse: --out is required; usage: %s", parseSynopsis)
 	}
-	return parse(pos[0], *out, *eventsOnly)
+	return parseDemo(pos[0], *out, *eventsOnly)
 }
 
-// parse streams the demo at path to the end and writes match.json to outDir.
-// eventsOnly has no effect yet, because round files are not produced.
-func parse(path, outDir string, eventsOnly bool) error {
+// parseDemo parses the demo at path with parse.Run and writes match.json to
+// outDir. eventsOnly has no effect yet, because round files are not produced.
+func parseDemo(path, outDir string, eventsOnly bool) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	sum := sha256.New()
-	r, err := demo.NewReader(io.TeeReader(f, sum))
+	file, err := parse.Run(context.Background(), f)
 	if err != nil {
 		return err
 	}
-	if err := walk(demo.NewDecoder(r)); err != nil {
-		return err
-	}
-
-	return match.WriteFile(outDir, match.File{
-		SchemaVersion: match.SchemaVersion,
-		ParserVersion: parserVersion,
-		Match:         match.Info{DemoSHA256: hex.EncodeToString(sum.Sum(nil))},
-	})
-}
-
-// walk decodes every frame from d and every message in its packets, so that
-// a malformed demo fails parse. Later stages hook into its switch.
-func walk(d *demo.Decoder) error {
-	var mr demo.MessageReader
-	for {
-		f, err := d.Next()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		switch f.Cmd {
-		case demo.CmdFileHeader:
-			err = f.Unmarshal(new(pb.CDemoFileHeader))
-		case demo.CmdFileInfo:
-			err = f.Unmarshal(new(pb.CDemoFileInfo))
-		case demo.CmdPacket, demo.CmdSignonPacket, demo.CmdFullPacket:
-			err = mr.Reset(f)
-			for err == nil {
-				_, err = mr.Next()
-			}
-			if err == io.EOF {
-				err = nil
-			}
-		}
-		if err != nil {
-			return err
-		}
-	}
+	return match.WriteFile(outDir, file)
 }
 
 // parseArgs parses args against fs and returns the positional arguments.

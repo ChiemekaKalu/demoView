@@ -1,16 +1,15 @@
 package main
 
 import (
-	"encoding/binary"
-
-	"github.com/klauspost/compress/snappy"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
+	"github.com/ChiemekaKalu/demoview/parser/parse/parsetest"
 	"github.com/ChiemekaKalu/demoview/parser/pb"
 )
 
-// testFrame is a frame for buildDemo.
+// testFrame is a frame for buildDemo. These short local forms of the
+// parsetest builders keep the many fixtures below compact.
 type testFrame struct {
 	cmd      demo.Command
 	tick     int32
@@ -20,101 +19,35 @@ type testFrame struct {
 
 // buildDemo returns a demo file holding frames.
 func buildDemo(frames ...testFrame) []byte {
-	b := append([]byte(nil), demo.Magic[:]...)
-	b = binary.LittleEndian.AppendUint32(b, 0) // fileinfo offset
-	b = binary.LittleEndian.AppendUint32(b, 0) // spawngroups offset
-	for _, f := range frames {
-		cmd, p := uint64(f.cmd), f.payload
-		if f.compress {
-			cmd |= 0x40
-			p = snappy.Encode(nil, p)
-		}
-		b = binary.AppendUvarint(b, cmd)
-		b = binary.AppendUvarint(b, uint64(uint32(f.tick)))
-		b = binary.AppendUvarint(b, uint64(len(p)))
-		b = append(b, p...)
+	fs := make([]parsetest.Frame, len(frames))
+	for i, f := range frames {
+		fs[i] = parsetest.Frame{Cmd: f.cmd, Tick: f.tick, Compress: f.compress, Payload: f.payload}
 	}
-	return b
+	return parsetest.Build(fs...)
 }
 
-// pbBytes marshals m, panicking on error.
-func pbBytes(m proto.Message) []byte {
-	b, err := proto.Marshal(m)
-	if err != nil {
-		panic(err)
-	}
-	return b
-}
-
-// testMsg is one packet message for packetBits.
+// testMsg is one packet message.
 type testMsg struct {
 	typ  uint32
 	body []byte
 }
 
+func toMsgs(msgs []testMsg) []parsetest.Msg {
+	out := make([]parsetest.Msg, len(msgs))
+	for i, m := range msgs {
+		out[i] = parsetest.Msg{Type: m.typ, Body: m.body}
+	}
+	return out
+}
+
 // packetBits returns the bit stream of msgs and the number of padding bits
 // after the last one.
-func packetBits(msgs ...testMsg) ([]byte, int) {
-	var w bitWriter
-	for _, m := range msgs {
-		w.ubitvar(m.typ)
-		w.varuint(uint64(len(m.body)))
-		w.bytes(m.body)
-	}
-	return w.buf, len(w.buf)*8 - w.n
-}
+func packetBits(msgs ...testMsg) ([]byte, int) { return parsetest.PacketBits(toMsgs(msgs)...) }
 
 // packet returns a marshaled CDemoPacket holding msgs.
-func packet(msgs ...testMsg) []byte {
-	data, _ := packetBits(msgs...)
-	return pbBytes(&pb.CDemoPacket{Data: data})
-}
+func packet(msgs ...testMsg) []byte { return parsetest.Packet(toMsgs(msgs)...) }
 
-// bitWriter builds bit streams least significant bit first. It mirrors the
-// one in package bitread's tests.
-type bitWriter struct {
-	buf []byte
-	n   int // bits written
-}
-
-func (w *bitWriter) bits(v uint64, n int) {
-	for i := range n {
-		if w.n%8 == 0 {
-			w.buf = append(w.buf, 0)
-		}
-		w.buf[w.n/8] |= byte(v>>i&1) << (w.n % 8)
-		w.n++
-	}
-}
-
-func (w *bitWriter) bytes(p []byte) {
-	for _, c := range p {
-		w.bits(uint64(c), 8)
-	}
-}
-
-// ubitvar writes v in the shortest UBitVar form.
-func (w *bitWriter) ubitvar(v uint32) {
-	form := 3
-	switch {
-	case v < 1<<4:
-		form = 0
-	case v < 1<<8:
-		form = 1
-	case v < 1<<12:
-		form = 2
-	}
-	w.bits(uint64(v&0xF|uint32(form)<<4), 6)
-	w.bits(uint64(v>>4), [4]int{0, 4, 8, 28}[form])
-}
-
-func (w *bitWriter) varuint(v uint64) {
-	for v >= 0x80 {
-		w.bits(v&0x7F|0x80, 8)
-		v >>= 7
-	}
-	w.bits(v, 8)
-}
+var pbBytes = parsetest.Marshal
 
 // Contents of testDemo.
 var (

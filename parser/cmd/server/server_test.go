@@ -18,6 +18,7 @@ import (
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/match"
+	"github.com/ChiemekaKalu/demoview/parser/parse"
 	"github.com/ChiemekaKalu/demoview/parser/store"
 )
 
@@ -140,7 +141,7 @@ func TestBadRequest(t *testing.T) {
 }
 
 func TestParseOK(t *testing.T) {
-	h := newHarness(t, streamParse, "")
+	h := newHarness(t, parse.Run, "")
 	h.putDemo(emptyDemo)
 
 	status, body := h.parse()
@@ -152,7 +153,7 @@ func TestParseOK(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(emptyDemo)
-	if file.Match.DemoSHA256 != hex.EncodeToString(sum[:]) || file.SchemaVersion != 1 || file.ParserVersion != parserVersion {
+	if file.Match.DemoSHA256 != hex.EncodeToString(sum[:]) || file.SchemaVersion != 1 || file.ParserVersion != parse.Version {
 		t.Errorf("match.json = %+v", file)
 	}
 	if stored := h.stored("parsed/" + matchID + "/match.json"); !bytes.Equal(stored, body) {
@@ -166,7 +167,7 @@ func TestParseOK(t *testing.T) {
 }
 
 func TestParseLogLine(t *testing.T) {
-	h := newHarness(t, streamParse, "")
+	h := newHarness(t, parse.Run, "")
 	h.putDemo(emptyDemo)
 	h.parse()
 
@@ -178,7 +179,7 @@ func TestParseLogLine(t *testing.T) {
 		"demo_key":          demoKey,
 		"demo_size":         float64(len(emptyDemo)),
 		"peak_memory_bytes": float64(123 << 20),
-		"parser_version":    parserVersion,
+		"parser_version":    parse.Version,
 		"result":            "ok",
 		"status":            float64(200),
 	}
@@ -201,7 +202,7 @@ func TestParseLogLine(t *testing.T) {
 }
 
 func TestParseBadDemo(t *testing.T) {
-	h := newHarness(t, streamParse, "")
+	h := newHarness(t, parse.Run, "")
 	h.putDemo([]byte("this is not a demo at all"))
 
 	status, body := h.parse()
@@ -220,7 +221,7 @@ func TestParseBadDemo(t *testing.T) {
 }
 
 func TestParseTruncatedDemo(t *testing.T) {
-	h := newHarness(t, streamParse, "")
+	h := newHarness(t, parse.Run, "")
 	// A preamble, then a frame header that promises more bytes than follow.
 	h.putDemo(append(append([]byte{}, emptyDemo...), 0x01, 0x00, 0x7f, 'x'))
 	if status, body := h.parse(); status != http.StatusUnprocessableEntity {
@@ -266,7 +267,7 @@ func (f *failingStore) Put(ctx context.Context, key string, data []byte) error {
 
 func TestStoreFailureIs500(t *testing.T) {
 	for _, fs := range []*failingStore{{failOpen: true}, {failPut: true}} {
-		h := newHarness(t, streamParse, "")
+		h := newHarness(t, parse.Run, "")
 		h.putDemo(emptyDemo)
 		fs.Store = h.store
 		h.srv.store = fs

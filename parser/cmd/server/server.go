@@ -19,6 +19,7 @@ import (
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/match"
+	"github.com/ChiemekaKalu/demoview/parser/parse"
 	"github.com/ChiemekaKalu/demoview/parser/store"
 )
 
@@ -41,11 +42,11 @@ type server struct {
 	peakMem   func() int64
 }
 
-func newServer(st store.Store, secret string, parse ParseFunc, stubDir string, log io.Writer) *server {
+func newServer(st store.Store, secret string, parseFn ParseFunc, stubDir string, log io.Writer) *server {
 	return &server{
 		store:     st,
 		secret:    sha256.Sum256([]byte(secret)),
-		parse:     parse,
+		parse:     parseFn,
 		stubDir:   stubDir,
 		log:       log,
 		resetPeak: resetPeakMemory,
@@ -105,7 +106,7 @@ func (s *server) handleParse(w http.ResponseWriter, r *http.Request) {
 		DemoSize:      demoSize,
 		DurationMS:    time.Since(start).Milliseconds(),
 		PeakMemory:    s.peakMem(),
-		ParserVersion: parserVersion,
+		ParserVersion: parse.Version,
 		Result:        result,
 		Status:        status,
 		Stub:          s.stubDir != "",

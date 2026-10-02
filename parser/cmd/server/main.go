@@ -29,6 +29,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ChiemekaKalu/demoview/parser/parse"
 	"github.com/ChiemekaKalu/demoview/parser/store"
 )
 
@@ -58,7 +59,7 @@ func run(ctx context.Context, getenv func(string) string, log io.Writer) error {
 		port = "8080"
 	}
 
-	s := newServer(st, secret, streamParse, getenv("PARSER_STUB_DIR"), log)
+	s := newServer(st, secret, parse.Run, getenv("PARSER_STUB_DIR"), log)
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           s.routes(),
@@ -72,7 +73,7 @@ func run(ctx context.Context, getenv func(string) string, log io.Writer) error {
 		"severity":       "INFO",
 		"message":        "listening",
 		"port":           port,
-		"parser_version": parserVersion,
+		"parser_version": parse.Version,
 		"stub":           s.stubDir != "",
 	})
 
