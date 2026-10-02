@@ -4,6 +4,12 @@ Running log of decisions, progress and findings. Newest first. Keep entries shor
 
 ## 2026-10-02
 
+- **Later on 10-02:**
+  - No Claude co-author trailer on commits from now on. Existing commits keep it.
+  - v0 infers round winners and teams from events, because `round_end` and `round_start` are gone from demos since about Feb 2024.
+  - Two public demos approved as interim fixtures.
+  - M1 checkpoints 1.1 to 1.4 pass on both. `worker/`, `schema/`, `parser/pb` and `bitread` have landed.
+  - Details are in `plan.md`.
 - **Hard boundary, set by the user:** never touch their game memory, for any reason. Recorded in CLAUDE.md ground rules and sent to both peer sessions. Demo files are the only game input.
 - Workspace initialized: `parser/` (Go module) and `web/` (Vite + Preact + TypeScript). Go 1.27 installed. `parser/demo` reads and validates the demo preamble; tests pass.
 - Spec pasted into `.claude/spec.md`, reformatted as Markdown, then updated for a **solo build**:
