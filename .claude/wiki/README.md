@@ -77,7 +77,7 @@ flowchart LR
 - **The viewer on a real parse.** It has only been run against the synthetic samples so far.
 - **CI diff on fixtures.** Optional: set the read-only fixtures secrets so that job runs instead of skipping.
 - **Fetching your own demos from Valve.** Decided for v1.2, along with two-floor maps (Nuke, Vertigo). The design is in `plan.md`, and nothing is started.
-- **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The versioned R2 layout is waiting for the user's sign-off, and none of it is built yet.
+- **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The user has approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, paused at 80% of the monthly allowance, on in prod). None of it is built yet.
 - **Narrative log.** Only the groundwork (`parser/eventlog`, with tests, no output) is approved. The rest of `../logging.md` waits for later.
 
 ## The learning center

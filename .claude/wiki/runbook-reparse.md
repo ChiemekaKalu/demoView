@@ -22,8 +22,8 @@ Properties worth knowing before touching anything:
 - **The deployed build is injected at deploy**, from the same source as the container image tag.
 - **A failed reparse never takes a match off `ready`.** The match keeps its live parse and its status. The failure lands in `reparse_error` and `reparse_build`.
 - **The sweeper and the dead-letter handler don't touch these matches.** They only act on matches that have never been `ready`.
-- **Pace.** The cron runs hourly, 5 matches a batch, and pauses at 80% of the monthly container allowance. One `basic` instance at about 30 s a parse makes a batch about 3 minutes, so a new upload waits behind at most one batch.
-- **New uploads and links don't break.** Round and `match.json` URLs follow the live pointer. See [R2 layout](r2-layout.md), which is still pending the user's sign-off.
+- **Pace.** The cron runs hourly, 5 matches a batch, and pauses at 80% of the monthly container allowance. The user approved exactly these numbers, and approved leaving the cron on in prod. One `basic` instance at about 30 s a parse makes a batch about 3 minutes, so a new upload waits behind at most one batch.
+- **New uploads and links don't break.** Round and `match.json` URLs follow the live pointer. See [R2 layout](r2-layout.md), which the user has approved.
 
 ## Normal path: nothing to do
 

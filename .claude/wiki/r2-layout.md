@@ -1,6 +1,6 @@
 # R2 layout and versioned parses
 
-> **Pending user sign-off.** The versioned layout below is the v1.1 spec's proposal (`6d603ba`). It changes where parsed files live, and the user has not signed it off yet. Nothing here is built. The *current* layout is in the first section and is what runs today.
+> **Approved by the user** (recorded in `notes.md`, `4e06e12`), together with its D1 columns. **Nothing here is built yet.** The *current* layout is in the first section and is what runs today.
 
 ## Today
 
@@ -56,10 +56,10 @@ A reparse with fewer rounds leaves no old round file reachable, because the new 
 
 ### D1 columns it relies on
 
-`live_parse_id` (new), `demo_sha256` (indexed), `status_changed_at`, the last-attempted-build column, and `reparse_error` and `reparse_build`. See the [reparse runbook](runbook-reparse.md). These are spec changes and not schema-file changes, so `schema_version` stays 1.
+`live_parse_id` (new), `demo_sha256` (indexed), `status_changed_at`, the last-attempted-build column, and `reparse_error` and `reparse_build`. All of these are approved. See the [reparse runbook](runbook-reparse.md). These are spec changes and not schema-file changes, so `schema_version` stays 1.
 
-## Open points
+## Still to do
 
-- The user's sign-off on the whole layout.
-- The spec's own R2 layout section must change to match once it is signed off.
+- Building it, which is M5 work.
+- The spec's own R2 layout section must change to match.
 - The Worker's round and `match.json` routes and the viewer's cache keys have to follow the pointer.

@@ -2,6 +2,10 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, later at night: v1.1 sign-offs
+
+- The user approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, 80% cap, on in prod), and confirmed that their own demos stay local (`4e06e12`). The "pending sign-off" banner is gone from [R2 layout](r2-layout.md), and [decisions](decisions.md), the [reparse runbook](runbook-reparse.md) and the [README](README.md) say so. Nothing in v1.1 is built yet.
+
 ## 2026-10-02, night: v1.1 is final, and four new pages
 
 - **v1.1 is final in the spec** (`6d603ba`): M5 "every map and safe reparse" and M6 "trusted and hardened", with v1.2 as the Valve fetch, two-floor maps and the narrative log build. It adds D1 columns and changes the R2 layout, but `schema_version` stays 1. Wiki: [decisions](decisions.md), [README](README.md).
