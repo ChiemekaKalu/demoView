@@ -504,6 +504,14 @@ def flip_check(recs):
         else:
             res["warnings"].append({"path": r["path"], "kinds": match})
     res["counts"] = {k: len(v) for k, v in res.items() if isinstance(v, list)}
+    tally = {}
+    for r in recs:
+        for k, n in ((r.get("diff") or {}).get("kinds") or {}).items():
+            if not k.startswith("round[]"):
+                t = tally.setdefault(k, {"demos": 0, "lines": 0, "gates": blocks(k)})
+                t["demos"] += 1
+                t["lines"] += n
+    res["kinds_tally"] = dict(sorted(tally.items(), key=lambda kv: -kv[1]["demos"]))
     failing = [b["path"] for b in res["blocking"]] + [x["path"] for x in res["parse_failed"]]
     res["gate"] = "PASS" if not failing else "FAIL"
     res["gate_line"] = (f"GATE {res['gate']}: {len(failing)} blocking of {len(recs)} demos"
@@ -600,6 +608,9 @@ def markdown(rep):
             L += [f"- BLOCKING `{b['path']}`: {', '.join(b['kinds'])}" + (f" (rounds ours {b['rounds'][0]} vs ref {b['rounds'][1]})" if b.get("rounds") else "") for b in fc["blocking"]]
             L += [f"- ADR only `{p}`" for p in fc["adr_only"]]
             L += [f"- warning `{w['path']}`: {', '.join(w['kinds'])}" for w in fc["warnings"]]
+            L += ["", "Mismatch kinds across demos with a reference (lines are lower bounds: the diff prints at most 40):", "",
+                  "| Kind | Demos | Lines | Gates |", "| --- | --- | --- | --- |"]
+            L += [f"| {k} | {t['demos']} | {t['lines']} | {'yes' if t['gates'] else 'no'} |" for k, t in fc["kinds_tally"].items()]
             L += [f"- reference-side `{x['path']}`: {', '.join(x['kinds']) or 'none'} ({x['why']})" for x in fc["reference_side"]]
             L += [f"- no reference `{p}`" for p in fc["no_reference"]]
             L += [f"- parse failed `{x['path']}`: {x['err']}" for x in fc["parse_failed"]] + [""]
