@@ -4,6 +4,10 @@ Running log of decisions, progress and findings. Newest first. Keep entries shor
 
 ## 2026-10-02
 
+- **v1.1 sign-offs from the user:**
+  - The versioned R2 layout (`parsed/{id}/{parse_id}/` with `manifest.json` last) and its D1 columns are approved: `live_parse_id`, the last attempted build, `status_changed_at`, `reparse_error` and `reparse_build`.
+  - The reparse cron is approved: hourly, 5 matches a batch, pausing at 80% of the monthly container allowance, and on in prod.
+  - The user's own demos stay local, with the default kept. Only the public fixtures go to R2.
 - **v1.1 and v1.2 scope, decided by the user:**
   - Keep Steam ids in public match data, since it's semi-anonymous behind unlisted links.
   - M5 is the agreed set: duplicate-upload reuse by `demo_sha256`, a reparse path for older `parser_version`s, and more single-level maps.
