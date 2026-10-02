@@ -109,7 +109,13 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
   - Pawn position is `CBodyComponent` → `m_skeletonInstance.m_vecOrigin.m_cellX/Y/Z` + `m_vecX/Y/Z`. Also needed: `m_angEyeAngles`, `m_iHealth` and `m_lifeState`.
   - *Unverified until stage 3 reads real data:* `ClampHealth` zigzag, `minusone`, SimTime fields by name, pointer presence bits, and how a polymorphic pointer picks its type.
 - [x] **Stage 2, string tables** (`parser/stringtables`). Packet create, update and clear-all messages match every snapshot byte for byte on both demos. `instancebaseline` is ready. *Open:* Mirage also has keys like `43:0`–`43:27` for `CCSGOViewModel`, with an unknown suffix, so look up baselines by the bare class id.
-- [ ] **Stage 3, entity updates.** Field paths, value decoders, and create/update/delete. The position diff runs against the oracle's 64 Hz round files: x/y within 1 unit, yaw within 1°, hp exact. *In progress.*
+- [x] **Stage 3, entity updates** (1abbf6d, d455cbf).
+  - Pawn x/y/yaw/hp agree with the oracle on **100% of frames on all 10 demos**. Every `svc_PacketEntities` is consumed exactly (1.18M), and Nuke's 351k full-packet values equal the delta-built state.
+  - Nuke decodes in about 1.5 s on one CPU, at a 31 MB peak.
+  - **Field paths:** a 40-op Huffman table; the tie-break rule was found empirically. 6 ops never occur in the 10 demos.
+  - **Stage-1 unknowns resolved:** ClampHealth is zigzag, pointer presence is 1 bit, a polymorphic pointer is a UBitVar type index, and SimTime fields are varint ticks.
+  - **For stage 4:** apply only the *first* FullPacket's entities, because later ones omit fields.
+  - Found an oracle bug: a pre-round world death is filed under round 1. Reported to pipeline.
 - [ ] **Stages 4–5, extraction and round files** at 64 Hz, then swap them in for the oracle's.
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
 
