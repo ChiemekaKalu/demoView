@@ -1,7 +1,7 @@
 """Picks a deterministic, map-balanced sample of pro demos from the Hugging Face
 dataset and deals it into shards. Writes plan.json to stdout.
 
-usage: select.py config.json
+usage: pick.py config.json
 """
 import json
 import random

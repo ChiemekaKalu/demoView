@@ -3,7 +3,7 @@
 Tooling for the round-dynamics study. It lives on `research/bulk-demos`, which is never merged; only the write-up lands on `main`, under `.claude/ideas/rounds/`.
 
 - **Runs in the cloud:** `.github/workflows/research-bulk.yml` runs on GitHub Actions when this branch is pushed. Nothing runs on a laptop.
-- **Source:** public pro demos from the Hugging Face dataset `skkwowee/chimera-cs2`, pinned to one revision. `select.py` picks a map-balanced sample (`config.json`: 16 per map, seed 2026, 12 shards).
+- **Source:** public pro demos from the Hugging Face dataset `skkwowee/chimera-cs2`, pinned to one revision. `pick.py` picks a map-balanced sample (`config.json`: 16 per map, seed 2026, 12 shards).
 - **Per demo,** one at a time per shard:
   1. download
   2. `bulkfacts` (name-free round facts)

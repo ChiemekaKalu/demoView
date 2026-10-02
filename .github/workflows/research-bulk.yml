@@ -43,7 +43,7 @@ jobs:
           mode=$(python3 -c 'import json; print(json.load(open("${{ env.BULK }}/config.json"))["mode"])')
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
           if [ "$mode" = full ]; then
-            python3 "$BULK/select.py" "$BULK/config.json" > plan.json
+            python3 "$BULK/pick.py" "$BULK/config.json" > plan.json
             python3 -c 'import json; p=json.load(open("plan.json")); print(len(p["items"]), "demos;", {m: sum(1 for i in p["items"] if i["map"] == m) for m in sorted({i["map"] for i in p["items"]})})'
             echo "shards=$(python3 -c 'import json; print(json.dumps(list(range(json.load(open("plan.json"))["shards"]))))')" >> "$GITHUB_OUTPUT"
             echo "source=${{ github.run_id }}" >> "$GITHUB_OUTPUT"
