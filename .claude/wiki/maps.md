@@ -26,7 +26,7 @@ Mirage: `pos_x` −3230, `pos_y` 1713, `scale` 5.0, on a 1024×1024 radar. These
 
 **The bar.** Every single-level map that has a radar under `maps/`. The local demos cover Mirage, Ancient, Inferno and Overpass, all of which the spec lists as single-level.
 
-**Serving constants and radars (committed, `091b2b5`).** `GET /api/maps/:name` returns `{ name, pos_x, pos_y, scale }`, cached for a day, and `GET /api/maps/:name/radar.png` returns the image with an ETag. Both read the private R2 objects. A map with no radar, or a two-floor map, gets a 404.
+**Serving constants and radars (committed, `091b2b5`).** `GET /api/maps/:name` returns `{ name, pos_x, pos_y, scale }`, cached for a day, and `GET /api/maps/:name/radar.png` returns the image with an ETag. Both read the private R2 objects. A map with no radar gets a 404. **A two-floor map no longer does:** Nuke, Train and Vertigo used to get a 404 and so replayed on a plain grid that looked broken. The route now returns their main radar with `two_floor: true`, and both floors share it until v1.2 adds a radar per floor (`7916919`). The viewer draws them on that main radar with a note (`48bdb42`).
 
 **A map without a radar** still replays on a plain background, with a "no radar for this map" notice.
 
@@ -55,9 +55,9 @@ flowchart LR
     A --> S["share of alive frames<br/>on a non-transparent pixel"]
 ```
 
-## Two-floor maps are v1.2
+## Two-floor maps: a stopgap now, a real fix in v1.2
 
-Nuke and Vertigo have two levels and need a second radar layer. The decided plan is a `z` or level column in round files and a layer toggle in the viewer. That changes the schema, so it is a `schema_version` bump, and it is why those maps wait for v1.2.
+Nuke, Train and Vertigo have two levels and need a second radar layer. For now they show their **main radar** with a note, and players on the other floor land in the wrong place on it. The real plan is a `z` or level column in round files and a layer toggle in the viewer. That changes the schema, so it is a `schema_version` bump, and it is why those maps wait for v1.2.
 
 ## Adding a single-level map (planned procedure)
 

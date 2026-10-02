@@ -81,7 +81,7 @@ flowchart LR
 - **Fetching your own demos from Valve.** Decided for v1.2, along with two-floor maps (Nuke, Vertigo). The design is in `plan.md`, and nothing is started.
 - **v1.1.** M5 is closed (maps, duplicate reuse, safe reparse, self-recovery) and M6's parser-side hardening and dev shadow compare are done. Details are on [worker](worker.md), [r2-layout](r2-layout.md), [maps](maps.md) and the two runbooks.
 - **ADR on pro demos.** The one follow-up from the tournament sweep: 5 full recordings show 2 to 11% ADR gaps for a few players, cause unknown. It blocks nothing. See [match-logic](match-logic.md#tournament-gotv-demos-the-gate-passed).
-- **Narrative log.** The design is approved in full. The parser now writes the log with `demo parse` (facts, rounds, bomb timeline, opening kills, trades, multi-kills and clutches), but the server doesn't ship it yet and its R2 key is undecided.
+- **Narrative log.** The design is approved in full and the parser writes the log with `demo parse`. Left: coded notes, the server writing it to R2 (the key is undecided), `schema/log.schema.json` for the user to approve, and the story pane.
 - **Match Pulse.** Approved for v1.2. The back end is built behind a flag on dev, and the replay already draws the win-chance line under the scrubber with kill marks sized by swing. The "rounds worth watching" shelf waits for human ratings. See [pulse](pulse.md).
 
 ## The learning center

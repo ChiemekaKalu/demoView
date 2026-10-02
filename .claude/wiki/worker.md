@@ -18,7 +18,7 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `POST /api/matches/:id/pulse` | Queue a Pulse for the live parse | 401, 404, 409 |
 | `POST /api/admin/cron/:job` | Run the sweeper, the reparse batch or the cleanup by hand, so checks don't wait for the clock (`b64b6db`) | |
 | `POST /api/matches/:id/reparse` | Queue a reparse. The match stays `ready` on its live parse while it runs (`a37fc0d`) | 401, and 429 past the rate limit |
-| `GET /api/maps/:name` | `{ name, pos_x, pos_y, scale }`, cached a day (`091b2b5`) | 404 no radar, or a two-floor map |
+| `GET /api/maps/:name` | `{ name, pos_x, pos_y, scale }`, cached a day (`091b2b5`) | 404 no radar. A two-floor map returns its main radar with `two_floor: true` (`7916919`) |
 | `GET /api/maps/:name/radar.png` | The radar image, cached a day, with an ETag | 404 |
 
 The last two weren't in the original spec. The viewer needs `match.json` for the kill feed, and kills in D1 lack assisters. The summary GET leaves Steam ids out. `match.json` carries them, by the user's decision to keep them.

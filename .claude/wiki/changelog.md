@@ -2,6 +2,14 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, later: two-floor maps stop looking broken
+
+- **Two-floor maps show their main radar** (`7916919`, `48bdb42`): Nuke, Train and Vertigo used to get a 404 from the maps route and replayed on a plain grid. The route now returns the main radar with `two_floor: true`, and the viewer draws it with a note. Players on the other floor land in the wrong place until v1.2 adds a radar per floor. Wiki: [maps](maps.md), [worker](worker.md), [viewer](viewer.md).
+- **A findings page** for the pro-round study is in the viewer, linked from the upload page and loaded as its own chunk (`1684173`, `752cb25`, `e9bd483`). Wiki: [viewer](viewer.md).
+- **The narrative log's parser side is spelled out** (`ff22f9a`): `demo parse` writes `facts`, `derived` and `notes` files, and what's left is coded notes, the server writing to R2, `schema/log.schema.json` for the user to approve, and the story pane. Wiki: [parser](parser.md), [README](README.md).
+- The scoreboard check against the game's counters is kept as a tool (`09e8d4f`). Wiki: [testing](testing.md).
+- Other sessions added their own pickup prompts (`408fdc7`, `3a87d15`, `c4b23ab`). The [pickup](pickup.md) page now points at them.
+
 ## 2026-10-02, after the stopping point: a broken diagram, Pulse in the viewer, the log writes
 
 - **Fix:** one mermaid diagram was broken. The sequence diagram on the big-picture page had a semicolon in a message (`save players, rounds, kills; status ready`), and a semicolon ends a statement, so the whole diagram failed with a syntax error. It is reworded, and the components diagram beside it is tidied. A scan of every diagram in the wiki found no other semicolon, and every page now renders with no mermaid errors. Wiki: [big-picture](big-picture.md).

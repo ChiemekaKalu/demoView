@@ -39,7 +39,7 @@ The order and groups are `PATH` in `site/src/content.ts`. A page not listed ther
 
 ## How current it is
 
-- **Wiki and site are current to repo commit `cc4c6b3`** (the newest non-wiki commit at the last pass, "add opening kills, trades, multi-kills and clutches to the narrative log"), and the changelog's top entry says what that pass covered.
+- **Wiki and site are current to repo commit `408fdc7`** (the newest non-wiki commit at the last pass, "add the parser session's pickup prompt"), and the changelog's top entry says what that pass covered. Other sessions now keep their own pickup prompts under `../ideas/` and in `.claude`, which are worth reading alongside this one.
 - **State of the project it describes:** v1 is built. M0 to M4 are done: the schema and fixtures, the v0 parser, the cloud pipeline (dev and prod live), the viewer, and entity decoding with **prod shipping our own round files**. M5 (maps, duplicate reuse, safe reparse, self-recovery) is closed, and M6's parser-side hardening and the dev shadow compare are done.
 - **The last changelog entry** is the one at the top of `changelog.md`. The newest hash named in it is your "last seen" for the next pass.
 

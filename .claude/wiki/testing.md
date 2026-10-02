@@ -89,6 +89,7 @@ The two public demos were an *interim* choice, and they are still the ones CI ca
 | Round files | `demo diff` on `rounds/` | Our own round files against the oracle's on all 10 demos: players and kills have zero mismatches, and runs are byte-identical. |
 | Entity state | `parser/entities` tests | Decoded pawn position, view angle and health agree with the oracle on every frame of all 10 demos, and full-packet state equals state built from deltas. |
 | Fault drill | Dev, with the fault flag | 20 uploads under a forced transient failure all ended `failed` with a coded error after 3 attempts, none waiting longer than 0.5 minutes. |
+| Scoreboard check | `tools/` (`09e8d4f`) | The scoreboard is checked against the game's own counters on the user's matches, and the check is kept as a tool. |
 | Reparse | Worker tests | A reparse with fewer rounds hides the old extra rounds (`16c8041`). |
 
 Tests that need real demos skip when the files are absent, so CI stays green on forks. The CI `diff` job also skips with a notice when the fixture secrets are missing.
