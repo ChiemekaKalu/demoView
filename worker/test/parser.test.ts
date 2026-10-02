@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { httpParser, type Fetcher } from "../src/parser";
+import { httpParser, withFault, type Fetcher, type Parser } from "../src/parser";
 
 const JOB = { match_id: "0123456789abc", demo_key: "demos/0123456789abc.dem", parse_id: "01k6gq3m1abcdefg" };
 
@@ -89,5 +89,21 @@ describe("httpParser", () => {
     const result = await parser.parse(JOB);
     expect(result.kind).toBe("transient");
     expect(result).toMatchObject({ error: expect.stringContaining("connection refused") });
+  });
+});
+
+describe("withFault", () => {
+  const real: Parser = { parse: vi.fn(async () => ({ kind: "ok" as const, status: 200, body: {} })) };
+
+  it.each([
+    ["reject", { kind: "rejected", status: 422, code: "bad_demo", error: "fault injected" }],
+    ["fail", { kind: "transient", status: 503, error: "fault injected" }],
+  ])("FAULT=%s answers every parse without the parser", async (fault, result) => {
+    expect(await withFault(real, fault).parse(JOB)).toEqual(result);
+    expect(real.parse).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, "", "other"])("leaves the parser alone for %j", (fault) => {
+    expect(withFault(real, fault)).toBe(real);
   });
 });

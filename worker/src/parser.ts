@@ -28,6 +28,17 @@ export interface Parser {
   parse(request: ParseRequest, attempt?: ParseAttempt): Promise<ParseResult>;
 }
 
+// A dev-only fault flag for the recovery checks, standing in for a broken
+// parser build: FAULT=reject answers every parse as a bad demo, FAULT=fail
+// as a transient failure. The prod deploy refuses to run with it set.
+export function withFault(parser: Parser, fault: string | undefined): Parser {
+  if (fault === "reject") {
+    return { parse: async () => ({ kind: "rejected", status: 422, code: "bad_demo", error: "fault injected" }) };
+  }
+  if (fault === "fail") return { parse: async () => ({ kind: "transient", status: 503, error: "fault injected" }) };
+  return parser;
+}
+
 // Stop waiting well inside the queue consumer's 15-minute limit. Parses take
 // seconds.
 const TIMEOUT_MS = 11 * 60 * 1000;

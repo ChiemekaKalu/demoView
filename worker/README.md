@@ -85,6 +85,8 @@ The queue consumer sends each parse to one container through its Durable Object 
 
 The account, D1 databases (migrations applied), R2 buckets, queues and Worker secrets (`UPLOAD_TOKEN`, `PARSE_SECRET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) exist in both environments, and each bucket's CORS policy allows `PUT` from the Worker's origin, because browsers upload straight to R2. New migrations go first: `wrangler d1 migrations apply DB --remote` (plus `--env prod`).
 
+On dev only, the `FAULT` secret stands in for a broken parser build in the recovery checks: `reject` answers every parse as a bad demo, and `fail` as a transient failure. The prod deploy refuses to run while prod has it set.
+
 ## Local development
 
 `npm run dev` runs the API and both queue consumers with D1, R2 and Queues emulated locally. Run `npm run build:web` and `npm run migrate:local` first. Local D1 data is keyed by `database_id`, so migrate again if that changes. The parser container is off in `wrangler dev` (`dev.enable_containers`), since it needs Docker; set it to `true` with Docker running to parse locally. Presigned URLs always point at real R2, so for a local end-to-end run, put the demo with `wrangler r2 object put demoview-dev/demos/<id>.dem --local --file <demo>` instead.

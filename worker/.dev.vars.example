@@ -7,6 +7,10 @@ UPLOAD_TOKEN=change-me
 # Sent to the parser as X-Parse-Secret, and passed to its container
 PARSE_SECRET=change-me
 
+# Dev only, for the recovery checks: "reject" or "fail" makes every parse a bad
+# demo or a transient failure. The prod deploy refuses to run with it set.
+FAULT=
+
 # R2 S3 API credentials: presigned upload URLs, and the parser container
 R2_ACCESS_KEY_ID=change-me
 R2_SECRET_ACCESS_KEY=change-me
