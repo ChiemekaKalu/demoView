@@ -46,6 +46,7 @@ func tell(e eventlog.Emitter, b built) {
 		st.emitWindow()
 		for r := range st.res.Rounds {
 			st.emitRound(r, st.res.Rounds, st.outs[r])
+			st.emitKills(r)
 		}
 	}
 }

@@ -160,3 +160,68 @@ func TestStoryAgreesWithTheMatch(t *testing.T) {
 		t.Errorf("match.live_window %+v", w)
 	}
 }
+
+// The kill stories of one round: c opens on a; b trades c for a, and d
+// trades b for c, each within 5 seconds; b is left alone against two, then
+// d against one, and d wins.
+func TestStoryKills(t *testing.T) {
+	l, a, b, c, d := twoVsTwo()
+	l.ev(10, BeginNewMatch).spawn(10, a, b, c, d).ev(100, RoundFreezeEnd)
+	l.kill(200, c, a).kill(300, b, c).kill(400, d, b).ev(500, WinPanelMatch)
+	res, _, derived := tellLog(t, l, nil)
+	who := func(name string) float64 { return idxOf(res, name) }
+
+	if o := ofType(derived, "kill.opening"); len(o) != 1 || o[0].Tick != 200 || o[0].D["attacker"] != who("c") || o[0].D["victim"] != who("a") {
+		t.Errorf("kill.opening %+v", o)
+	}
+	trades := ofType(derived, "kill.trade")
+	wantTrades := []map[string]any{
+		{"attacker": who("b"), "victim": who("c"), "avenged": who("a")},
+		{"attacker": who("d"), "victim": who("b"), "avenged": who("c")},
+	}
+	if len(trades) != len(wantTrades) {
+		t.Fatalf("kill.trade %+v", trades)
+	}
+	for i, tr := range trades {
+		if !reflect.DeepEqual(tr.D, wantTrades[i]) || len(tr.Basis) != 2 {
+			t.Errorf("kill.trade %d: %v basis %v, want %v", i, tr.D, tr.Basis, wantTrades[i])
+		}
+	}
+	clutches := ofType(derived, "round.clutch")
+	want := []map[string]any{
+		{"player": who("b"), "against": 2.0, "won": false},
+		{"player": who("d"), "against": 1.0, "won": true},
+	}
+	if len(clutches) != len(want) {
+		t.Fatalf("round.clutch %+v", clutches)
+	}
+	for i, c := range clutches {
+		if !reflect.DeepEqual(c.D, want[i]) {
+			t.Errorf("round.clutch %d: %v, want %v", i, c.D, want[i])
+		}
+	}
+	if m := ofType(derived, "round.multikill"); len(m) != 0 {
+		t.Errorf("round.multikill %+v, want none", m)
+	}
+}
+
+// Three kills by one player are a multi-kill; a kill that comes more than 5
+// seconds after the teammate's death is no trade.
+func TestStoryMultikill(t *testing.T) {
+	l := &testLog{}
+	a, b, c := l.human("a", CT), l.human("b", CT), l.human("c", CT)
+	d, e, f := l.human("d", T), l.human("e", T), l.human("f", T)
+	l.cvar(0, "mp_maxrounds", "24").cvar(0, "mp_roundtime_defuse", "1.92")
+	l.ev(10, BeginNewMatch).spawn(10, a, b, c, d, e, f).ev(100, RoundFreezeEnd)
+	l.kill(200, d, b).kill(1000, a, d).kill(1100, a, e).kill(1200, a, f).ev(1300, WinPanelMatch)
+	res, _, derived := tellLog(t, l, nil)
+	if m := ofType(derived, "round.multikill"); len(m) != 1 || m[0].Tick != 1200 || m[0].D["player"] != idxOf(res, "a") || m[0].D["kills"] != 3.0 || len(m[0].Basis) != 3 {
+		t.Errorf("round.multikill %+v", m)
+	}
+	if tr := ofType(derived, "kill.trade"); len(tr) != 0 {
+		t.Errorf("kill.trade %+v, want none: a avenged b 12.5 s later", tr)
+	}
+	if c := ofType(derived, "round.clutch"); len(c) != 1 || c[0].D["player"] != idxOf(res, "f") || c[0].D["against"] != 2.0 || c[0].D["won"] != false {
+		t.Errorf("round.clutch %+v", c)
+	}
+}
