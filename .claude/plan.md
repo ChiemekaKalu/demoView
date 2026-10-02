@@ -86,9 +86,8 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 - [x] The oracle defaults to 64 Hz (9ab7e1f). It writes compact round files, at most 1.5 MB raw (about 100 KB gzipped). Peak memory is 412 MB on Nuke.
 - [x] **First real end-to-end parse on dev (2026-10-02).** The user's de_ancient match (166 MB) went from upload to ready in about 48 s; the parse took 31.6 s on attempt 1. The D1 scoreboard equals local `demo parse`. Round files are served as application/json with brotli: 503 KB becomes 56 KB on the wire at 64 Hz.
 - [x] GitHub remote `ChiemekaKalu/demoView` (private). The first CI run passed all 7 checks, so the Docker build is verified.
-- [ ] The rest of M2:
-  - the first green CI deploy run. `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are set as repo secrets (2026-10-02).
-  - the prod deploy, once the user OKs it
+- [x] **First green CI deploy (2026-10-02, run 36994672034).** All 7 checks passed, then dev and prod deployed from `main`. Prod is live. *M2 exit met.*
+- [ ] *Optional:* set `FIXTURES_R2_ACCESS_KEY_ID` and `FIXTURES_R2_SECRET_ACCESS_KEY` (read-only on `demoview-fixtures`) so the CI diff job runs instead of skipping.
 
 ## M3 groundwork (pulled forward)
 
