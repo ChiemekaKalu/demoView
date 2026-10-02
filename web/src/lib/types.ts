@@ -81,6 +81,18 @@ export interface RoundEvent {
 export type MatchStatus = 'uploaded' | 'queued' | 'parsing' | 'ready' | 'failed'
 
 // GET /api/matches/:id. D1 columns can be null until a parse fills them.
+// One row of GET /api/matches/:id/events: a status change, parse attempt,
+// reparse request or cleanup.
+export interface MatchEvent {
+  seq: number
+  ts: number
+  kind: 'status' | 'attempt' | 'reparse' | 'cleanup'
+  msg: string
+  attempt: number | null
+  build: string | null
+  parse_id: string | null
+}
+
 export interface MatchSummary {
   id: string
   status: MatchStatus

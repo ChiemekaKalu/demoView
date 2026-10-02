@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'preact/hooks'
-import { ApiError, getSummary, hasReplay, isAbort, isFixture, SAMPLE_ROUNDS } from '../api'
+import { ApiError, getEvents, getSummary, hasReplay, isAbort, isFixture, SAMPLE_ROUNDS } from '../api'
 import { explainFailure, schemaProblem } from '../lib/errors'
 import { reasonLabel, reasonShort, SIDE_GLYPH, sideOf } from '../lib/format'
 import { mapTitle } from '../lib/maps'
-import type { MatchSummary, SummaryPlayer } from '../lib/types'
+import type { MatchEvent, MatchSummary, SummaryPlayer } from '../lib/types'
 import { Link } from '../Link'
 import { useTitle } from '../router'
 
@@ -96,6 +96,7 @@ export function Match({ id }: { id: string }) {
           {message}
         </p>
         {detail && <p class="muted small">Details: {detail}</p>}
+        <History id={id} />
       </main>
     )
   }
@@ -136,7 +137,42 @@ export function Match({ id }: { id: string }) {
         <h2 id="rounds">Rounds</h2>
         <RoundList id={id} summary={summary} />
       </section>
+      {!isFixture(id) && <History id={id} />}
     </main>
+  )
+}
+
+// The match's pipeline history: uploads, parse attempts, reparses and
+// cleanups. Loaded the first time it is opened.
+function History({ id }: { id: string }) {
+  const [rows, setRows] = useState<MatchEvent[] | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
+  const onToggle = (e: Event) => {
+    if (!(e.currentTarget as HTMLDetailsElement).open || rows) return
+    setProblem(null)
+    getEvents(id).then(setRows, (err: unknown) => setProblem(err instanceof Error ? err.message : String(err)))
+  }
+  const when = (ts: number) => new Date(ts).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'medium' })
+  return (
+    <details class="history" onToggle={onToggle}>
+      <summary>Pipeline history</summary>
+      {problem ? (
+        <p class="error">{problem}</p>
+      ) : !rows ? (
+        <p class="muted small">Loading…</p>
+      ) : rows.length === 0 ? (
+        <p class="muted small">Nothing recorded yet.</p>
+      ) : (
+        <ol>
+          {rows.map((r) => (
+            <li key={r.seq}>
+              <time dateTime={new Date(r.ts).toISOString()}>{when(r.ts)}</time> {r.msg}
+              {r.build && <span class="muted"> · build {r.build}</span>}
+            </li>
+          ))}
+        </ol>
+      )}
+    </details>
   )
 }
 

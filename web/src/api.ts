@@ -6,7 +6,7 @@
 import { deriveSummary, roundFileName } from './lib/fixtures'
 import { schemaProblem } from './lib/errors'
 import { apiMap, MAPS, type MapInfo, type RadarInfo } from './lib/maps'
-import type { MatchFile, MatchSummary, RoundFile } from './lib/types'
+import type { MatchEvent, MatchFile, MatchSummary, RoundFile } from './lib/types'
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
 const SAMPLES = `${import.meta.env.BASE_URL}samples`
@@ -122,6 +122,13 @@ export async function getSummary(id: string, opts: { fresh?: boolean; signal?: A
   })
   if (summary.status === 'ready') readySummaries.set(id, summary)
   return summary
+}
+
+// The match's pipeline history, oldest first. Fixtures have none.
+export async function getEvents(id: string): Promise<MatchEvent[]> {
+  if (isFixture(id)) return []
+  return (await request<{ events: MatchEvent[] }>(`${API_BASE}/api/matches/${enc(id)}/events`, { cache: 'no-store' }))
+    .events
 }
 
 // Whether round n has a replay file. Fixtures only have a few.

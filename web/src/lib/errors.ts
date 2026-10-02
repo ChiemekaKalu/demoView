@@ -10,6 +10,7 @@ const FAILURES = new Map([
   ['too_large', 'The demo is larger than 1 GB, the upload limit.'],
   ['bad_output', 'The parser wrote something the site could not read. This is a bug on our side.'],
   ['parse_failed', 'The parser failed three times in a row. It may be a passing problem, so try uploading the demo again later.'],
+  ['stuck', 'The parse stopped answering and was given up on. Try uploading the demo again.'],
 ])
 
 // The message for a failed match, and the raw detail behind it when the code

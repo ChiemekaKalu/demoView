@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, getMap, getMatchFile, getRound, getSummary, uploadDemo } from './api'
+import { ApiError, getEvents, getMap, getMatchFile, getRound, getSummary, uploadDemo } from './api'
 import { MAPS } from './lib/maps'
 
 // The module caches per match id, so each test uses its own id.
@@ -182,5 +182,15 @@ describe('uploadDemo', () => {
     const cb = { onStage: () => {}, onProgress: () => {}, signal: new AbortController().signal }
     expect(await uploadDemo(new File(['PBDEMS2'], 'a.dem'), 'token', cb)).toBe('aaaaaaaaaaaa8')
     expect(urls()).toEqual(['/api/matches', '/api/matches/aaaaaaaaaaaa9/uploaded'])
+  })
+})
+
+describe('getEvents', () => {
+  it("reads the match's history, and has none for the sample", async () => {
+    const row = { seq: 1, ts: 5, kind: 'status', msg: 'uploaded', attempt: null, build: null, parse_id: null }
+    fetchMock.mockResolvedValue(json({ events: [row] }))
+    expect(await getEvents('aaaaaaaaaaab4')).toEqual([row])
+    expect(urls()).toEqual(['/api/matches/aaaaaaaaaaab4/events'])
+    expect(await getEvents('sample')).toEqual([])
   })
 })
