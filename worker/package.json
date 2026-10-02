@@ -4,12 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "build:web": "npm --prefix ../web run build",
     "dev": "wrangler dev",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "lint": "oxlint",
     "types": "wrangler types --include-runtime=false --strict-vars=false --env-file .dev.vars.example",
-    "migrate:local": "wrangler d1 migrations apply DB --local"
+    "migrate:local": "wrangler d1 migrations apply DB --local",
+    "deploy:dev": "npm run build:web && wrangler deploy --env=\"\"",
+    "deploy:prod": "npm run build:web && wrangler deploy --env prod"
   },
   "dependencies": {
     "aws4fetch": "^1.0.20"

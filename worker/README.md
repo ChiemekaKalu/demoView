@@ -1,6 +1,6 @@
 # worker
 
-The Cloudflare Worker: the public API and the parse queue consumer. It owns D1. See the API, Queue consumer and Data model sections of `.claude/spec.md`.
+The Cloudflare Worker: the public API, the parse queue consumer, and the host for the viewer's static files. It owns D1. See the API, Queue consumer and Data model sections of `.claude/spec.md`.
 
 ```sh
 npm ci
@@ -8,7 +8,10 @@ npm test              # vitest inside workerd, with fake secrets and a stubbed p
 npm run typecheck
 npm run lint
 npm run types         # regenerate worker-configuration.d.ts after editing wrangler.jsonc
-npm run dev           # wrangler dev; needs a .dev.vars (copy .dev.vars.example)
+npm run dev           # wrangler dev; needs a .dev.vars (copy .dev.vars.example) and a web build
+npm run build:web     # build the viewer into ../web/dist
+npm run deploy:dev    # build the viewer, then deploy dev
+npm run deploy:prod   # build the viewer, then deploy prod
 ```
 
 If npm 10.9 has to resolve the tree without `package-lock.json`, it crashes on Vite 8's optional peers (`Cannot read properties of null (reading 'edgesOut')`). Regenerate the lockfile with `npx npm@11 install` instead.
@@ -27,6 +30,16 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 
 `players` rows are `{ idx, name, team, kills, deaths, assists, adr, hs_pct }`, ordered by `idx`. Steam ids stay out until the spec's open question on them is settled. `rounds` rows are `{ n, winner, reason, side_a }`, ordered by `n`. Timestamps are Unix milliseconds.
 
+## Viewer
+
+The same Worker serves the viewer from `../web/dist` (`assets` in `wrangler.jsonc`), so the API is same-origin and needs no CORS. Build the viewer before `wrangler dev` or a deploy; the `deploy:*` scripts do it for you.
+
+- `/api/*` always runs the Worker (`run_worker_first`), even for a browser navigation.
+- Any other path that isn't a file gets `index.html` (`single-page-application`), so `/m/:id` and `/m/:id/r/:n` load directly.
+- The build includes `samples/` (from `schema/samples`), so `/m/sample` works in every environment.
+
+Tests don't need the viewer build.
+
 ## Match status
 
 ```text
@@ -41,15 +54,15 @@ A match is `uploaded` from creation until the upload is confirmed. While a retry
 
 ## Setup for M2
 
-`wrangler.jsonc` has placeholders. The top level is dev; `--env prod` is prod.
+Done: the account, the D1 databases (ids in `wrangler.jsonc`, migrations applied to both), the R2 buckets and the four queues. The top level of `wrangler.jsonc` is dev; `--env prod` is prod.
 
-1. `wrangler d1 create demoview-dev` (and `demoview-prod`). Paste each `database_id` into `wrangler.jsonc`.
-2. Create R2 buckets `demoview-dev` and `demoview-prod`. Allow `PUT` from the viewer origin in each bucket's CORS policy, because browsers upload straight to R2.
-3. `wrangler queues create` for `demoview-dev-parse`, `demoview-dev-parse-dlq`, `demoview-prod-parse` and `demoview-prod-parse-dlq`.
-4. Set `R2_ACCOUNT_ID` and `PARSER_URL` in `wrangler.jsonc`. `R2_BUCKET` already names each environment's bucket; the parser service reads the same variable.
-5. `wrangler secret put` for `UPLOAD_TOKEN`, `PARSE_SECRET`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`. Repeat with `--env prod` for prod. The R2 keys come from an R2 API token with Object Read & Write on that environment's bucket.
-6. `wrangler d1 migrations apply DB --remote` (and `--env prod`), then `wrangler deploy` (and `--env prod`).
+Still to do, per environment:
+
+1. Set `PARSER_URL` in `wrangler.jsonc` once the Cloud Run service exists.
+2. `wrangler secret put` for `UPLOAD_TOKEN`, `PARSE_SECRET`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` (add `--env prod` for prod). The R2 keys come from an R2 API token with Object Read & Write on that environment's bucket.
+3. Allow `PUT` from the Worker's origin (its workers.dev or custom domain) in the bucket's CORS policy, because browsers upload straight to R2.
+4. `npm run deploy:dev` or `npm run deploy:prod`. New migrations go first: `wrangler d1 migrations apply DB --remote` (plus `--env prod`).
 
 ## Local development
 
-`npm run dev` runs the API and both queue consumers with D1, R2 and Queues emulated locally. Run `npm run migrate:local` once first. To parse locally, set `PARSER_URL=http://localhost:8080` in `.dev.vars` and run the parser container. Presigned URLs always point at real R2, so for a local end-to-end run, put the demo with `wrangler r2 object put demoview-dev/demos/<id>.dem --local --file <demo>` instead.
+`npm run dev` runs the API and both queue consumers with D1, R2 and Queues emulated locally. Run `npm run build:web` and `npm run migrate:local` first. Local D1 data is keyed by `database_id`, so migrate again if that changes. To parse locally, set `PARSER_URL=http://localhost:8080` in `.dev.vars` and run the parser container. Presigned URLs always point at real R2, so for a local end-to-end run, put the demo with `wrangler r2 object put demoview-dev/demos/<id>.dem --local --file <demo>` instead.

@@ -10,6 +10,15 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "observability": { "enabled": true },
+  // The viewer, served by this same Worker so the API needs no CORS. Build
+  // it first (`npm run build:web`). Requests for /api/* always reach the
+  // Worker; any other path that isn't a file gets index.html, so the
+  // viewer's client-side routes (/m/:id, /m/:id/r/:n) load directly.
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
   "vars": {
     "PARSER_URL": "https://demoview-parser-dev.example.run.app",
     "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
