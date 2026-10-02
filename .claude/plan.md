@@ -46,9 +46,14 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - The Dockerfile's build context is the repo root. It's unverified until CI builds it.
 - [x] `parser/parse`: `parse.Run`, shared by the CLI and the server.
 - [x] Wrangler config points at the real Cloudflare account and D1 databases (user-approved), and `0001_init.sql` is applied to remote dev and prod D1.
-- [ ] Worker `GET /api/matches/:id/match.json`. The viewer already calls it for the kill feed.
-- [ ] Serve the viewer from the same Worker as static assets, with an SPA fallback (`not_found_handling: "single-page-application"`), so no API CORS is needed.
-- [ ] The rest of M2: R2 buckets and CORS, queues, Cloud Run and secrets, plus CI.
+- [x] Worker `GET /api/matches/:id/match.json`: streams it from R2, 404 until ready, max-age 300 plus an ETag.
+- [x] The viewer is served from the same Worker. Assets come from `../web/dist` with an SPA fallback, and `/api/*` runs the Worker first, so the API needs no CORS. `npm run deploy:dev` and `deploy:prod` build the web app first.
+- [ ] The rest of M2. Remaining per `worker/README.md`:
+  - R2 buckets with CORS (PUT from the Worker origin)
+  - queues
+  - Cloud Run and its `PARSER_URL`
+  - 4 secrets per env
+  - CI, which needs a GitHub remote; there isn't one yet
 
 ## M3 groundwork (pulled forward)
 
@@ -123,13 +128,13 @@ Things the spec leaves open that the code has to decide. Each one has a proposed
 
 - **Status before upload.** *Built:* `uploaded` means "created, awaiting upload". Proposed: rename it to `pending`.
 - **GET `/api/matches/:id` shape.** *Built:* `{id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, players[], rounds[]}`, in `worker/README.md`. Proposed: copy it into the spec.
-- **Kill feed source.** Round files reference kills by index, but D1 `kills` has no assister and no stable index. Proposed: add `GET /api/matches/:id/match.json`, served from R2.
+- **Kill feed source.** *Built:* `GET /api/matches/:id/match.json`, served from R2. Proposed: add it to the spec's API table.
 - **Final score.** *Built:* the Worker counts round winners into `score_a`/`score_b`.
 - **Upload auth.** *Built:* `Authorization: Bearer <token>` on both POSTs.
-- **Caching vs reparse.** Round files are cached `immutable`, but a reparse overwrites the same keys. A reparse that yields fewer rounds also leaves stale `rounds/NN.json` behind, because the store has no delete. Proposed: versioned keys (`parsed/{id}/v{parser_version}/...`).
+- **Caching vs reparse.** *Fixed in the viewer:* round and match.json URLs carry `?v=<parsed_at>`, so a reparse gets fresh cache entries. R2 keys are unchanged. *Still open:* a reparse that yields fewer rounds leaves stale `rounds/NN.json` behind, because the store has no delete. That's harmless, because the round list comes from D1.
 - **Retries.** *Built:* `max_retries: 2` gives the spec's 3 attempts. The status returns to `queued` with the last error, and the DLQ sets `failed`.
 - **Secrets.** The Worker also needs R2 S3 credentials to presign uploads. The bucket env var is `R2_BUCKET` on both sides.
-- **CORS.** R2 buckets need a CORS rule for the browser PUT. Proposed: serve the viewer from the same Worker, so no API CORS is needed.
+- **CORS.** *Built:* the viewer is served by the same Worker, so the API needs no CORS. R2 buckets still need a CORS rule for the browser PUT.
 - **Long subrequest.** The consumer waits up to 11 minutes for Cloud Run; confirm in M2.
 - **Stub mode.** HEAD can't tell a missing bucket from a missing key, so a misconfigured bucket gives a 422 instead of a 500.
 - **Docker.** The build context is the repo root (`docker build -f parser/Dockerfile .`) so that `schema/samples` lands in the image as `/fixtures`. It needs BuildKit and is unverified until CI builds it.
