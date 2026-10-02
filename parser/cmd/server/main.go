@@ -19,9 +19,18 @@
 //	PARSER_STUB_DIR       copy match.json and rounds/*.json from this directory
 //	                      instead of parsing (the M2 stub pipeline)
 //	PARSER_ROUNDS         "oracle" to write round files with tools/oracle, the
-//	                      v1 setting; unset writes match.json only
+//	                      v1 setting in the image; "parser" (opt-in) to write
+//	                      our own, with the oracle's instead, if there is an
+//	                      oracle, when ours can't be trusted; unset writes
+//	                      match.json only
 //	PARSER_ORACLE_BIN     the oracle binary (default "oracle" on PATH; the
-//	                      image installs it at /usr/local/bin/oracle)
+//	                      image installs it at /usr/local/bin/oracle). If set,
+//	                      it must exist; with "parser", a missing default
+//	                      means no fallback
+//	PARSER_SHADOW         "oracle" (dev) to run the oracle again after each
+//	                      parse that ships our round files, once the response
+//	                      has gone, and log how its output compares; needs
+//	                      PARSER_ROUNDS=parser and an oracle
 //	PARSER_BUILD          the build id the Worker reparses by (default "dev");
 //	                      written to each manifest as parsed_by
 package main
@@ -72,9 +81,13 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 	if err != nil {
 		return err
 	}
-	s := newServer(st, secret, parse.RunStats, getenv("PARSER_STUB_DIR"), logger)
+	s := newServer(st, secret, parse.Parse, getenv("PARSER_STUB_DIR"), logger)
 	s.build = cmp.Or(getenv("PARSER_BUILD"), s.build)
+	s.parserRounds = getenv("PARSER_ROUNDS") == "parser"
 	if s.oracle, err = oracleFromEnv(getenv); err != nil {
+		return err
+	}
+	if s.shadow, err = shadowFromEnv(getenv, s.oracle != nil); err != nil {
 		return err
 	}
 	ln, err := net.Listen("tcp", ":"+cmp.Or(getenv("PORT"), "8080"))
@@ -96,6 +109,8 @@ func run(ctx context.Context, getenv func(string) string, logger *slog.Logger) e
 		"build", s.build,
 		"store", storeKind(st),
 		"rounds", cmp.Or(getenv("PARSER_ROUNDS"), "none"),
+		"oracle", s.oracle != nil,
+		"shadow", s.shadow,
 		"stub", s.stubDir != "",
 		"gomaxprocs", runtime.GOMAXPROCS(0),
 		"peak_reset", s.resetPeak(),
@@ -137,24 +152,44 @@ func storeKind(st store.Store) string {
 	return "r2"
 }
 
-// oracleFromEnv returns the round file producer PARSER_ROUNDS asks for: nil
-// when unset, or the oracle, whose binary must exist so a misconfigured
-// image fails at startup instead of on every parse.
+// oracleFromEnv returns the oracle PARSER_ROUNDS calls for. Unset needs
+// none. "oracle" needs it, so its binary must exist and a misconfigured
+// image fails at startup instead of on every parse. "parser" uses it as the
+// fallback: a PARSER_ORACLE_BIN that is set must exist too, but without
+// one, no "oracle" on PATH just means no fallback, and nil.
 func oracleFromEnv(getenv func(string) string) (*oracle, error) {
-	switch mode := getenv("PARSER_ROUNDS"); mode {
+	mode := getenv("PARSER_ROUNDS")
+	switch mode {
 	case "":
 		return nil, nil
-	case "oracle":
-		bin := getenv("PARSER_ORACLE_BIN")
-		if bin == "" {
-			bin = "oracle"
-		}
-		path, err := exec.LookPath(bin)
-		if err != nil {
-			return nil, fmt.Errorf("PARSER_ROUNDS=oracle: %w", err)
-		}
-		return &oracle{argv: []string{path}}, nil
+	case "oracle", "parser":
 	default:
-		return nil, fmt.Errorf("PARSER_ROUNDS=%q: want \"oracle\" or unset", mode)
+		return nil, fmt.Errorf("PARSER_ROUNDS=%q: want \"parser\", \"oracle\" or unset", mode)
 	}
+	bin := getenv("PARSER_ORACLE_BIN")
+	path, err := exec.LookPath(cmp.Or(bin, "oracle"))
+	switch {
+	case err == nil:
+		return &oracle{argv: []string{path}}, nil
+	case mode == "parser" && bin == "":
+		return nil, nil
+	}
+	return nil, fmt.Errorf("PARSER_ROUNDS=%s: %w", mode, err)
+}
+
+// shadowFromEnv reports whether PARSER_SHADOW=oracle asks for the shadow
+// compare. It needs our round files to compare (PARSER_ROUNDS=parser) and an
+// oracle to compare them with, so anything else is refused at startup.
+func shadowFromEnv(getenv func(string) string, haveOracle bool) (bool, error) {
+	switch mode := getenv("PARSER_SHADOW"); {
+	case mode == "":
+		return false, nil
+	case mode != "oracle":
+		return false, fmt.Errorf("PARSER_SHADOW=%q: want \"oracle\" or unset", mode)
+	case getenv("PARSER_ROUNDS") != "parser":
+		return false, errors.New("PARSER_SHADOW=oracle needs PARSER_ROUNDS=parser")
+	case !haveOracle:
+		return false, errors.New("PARSER_SHADOW=oracle needs an oracle: set PARSER_ORACLE_BIN or put oracle on PATH")
+	}
+	return true, nil
 }

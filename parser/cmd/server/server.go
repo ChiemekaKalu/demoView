@@ -24,13 +24,14 @@ import (
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/parse"
+	"github.com/ChiemekaKalu/demoview/parser/roundfile"
 	"github.com/ChiemekaKalu/demoview/parser/store"
 )
 
-// ParseFunc parses a streamed demo into match.json, with stats on how far
-// it got even when it fails. Errors caused by a bad demo wrap
-// demo.ErrBadDemo.
-type ParseFunc func(ctx context.Context, r io.Reader) (match.File, parse.Stats, error)
+// ParseFunc parses a streamed demo as parse.Parse does: match.json, and
+// round files when opt.Rounds is set, with stats on how far it got even
+// when it fails. Errors caused by a bad demo wrap demo.ErrBadDemo.
+type ParseFunc func(ctx context.Context, r io.Reader, opt parse.Options) (parse.Output, parse.Stats, error)
 
 // server is the parse service. See the spec's "Cloud Run route", which
 // holds wherever the container runs.
@@ -41,13 +42,19 @@ type server struct {
 	// stubDir, when set, holds match.json and rounds/*.json to copy instead
 	// of parsing. M2 deploys the pipeline this way before the parser is done.
 	stubDir string
-	// oracle, when set, produces the round files (PARSER_ROUNDS=oracle).
+	// parserRounds ships our own round files (PARSER_ROUNDS=parser).
+	parserRounds bool
+	// oracle, when set, produces the round files (PARSER_ROUNDS=oracle). With
+	// parserRounds, it stands in for ours when they can't be trusted.
 	oracle *oracle
+	// shadow compares each parse that ships our round files with the
+	// oracle's output, after the response (PARSER_SHADOW=oracle).
+	shadow bool
 	// build identifies the parser build (PARSER_BUILD), which reparses key on.
 	build string
 
 	log       *slog.Logger
-	inFlight  atomic.Int64 // parses running now
+	inFlight  atomic.Int64 // parses and shadow compares running now
 	resetPeak func() bool
 	peakMem   func() int64
 }
@@ -135,6 +142,9 @@ func (s *server) handleParse(w http.ResponseWriter, r *http.Request) {
 	if err := writeBody(w, status, body); err != nil {
 		log.Warn("response write failed", "status", status, "bytes", len(body), "error", err)
 	}
+	if s.shadow && err == nil && res.roundSource == "parser" {
+		s.shadowCompare(r.Context(), log, req, res)
+	}
 }
 
 // decodeRequest reads and checks the body of POST /parse. Its errors wrap
@@ -174,14 +184,15 @@ func (s *server) track(ctx context.Context, log *slog.Logger, req parseRequest) 
 type runResult struct {
 	matchJSON   []byte
 	source      string // whose match.json shipped: "parser", "oracle" or "stub"
-	roundSource string // whose round files shipped: "oracle", "stub" or "none"
+	roundSource string // whose round files shipped: "parser", "oracle", "stub" or "none"
+	rounds      []outFile
 	manifestSHA string
 	demoSize    int64
 	parse       parse.Stats
 	store       storeStats
 	stack       string // where the parse panicked
 
-	inFlight  int64  // parses running as this one ended, itself included
+	inFlight  int64  // parses and shadow compares running as this one ended, itself included
 	peakScope string // "parse", or "process" where the peak couldn't be reset
 	peakMem   int64
 
@@ -214,25 +225,82 @@ func (s *server) run(ctx context.Context, req parseRequest, res *runResult) erro
 	}
 	defer rc.Close() // even if the parse panics
 	res.demoSize, res.source, res.roundSource = size, "parser", "none"
-	file, stats, err := s.parse(ctx, rc)
+	out, stats, err := s.parse(ctx, rc, parse.Options{Rounds: s.parserRounds})
 	res.parse = stats
 	if err != nil {
 		return err
 	}
 	var buf bytes.Buffer
-	if err := match.Write(&buf, file); err != nil {
+	if err := match.Write(&buf, out.Match); err != nil {
 		return err
 	}
 	res.matchJSON = buf.Bytes()
 
-	var rounds []outFile
-	if s.oracle != nil {
-		if rounds, err = s.oracleRounds(ctx, st, req, res); err != nil {
-			return err
-		}
-		res.roundSource = "oracle"
+	if res.rounds, err = s.roundFiles(ctx, st, req, res, out); err != nil {
+		return err
 	}
-	return s.write(ctx, st, req, res, rounds)
+	return s.write(ctx, st, req, res, res.rounds)
+}
+
+// roundFiles returns the round files to ship and sets res.roundSource.
+// PARSER_ROUNDS=oracle ships the oracle's. PARSER_ROUNDS=parser ships ours
+// unless fallbackReason finds a reason not to, which a warning names; then
+// the oracle's ship if there is an oracle, and none if not.
+func (s *server) roundFiles(ctx context.Context, st store.Store, req parseRequest, res *runResult, out parse.Output) ([]outFile, error) {
+	if s.parserRounds {
+		reason := fallbackReason(out, s.oracle != nil)
+		if reason == "" {
+			res.roundSource = "parser"
+			return encodeRounds(out.Rounds)
+		}
+		source := "none"
+		if s.oracle != nil {
+			source = "oracle"
+		}
+		attrs := []any{"match_id", req.MatchID, "parse_id", req.ParseID, "fallback_reason", reason,
+			"round_source", source, "live_rounds", len(out.Match.Rounds), "kills", len(out.Match.Kills)}
+		if out.RoundsErr != nil {
+			attrs = append(attrs, "entity_error", out.RoundsErr.Error())
+		}
+		s.log.Warn("round file fallback", attrs...)
+	}
+	if s.oracle == nil {
+		return nil, nil
+	}
+	rounds, err := s.oracleRounds(ctx, st, req, res)
+	if err != nil {
+		return nil, err
+	}
+	res.roundSource = "oracle"
+	return rounds, nil
+}
+
+// fallbackReason says why our round files must not ship, or "" if they
+// may: "entity_error" when the entity stage failed, or, when an oracle can
+// stand in, "implausible_match" when match logic found fewer than 2 live
+// rounds or no kills. Every real match has more, and a round segmentation
+// bug would look like that.
+func fallbackReason(out parse.Output, haveOracle bool) string {
+	switch {
+	case out.RoundsErr != nil:
+		return "entity_error"
+	case haveOracle && (len(out.Match.Rounds) < 2 || len(out.Match.Kills) == 0):
+		return "implausible_match"
+	}
+	return ""
+}
+
+// encodeRounds encodes our round files as rounds/NN.json.
+func encodeRounds(files []roundfile.File) ([]outFile, error) {
+	out := make([]outFile, len(files))
+	for i, f := range files {
+		var buf bytes.Buffer
+		if err := roundfile.Write(&buf, f); err != nil {
+			return nil, err
+		}
+		out[i] = outFile{name: roundfile.Name(f.Round), data: buf.Bytes()}
+	}
+	return out, nil
 }
 
 // write puts the round files and match.json under the parse's prefix, then
@@ -268,12 +336,7 @@ func (s *server) write(ctx context.Context, st store.Store, req parseRequest, re
 // warning names the first difference.
 func (s *server) oracleRounds(ctx context.Context, st store.Store, req parseRequest, res *runResult) ([]outFile, error) {
 	start := time.Now()
-	rc, _, err := st.Open(ctx, req.DemoKey)
-	if err != nil {
-		return nil, err
-	}
-	defer rc.Close()
-	out, err := s.oracle.export(ctx, rc)
+	out, err := s.runOracle(ctx, st, req.DemoKey)
 	res.oracleMS = time.Since(start).Milliseconds()
 	res.oraclePeak, res.oracleStderr = out.peakMem, out.stderr
 	if err != nil {
@@ -286,6 +349,16 @@ func (s *server) oracleRounds(ctx context.Context, st store.Store, req parseRequ
 		s.log.Warn("match.json disagrees with the oracle's; shipping the oracle's", "match_id", req.MatchID, "mismatch", why)
 	}
 	return out.rounds, nil
+}
+
+// runOracle streams the demo at key from st into the oracle.
+func (s *server) runOracle(ctx context.Context, st store.Store, key string) (oracleOutput, error) {
+	rc, _, err := st.Open(ctx, key)
+	if err != nil {
+		return oracleOutput{}, err
+	}
+	defer rc.Close()
+	return s.oracle.export(ctx, rc)
 }
 
 // runStub checks the demo exists, then writes the fixture files as they are,
@@ -387,13 +460,17 @@ func classify(err error) (status int, result string, level slog.Level) {
 	return http.StatusInternalServerError, "error", slog.LevelError
 }
 
-// writeBody sends a JSON response and reports whether it reached the
-// connection.
+// writeBody sends a JSON response, with its length and flushed, so the
+// client has all of it while the handler goes on to a shadow compare. It
+// reports whether the response reached the connection.
 func writeBody(w http.ResponseWriter, status int, body []byte) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.WriteHeader(status)
-	_, err := w.Write(body)
-	return err
+	if _, err := w.Write(body); err != nil {
+		return err
+	}
+	return http.NewResponseController(w).Flush()
 }
 
 // errorJSON is the body of an error response. code is classify's result,

@@ -167,15 +167,15 @@ func errorCode(body []byte) string {
 }
 
 func neverParse(t *testing.T) ParseFunc {
-	return func(context.Context, io.Reader) (match.File, parse.Stats, error) {
+	return func(context.Context, io.Reader, parse.Options) (parse.Output, parse.Stats, error) {
 		t.Error("parse called")
-		return match.File{}, parse.Stats{}, nil
+		return parse.Output{}, parse.Stats{}, nil
 	}
 }
 
 func failParse(err error) ParseFunc {
-	return func(context.Context, io.Reader) (match.File, parse.Stats, error) {
-		return match.File{}, parse.Stats{}, err
+	return func(context.Context, io.Reader, parse.Options) (parse.Output, parse.Stats, error) {
+		return parse.Output{}, parse.Stats{}, err
 	}
 }
 
@@ -219,7 +219,7 @@ func TestBadRequest(t *testing.T) {
 // A parse writes under its own prefix and commits with a manifest listing
 // every file, and the response names the parse and the manifest.
 func TestManifest(t *testing.T) {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	h.srv.build = "a1b2c3d4e5f6"
 	h.putDemo(testDemo)
 	rec := httptest.NewRecorder()
@@ -261,7 +261,7 @@ func TestManifest(t *testing.T) {
 }
 
 func TestParseOK(t *testing.T) {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	h.putDemo(testDemo)
 
 	status, body := h.parse()
@@ -287,7 +287,7 @@ func TestParseOK(t *testing.T) {
 }
 
 func TestParseLogLines(t *testing.T) {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	h.putDemo(testDemo)
 	req := newParseRequest(context.Background())
 	req.Header.Set("X-Attempt", "2")
@@ -349,7 +349,7 @@ func TestParseLogLines(t *testing.T) {
 }
 
 func TestPeakScope(t *testing.T) {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	h.putDemo(testDemo)
 	h.srv.resetPeak = func() bool { return false }
 	h.parse()
@@ -363,8 +363,8 @@ func TestNotesAreCapped(t *testing.T) {
 	for i := range notes {
 		notes[i] = fmt.Sprintf("note %d", i)
 	}
-	h := newHarness(t, func(context.Context, io.Reader) (match.File, parse.Stats, error) {
-		return match.File{}, parse.Stats{Notes: notes}, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
+	h := newHarness(t, func(context.Context, io.Reader, parse.Options) (parse.Output, parse.Stats, error) {
+		return parse.Output{}, parse.Stats{Notes: notes}, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
 	}, "")
 	h.putDemo(testDemo)
 	h.parse()
@@ -378,7 +378,7 @@ func TestNotesAreCapped(t *testing.T) {
 }
 
 func TestParseBadDemo(t *testing.T) {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	h.putDemo([]byte("this is not a demo at all"))
 
 	status, body := h.parse()
@@ -397,7 +397,7 @@ func TestParseBadDemo(t *testing.T) {
 }
 
 func TestParseTruncatedDemo(t *testing.T) {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	// A preamble, then a frame header that promises more bytes than follow.
 	h.putDemo(append(append([]byte{}, testDemo...), 0x01, 0x00, 0x7f, 'x'))
 	if status, body := h.parse(); status != http.StatusUnprocessableEntity {
@@ -443,7 +443,7 @@ func (f *failingStore) Put(ctx context.Context, key string, data []byte) error {
 
 func TestStoreFailureIs500(t *testing.T) {
 	for _, fs := range []*failingStore{{failOpen: true}, {failPut: true}} {
-		h := newHarness(t, parse.RunStats, "")
+		h := newHarness(t, parse.Parse, "")
 		h.putDemo(testDemo)
 		fs.Store = h.store
 		h.srv.store = fs
@@ -462,7 +462,7 @@ func TestStoreFailureIs500(t *testing.T) {
 }
 
 func TestPanicIs500AndServingGoesOn(t *testing.T) {
-	h := newHarness(t, func(context.Context, io.Reader) (match.File, parse.Stats, error) {
+	h := newHarness(t, func(context.Context, io.Reader, parse.Options) (parse.Output, parse.Stats, error) {
 		panic("decoder bug")
 	}, "")
 	h.putDemo(testDemo)
@@ -480,7 +480,7 @@ func TestPanicIs500AndServingGoesOn(t *testing.T) {
 		t.Errorf("stack = %q, want the panicking function", stack)
 	}
 
-	h.srv.parse = parse.RunStats
+	h.srv.parse = parse.Parse
 	if status, body := h.parse(); status != http.StatusOK {
 		t.Errorf("next parse: status %d, body %s", status, body)
 	}
@@ -490,7 +490,7 @@ func TestPanicIs500AndServingGoesOn(t *testing.T) {
 }
 
 func TestCanceledIsAWarning(t *testing.T) {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	h.putDemo(testDemo)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -504,7 +504,7 @@ type brokenWriter struct{ *httptest.ResponseRecorder }
 func (brokenWriter) Write([]byte) (int, error) { return 0, errors.New("broken pipe") }
 
 func TestResponseWriteFailureIsLogged(t *testing.T) {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	h.putDemo(testDemo)
 	h.srv.routes().ServeHTTP(brokenWriter{httptest.NewRecorder()}, newParseRequest(context.Background()))
 	checkLog(t, h.lastLog(), map[string]any{
@@ -625,7 +625,7 @@ func TestRunLogsStartAndShutdown(t *testing.T) {
 		t.Fatalf("want listening, shutdown and stopped, got:\n%s", &logs)
 	}
 	listening := lines[0]
-	checkLog(t, listening, map[string]any{"message": "listening", "parser_version": parse.Version, "store": "r2", "rounds": "none", "stub": false})
+	checkLog(t, listening, map[string]any{"message": "listening", "parser_version": parse.Version, "store": "r2", "rounds": "none", "oracle": false, "shadow": false, "stub": false})
 	for _, k := range []string{"port", "gomaxprocs"} {
 		if n, _ := listening[k].(float64); n <= 0 {
 			t.Errorf("listening %s = %v, want a positive number", k, listening[k])

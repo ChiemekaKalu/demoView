@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/ChiemekaKalu/demoview/parser/parse"
+	"github.com/ChiemekaKalu/demoview/parser/roundfile"
 	"github.com/ChiemekaKalu/demoview/parser/store"
 )
 
@@ -60,11 +61,25 @@ func TestHelperOracle(t *testing.T) {
 	var match bytes.Buffer
 	json.NewEncoder(&match).Encode(file)
 	os.WriteFile(filepath.Join(out, "match.json"), match.Bytes(), 0o644)
-	// Round files record how much of the demo arrived on stdin, and the
-	// environment the oracle got.
-	for _, name := range []string{"01.json", "02.json"} {
-		rf, _ := json.Marshal(helperRound{Round: name, StdinBytes: len(stdin), Env: os.Environ()})
-		os.WriteFile(filepath.Join(out, "rounds", name), rf, 0o644)
+	switch mode {
+	case "rounds", "rounds-differ":
+		// Real round files, the ones parseWithRounds makes. "rounds-differ"
+		// moves a player in round 1 and leaves out the last round.
+		rounds := testRounds(file)
+		if mode == "rounds-differ" {
+			rounds[0].Players[0].X[0] += 5
+			rounds = rounds[:len(rounds)-1]
+		}
+		for _, rf := range rounds {
+			roundfile.WriteFile(out, rf)
+		}
+	default:
+		// Round files record how much of the demo arrived on stdin, and the
+		// environment the oracle got.
+		for _, name := range []string{"01.json", "02.json"} {
+			rf, _ := json.Marshal(helperRound{Round: name, StdinBytes: len(stdin), Env: os.Environ()})
+			os.WriteFile(filepath.Join(out, "rounds", name), rf, 0o644)
+		}
 	}
 	os.Exit(0)
 }
@@ -85,7 +100,7 @@ func fakeOracle(mode string) *oracle {
 }
 
 func newOracleHarness(t *testing.T, mode string) *harness {
-	h := newHarness(t, parse.RunStats, "")
+	h := newHarness(t, parse.Parse, "")
 	h.srv.oracle = fakeOracle(mode)
 	return h
 }
@@ -272,7 +287,7 @@ func TestOracleFromEnv(t *testing.T) {
 	if o, err := oracleFromEnv(getenv); o != nil || err != nil {
 		t.Errorf("unset: %v, %v", o, err)
 	}
-	env["PARSER_ROUNDS"] = "parser"
+	env["PARSER_ROUNDS"] = "bogus"
 	if _, err := oracleFromEnv(getenv); err == nil {
 		t.Error("unknown mode accepted")
 	}
@@ -332,7 +347,7 @@ func TestRealDemosWithOracle(t *testing.T) {
 
 	for _, p := range demos {
 		t.Run(filepath.Base(p), func(t *testing.T) {
-			h := newHarness(t, parse.RunStats, "")
+			h := newHarness(t, parse.Parse, "")
 			h.store = demoStore{Store: h.store, key: demoKey, path: p}
 			h.srv.store = h.store
 			h.srv.oracle = &oracle{argv: []string{bin}}
