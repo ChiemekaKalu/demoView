@@ -4,6 +4,8 @@ What moved, newest first. This is a digest, so `git log` has the full detail. Ea
 
 ## 2026-10-02, late night: the gate passes, and prod ships our round files
 
+- **Deployed and confirmed** (per `cloud`): run `37064251547` shipped `93000d4`, and prod's match manifest shows `match_source=parser`, `round_source=parser` and no fallback. M4 is done, and v1 is complete except the user's own desktop scrub check of the viewer. Wiki: [infra](infra.md), [README](README.md).
+
 - **The tournament-demo gate passed** (`6782d49`, `07b7177`): of 132 public pro demos, 0 blocking differences from the reference (115 clean, 11 ADR-only, 4 reference-side, 2 with no reference). The route there ran 46 collapsed, then 0 collapsed with 100 clean, then 105, 106, 114 and finally 115 clean. All parse at a peak of 115 MB and 7.3 s. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-the-gate-passed), [testing](testing.md).
 - **Prod now ships our own round files** (`93000d4`): M4's finish line. The round mode is part of the build id, so the hourly reparse moves every match across. The oracle stays as the fallback. Wiki: [parser](parser.md), [worker](worker.md), [decisions](decisions.md), [big-picture](big-picture.md), [README](README.md).
 - **New quirks handled:** deaths on a restart's tick count in the round before (`6782d49`), and sides come from bomb plants and defuses when nothing else shows them (`37e41c6`). A plausible match ships when the oracle fails (`a40a665`).

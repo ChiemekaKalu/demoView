@@ -75,7 +75,7 @@ flowchart LR
 
 The user commits straight to `main` with no pull request, so the CI gate runs *inside* the deploy workflow, and nothing ships unless every check passes. Deploys never run concurrently and are never cancelled halfway. `prod` can require reviewers for a manual approval.
 
-**Status:** the first CI deploy was fully green (run `36994672034`): all 7 checks, then dev, then prod. That met the exit check for M2. The repo is `ChiemekaKalu/demoView` on GitHub (private).
+**Status:** the first CI deploy was fully green (run `36994672034`): all 7 checks, then dev, then prod. That met the exit check for M2. Run `37064251547` later deployed `93000d4` to prod, and prod's match manifest then showed `match_source=parser` and `round_source=parser` with no fallback, as reported by `cloud`. The repo is `ChiemekaKalu/demoView` on GitHub (private).
 
 Secrets and one-time setup live in `.github/README.md`. They're set at the repository level, because the image job runs outside any environment.
 

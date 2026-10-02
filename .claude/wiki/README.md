@@ -69,7 +69,7 @@ flowchart LR
 - **Parser:** M1 is closed (`3bd6548`). The v0 done-when is met on the user's own matches: K/A/D, headshot kills and ADR equal the game's scoreboard counters for 80 of 80 players. `demo diff` passes locally on all 10 demos.
 - **Round files:** 64 Hz, every tick, in the spec, the oracle and the samples.
 - **Cloud:** the first green CI deploy put dev and prod live (run `36994672034`), which met M2's exit (`1244395`). The first real end-to-end parse took about 48 s, of which the parse was 31.6 s. See [infra](infra.md).
-- **Entity decoding:** M4 is done. Our own 64 Hz round files match the oracle on all 10 local demos, and the gate on 132 public tournament demos passed (0 blocking, 115 clean). **Prod now ships our own round files** (`93000d4`), and the hourly reparse moves every match across. The oracle stays as the fallback.
+- **Entity decoding:** M4 is done. Our own 64 Hz round files match the oracle on all 10 local demos, and the gate on 132 public tournament demos passed (0 blocking, 115 clean). **Prod now ships our own round files** (`93000d4`, deployed in run `37064251547`; prod's manifest shows `match_source=parser`, `round_source=parser`, no fallback), and the hourly reparse moves every match across. The oracle stays as the fallback. With M4 done, everything in v1 is built except the user's own desktop scrub check of the viewer.
 - **Viewer:** upload, match and replay pages are built against synthetic fixtures, with the Mirage radar in.
 - **Fixtures:** the two public demos plus 8 of the user's own MM/Premier demos, one of which has overtime. The shared fixtures bucket holds the two public ones only.
 
