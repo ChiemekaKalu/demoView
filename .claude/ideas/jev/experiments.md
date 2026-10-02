@@ -7,7 +7,7 @@ Log of what was tried with Jev on demoView data, 2026-10-02, by the `aiguy` sess
 - **Model:** TypeSafe's Jev (`jev-1.13.0`), called as `typesafe/jev` on the Workers AI REST API (`POST /accounts/{id}/ai/run`, body `{"model", "input": {"state", "questions"}}`). The answer is nested one level deeper than the docs show: `result.result.answers`.
 - **Token:** `CLOUDFLARE_JEV` is a user-owned API token, active, with Workers AI access. It is refused on R2, D1, Queues, AI Gateway and its own details. It was kept in a scratchpad file outside the repo and never printed.
 - **Billing:** third-party models bill against prepaid AI Gateway credits (Unified Billing), not the Workers Paid allowance. The first call failed with `2021 Insufficient balance` until the user loaded credits.
-- **Budget:** 2M input tokens for E0–E3, set by `cloud`. The user then raised it to $12.50 of gateway credit for the iterate pass (E4). Used in total: 4.53M input tokens over 5,335 calls, **$0.19**.
+- **Budget:** 2M input tokens for E0–E3, set by `cloud`. The user then raised it to $12.50 of gateway credit for the iterate pass (E4). Used in total: 7.22M input tokens over 9,140 calls, **$0.30**. E0–E4 ran from this session; E5 (3,805 calls, $0.11) ran in GitHub Actions.
 - **Data:**
   - **E0–E3:** the two public fixtures, `valve_mm_mirage_2024` (10 rounds) and `faceit_nuke_2026` (19 rounds). Surrender rounds are skipped, which leaves 28.
   - **E4 adds the user's 8 matches,** run locally with the user's direct approval: 164 rounds on Ancient, Inferno, Mirage and Overpass. Only aggregates are reported here, and no state from those matches is committed.
@@ -157,6 +157,27 @@ Round-level bootstrap, 95% CIs:
 - **The highlight signal held up worse than the first 28 rounds suggested.** ρ is 0.60 against a rubric that isn't human, and the top pick matched in 3 of 10 matches. It needs real human ratings before the shelf ships.
 - **Headlines need the code filter.** Unfiltered, 68% is far below the 85% bar.
 - **The factual answers repeat the E2 pattern.** Reading questions are right ("how", clutch). Counting and comparing aren't (comeback 31%).
+
+## E5: pro play
+
+Run in GitHub Actions (research run 37051653572) from the name-free facts of the pro-demo study ([../rounds/findings.md](../rounds/findings.md)):
+- **Sample:** 24 map-balanced pro demos, 3,805 moments, regulation rounds only.
+- **States:** the same shape as the `entity` tier, minus per-player HP, which the bulk facts don't carry.
+- **Baseline:** a 9-feature logistic regression (alive counts, bomb, time, both sides' equipment value) trained on the other ~106 pro demos.
+
+| Predictor | Brier | AUC | ECE |
+| --- | --- | --- | --- |
+| Jev, raw | 0.156 | 0.865 | 0.069 |
+| Jev, matchmaking temperature (0.54) | 0.154 | 0.865 | 0.045 |
+| Jev, temperature fitted on pro (0.70) | 0.152 | 0.865 | 0.046 |
+| **Logistic + economy, trained on pro** | **0.146** | **0.873** | **0.028** |
+
+- **The matchmaking temperature transfers well enough:** calibration error 0.045. Pro wants a milder one (0.70 against 0.54).
+- **With about 16k in-domain training moments, the small model wins** overall and on 7 of 9 maps: Nuke 0.131 vs 0.151, Vertigo 0.135 vs 0.158. Jev is slightly ahead only on Dust2 (0.161 vs 0.162).
+- **Tension still tracks closeness:** r 0.76.
+- **Ops:** 3,805 calls at 4 req/s, no errors, no rate limits, p50 196 ms, $0.11.
+
+So Jev's edge on win probability is being zero-shot. It's as good as a fitted model when there's little data (E4: 9 training matches). Once there are ~100 matches to train on, a tiny model draws the line better, for free.
 
 ## Observability rollup
 

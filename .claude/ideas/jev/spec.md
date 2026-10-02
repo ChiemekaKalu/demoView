@@ -28,10 +28,13 @@ The iterate pass grew the eval from 28 rounds to 192.
    - Raw, they're underconfident: at 65% the CTs won 85% of the time.
    - One temperature (0.54, stable in every fold) cuts Brier by 0.009 (95% CI −0.014 to −0.004).
    - That constant ships in `pulse.json` and is refitted from the self-grading rows.
-3. **A small fitted model ties Jev, so it becomes the fallback.**
-   - A 7-feature logistic regression on alive counts, plant and time, fitted on other matches, scores Brier 0.138. Jev's edge over it is within noise.
-   - Jev is better where it counts for the viewer. It ranks moments better (AUC +0.026, CI +0.008 to +0.044), which is what picks the biggest swing. It also reads economy at round start, where the small model is blind (AUC 0.71 vs 0.33).
-   - So Jev draws the line, and the logistic model draws it whenever Jev is out of credits, rate-limited or down. A Pulse is then never missing, only marked `fallback`.
+3. **A small fitted model ties Jev now, and beats it once the corpus grows.**
+   - On matchmaking, with 9 training matches, a 7-feature logistic regression scores Brier 0.138, a tie with recalibrated Jev's 0.134. There, Jev ranks moments better (AUC +0.026, CI +0.008 to +0.044) and reads economy at round start.
+   - On pro play (E5), the same kind of model with economy, trained on ~106 demos, beats Jev: 0.146 vs 0.154, AUC 0.873 vs 0.865, better on 7 of 9 maps.
+   - **The plan:**
+     - Jev draws the line at launch, while the corpus is small.
+     - The logistic model is its fallback when Jev is out of credits, rate-limited or down. A Pulse is then never missing, only marked `fallback`.
+     - Once the trained model beats Jev on the self-grading rows (likely around 100 parsed matches), the roles swap: the trained model draws the line for free, and Jev keeps tension, highlights and headlines, which have no labels to train on.
 4. **The shelf isn't proven yet.**
    - Highlight scores track this session's rubric at ρ 0.60, and the top round matched in 3 of 10 matches.
    - Headlines are 68% right unfiltered.
@@ -42,7 +45,7 @@ The iterate pass grew the eval from 28 rounds to 192.
    - The bomb timeline (narrative log v0) feeds the facts and headlines. It doesn't feed the odds: alive counts and time already carry them.
    - Economy (M4) is the one entity input worth having, because it's what makes round start readable.
 
-**Best single idea:** Match Pulse with a self-grading loop. Every parse grades Jev against round outcomes known the moment it ends, so the feature monitors its own calibration and drift in prod for free. The fitted model doubles as its fallback and as the CI baseline.
+**Best single idea:** Match Pulse with a self-grading loop. Every parse grades both Jev and the fitted model against round outcomes known the moment it ends. So the feature monitors its own calibration and drift in prod for free, and the same rows say when the trained model is good enough to take over the line.
 
 ## What Jev is good for here
 
