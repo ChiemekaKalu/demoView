@@ -1,0 +1,72 @@
+# Deploys on every push to main: the spec's "Merge to main" row. One parser
+# image is built and pushed, then dev is deployed and, only if that
+# succeeds, prod. See .github/README.md for the secrets, variables and
+# one-time setup this needs.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never run two deploys at once, and never cancel one halfway.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  REGION: us-west1
+
+jobs:
+  image:
+    name: parser image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: ref
+        run: echo "image=${REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/demoview/parser:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: parser/Dockerfile
+          push: true
+          tags: ${{ steps.ref.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  dev:
+    needs: image
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: dev
+      image: ${{ needs.image.outputs.image }}
+    secrets: inherit
+
+  prod:
+    needs: [image, dev]
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: prod
+      image: ${{ needs.image.outputs.image }}
+    secrets: inherit

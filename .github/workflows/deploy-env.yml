@@ -1,0 +1,83 @@
+# Deploys one environment, dev or prod, from an already pushed parser image:
+# the parser to Cloud Run, the D1 migrations, then the Worker and viewer.
+# Called by deploy.yml.
+name: deploy-env
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: dev or prod
+        type: string
+        required: true
+      image:
+        description: the parser image to deploy
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: deploy ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      ENV_NAME: ${{ inputs.environment }}
+      REGION: us-west1
+      # Prod names have no suffix, as in worker/wrangler.jsonc.
+      SERVICE: ${{ inputs.environment == 'prod' && 'demoview-parser' || 'demoview-parser-dev' }}
+      BUCKET: demoview-${{ inputs.environment }}
+      WRANGLER_ENV: ${{ inputs.environment == 'prod' && 'prod' || '' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+
+      # Settings from the spec: 2 GiB, 1 vCPU, 10 minute timeout, one request
+      # per instance, scale to zero. The image sets PARSER_ROUNDS=oracle.
+      # The Worker authenticates with X-Parse-Secret, so the service is public.
+      - name: Deploy the parser to Cloud Run
+        id: run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "$REGION" \
+            --image "${{ inputs.image }}" \
+            --memory 2Gi --cpu 1 --timeout 600 --concurrency 1 --min-instances 0 \
+            --allow-unauthenticated \
+            --set-env-vars "R2_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID},R2_BUCKET=${BUCKET}" \
+            --set-secrets "PARSE_SECRET=demoview-${ENV_NAME}-parse-secret:latest,R2_ACCESS_KEY_ID=demoview-${ENV_NAME}-r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=demoview-${ENV_NAME}-r2-secret-access-key:latest" \
+            --quiet
+          url="$(gcloud run services describe "$SERVICE" --project "${{ vars.GCP_PROJECT_ID }}" --region "$REGION" --format 'value(status.url)')"
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            worker/package-lock.json
+            web/package-lock.json
+      - name: Install the Worker and viewer
+        run: |
+          npm ci --prefix worker
+          npm ci --prefix web
+
+      - name: Apply D1 migrations
+        working-directory: worker
+        run: npx wrangler d1 migrations apply DB --remote --env "$WRANGLER_ENV"
+
+      # deploy:<env> builds the viewer first. PARSER_URL comes from the Cloud
+      # Run service just deployed, replacing the placeholder in wrangler.jsonc.
+      - name: Deploy the Worker and viewer
+        working-directory: worker
+        run: npm run "deploy:${ENV_NAME}" -- --var "PARSER_URL:${{ steps.run.outputs.url }}"
