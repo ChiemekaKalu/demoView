@@ -74,13 +74,15 @@ CLAUDE_PRICE = (4.0, 20.0)  # $ per 1M input / output tokens, claude-opus-5-5
 
 class Claude:
     def __init__(self, model, max_usd):
+        # The Cloudflare token goes out as Authorization: Bearer. An x-api-key of
+        # any value is forwarded to Anthropic and rejected, so none is sent.
         self.client = anthropic.Anthropic(
-            api_key="placeholder",  # ignored by AI Gateway under Unified Billing
+            auth_token=TOKEN,
             base_url=f"https://gateway.ai.cloudflare.com/v1/{ACCOUNT}/default/anthropic",
-            default_headers={"cf-aig-authorization": f"Bearer {TOKEN}"},
             max_retries=4,
         )
         self.model, self.max_usd = model, max_usd
+        self.first_error = None
 
     def spent(self):
         r = LEDGER.rows.get("claude", {"in": 0, "out": 0})
@@ -96,11 +98,13 @@ class Claude:
                 output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema}},
                 messages=[{"role": "user", "content": prompt}],
             )
-        except anthropic.APIStatusError:
+        except anthropic.APIStatusError as e:
             LEDGER.add("claude", error=True)
+            self.first_error = self.first_error or f"{e.status_code}: {e.message}"[:200]
             raise
-        except anthropic.APIConnectionError:
+        except anthropic.APIConnectionError as e:
             LEDGER.add("claude", error=True)
+            self.first_error = self.first_error or f"connection: {e}"[:200]
             raise
         LEDGER.add("claude", round((time.time() - t0) * 1000), resp.usage.input_tokens, resp.usage.output_tokens,
                    error=resp.stop_reason not in ("end_turn", "stop_sequence"))
@@ -303,17 +307,21 @@ def main():
     for x in wins:
         x["logistic"] = A.predict(w, A.feats(x["features"], "econ", maps))
 
-    names = ("jev", "claude", "gpt-oss", "logistic")
+    # Score on the moments every model that answered most of them shares, so a
+    # model that failed outright can't empty the comparison.
+    answered = {n: sum(1 for x in wins if n in x) for n in ("jev", "claude", "gpt-oss", "logistic")}
+    names = [n for n, c in answered.items() if c >= 0.5 * len(moments)]
     common = [x for x in wins if all(n in x for n in names)]
     ys = [x["y"] for x in common]
-    m1 = {"moments_asked": len(moments), "moments_answered_by_all": len(common), "by_model": {}}
+    m1 = {"moments_asked": len(moments), "answered": answered, "compared": names, "moments_compared": len(common),
+          "claude_first_error": claude.first_error, "by_model": {}}
     for n in names:
         ps = [x[n] for x in common]
-        if not ps:
+        if not ps or len(set(ys)) < 2:
             continue
         t = fit_t(ps, ys) if n != "logistic" else 1.0
         m1["by_model"][n] = {"raw": score(ps, ys), "temperature": t, "recalibrated": score([J.cal(p, t) for p in ps], ys),
-                             "answered": sum(1 for x in wins if n in x)}
+                             "answered": answered[n]}
     m2 = {"rounds": len(recaps), "by_model": {}}
     for n in ("claude", "gpt-oss"):
         rs = [r[n] for r in recaps if n in r]
@@ -330,7 +338,8 @@ def main():
            "ledger": LEDGER.summary({"claude": CLAUDE_PRICE}), "jev_ledger": {"calls": jev.calls, "errors": jev.errors, "input_tokens": jev.tokens, "usd": round(jev.tokens * 0.042e-6, 4)},
            "models": {"claude": cfg["claude_model"], "gpt-oss": cfg["oss_model"], "jev": jev.model}}
     json.dump(rep, open(os.path.join(out, "models_report.json"), "w"), indent=1)
-    L = ["# Model comparison on pro rounds", "", f"M1: {len(common)} moments answered by all four of {len(moments)} asked.", "",
+    L = ["# Model comparison on pro rounds", "", f"M1: {len(common)} of {len(moments)} moments answered by every compared model ({', '.join(names)}). Answered: {answered}." +
+         (f" Claude's first error: {claude.first_error}" if claude.first_error else ""), "",
          "| Model | Brier | AUC | ECE | Fitted T | Brier recalibrated |", "| --- | --- | --- | --- | --- | --- |"]
     for n, v in m1["by_model"].items():
         L.append(f"| {n} | {v['raw']['brier']} | {v['raw']['auc']} | {v['raw']['ece']} | {v['temperature']} | {v['recalibrated']['brier']} |")

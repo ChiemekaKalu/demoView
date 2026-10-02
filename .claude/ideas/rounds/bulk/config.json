@@ -1,5 +1,5 @@
 {
-  "mode": "parser",
+  "mode": "models",
   "source_run": "37003041437",
   "parser_ref": "ca49811d84658b830b3995e8f704d6b7d04c3e6c",
   "parser_sample": "repro",

@@ -8,6 +8,7 @@ usage: embed.py <dir with facts/> <plan.json> <config.json> <out dir>
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -19,9 +20,11 @@ import analyze as A
 import jev_pro as J
 
 
-def story(m, r):
+def story(m, r, with_map=True):
+    """A round as text. Without the map, the map name and callouts are dropped
+    so neighbours can come from any map."""
     kills = [k for k in r.get("kills") or [] if not k.get("post")]
-    lines = [(k["t"], J.kill_line(k)) for k in kills]
+    lines = [(k["t"], J.kill_line(k) if with_map else re.sub(r" at \S+(?= \()", "", J.kill_line(k))) for k in kills]
     if r.get("plant"):
         p = r["plant"]
         lines.append((p["t"] - 0.01, f"{J.clock(p['t'])} the T side plants the bomb" + (f" at {p['site']} site." if p.get("site") else ".")))
@@ -31,7 +34,8 @@ def story(m, r):
         lines.append((r["explode"], f"{J.clock(r['explode'])} the bomb explodes."))
     e = r.get("econ") or {}
     buys = f"CT {A.buy(e.get('CT', {}).get('equip', 0), r['n'] in (1, 13))}, T {A.buy(e.get('T', {}).get('equip', 0), r['n'] in (1, 13))}"
-    return f"de_{m}. Buys: {buys}. " + " ".join(l for _, l in sorted(lines)) + f" Result: {r['winner']} win by {r['reason'].replace('_', ' ')}."
+    prefix = f"de_{m}. " if with_map else ""
+    return prefix + f"Buys: {buys}. " + " ".join(l for _, l in sorted(lines)) + f" Result: {r['winner']} win by {r['reason'].replace('_', ' ')}."
 
 
 def attrs(m, r):
@@ -74,38 +78,35 @@ def main():
     os.makedirs(out, exist_ok=True)
     demos, _ = A.load(src, plan)
     items = [(d["id"], d["map_name"], r) for d in demos for r in d["rounds"] if r["n"] <= 24]
-    texts = [story(m, r) for _, m, r in items]
     meta = [attrs(m, r) for _, m, r in items]
-    vecs, ledger = embed(texts, cfg["embed_model"], cfg["embed_batch"])
-    vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-9
-    sims = vecs @ vecs.T
     demo_ids = np.array([i for i, _, _ in items])
-    np.fill_diagonal(sims, -2)
-    k = 5
-    res = {"rounds": len(items), "model": cfg["embed_model"], "ledger": ledger, "agreement_at_5": {}, "agreement_at_5_other_demos": {}, "chance": {}}
-    nn_all = np.argsort(-sims, axis=1)[:, :k]
-    other = sims.copy()
-    other[demo_ids[:, None] == demo_ids[None, :]] = -2
-    nn_other = np.argsort(-other, axis=1)[:, :k]
+    report = {"rounds": len(items), "model": cfg["embed_model"], "chance": {}, "variants": {}}
     for a in ("winner", "how_won", "clutch", "first_deaths", "buys", "map"):
-        vals = [m[a] for m in meta]
-        cnt = Counter(vals)
-        res["chance"][a] = round(sum((c / len(vals)) ** 2 for c in cnt.values()), 3)
-        for key, nn in (("agreement_at_5", nn_all), ("agreement_at_5_other_demos", nn_other)):
-            res[key][a] = round(float(np.mean([[vals[i] == vals[j] for j in row] for i, row in enumerate(nn)])), 3)
-    # A few examples: the round, then its three nearest neighbours in other demos.
-    examples = []
-    picks = [i for i, m in enumerate(meta) if m["clutch"]][:1] + [i for i, m in enumerate(meta) if m["how_won"] == "ct_retake"][:1] + \
-            [i for i, m in enumerate(meta) if m["buys"][0] in ("eco", "semi") and m["winner"] == "CT"][:1]
-    for i in picks:
-        examples.append({"query": {"map": meta[i]["map"], "how_won": meta[i]["how_won"], "text": texts[i][:600]},
-                         "neighbours": [{"map": meta[j]["map"], "how_won": meta[j]["how_won"], "similarity": round(float(other[i, j]), 3), "text": texts[j][:400]} for j in nn_other[i][:3]]})
-    res["examples"] = examples
-    json.dump(res, open(os.path.join(out, "embed_report.json"), "w"), indent=1)
-    L = ["# Rounds like this one", "", f"{res['rounds']} regulation rounds embedded with {res['model']} ({ledger['calls']} calls).", "",
-         "| Shared attribute | Top-5 neighbours | Top-5, other demos only | Two random rounds |", "| --- | --- | --- | --- |"]
-    for a in res["chance"]:
-        L.append(f"| {a} | {res['agreement_at_5'][a]:.0%} | {res['agreement_at_5_other_demos'][a]:.0%} | {res['chance'][a]:.0%} |")
+        cnt = Counter(m[a] for m in meta)
+        report["chance"][a] = round(sum((c / len(meta)) ** 2 for c in cnt.values()), 3)
+    L = ["# Rounds like this one", "", f"{len(items)} regulation rounds embedded with {cfg['embed_model']}. Each cell is how often a round's 5 nearest neighbours (from other demos) share the attribute.", "",
+         "| Shared attribute | With map and callouts | Without map or callouts | Two random rounds |", "| --- | --- | --- | --- |"]
+    for variant, with_map in (("with_map", True), ("without_map", False)):
+        texts = [story(m, r, with_map) for _, m, r in items]
+        vecs, ledger = embed(texts, cfg["embed_model"], cfg["embed_batch"])
+        vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-9
+        sims = vecs @ vecs.T
+        np.fill_diagonal(sims, -2)
+        sims[demo_ids[:, None] == demo_ids[None, :]] = -2  # neighbours from other demos only
+        nn = np.argsort(-sims, axis=1)[:, :5]
+        res = {"ledger": ledger, "agreement_at_5": {}}
+        for a in report["chance"]:
+            vals = [m[a] for m in meta]
+            res["agreement_at_5"][a] = round(float(np.mean([[vals[i] == vals[j] for j in row] for i, row in enumerate(nn)])), 3)
+        picks = [i for i, m in enumerate(meta) if m["clutch"]][:1] + [i for i, m in enumerate(meta) if m["how_won"] == "ct_retake"][:1] + \
+                [i for i, m in enumerate(meta) if m["buys"][0] in ("eco", "semi") and m["winner"] == "CT"][:1]
+        res["examples"] = [{"query": {"map": meta[i]["map"], "how_won": meta[i]["how_won"], "text": texts[i][:600]},
+                            "neighbours": [{"map": meta[j]["map"], "how_won": meta[j]["how_won"], "similarity": round(float(sims[i, j]), 3), "text": texts[j][:400]} for j in nn[i][:3]]}
+                           for i in picks]
+        report["variants"][variant] = res
+    for a in report["chance"]:
+        L.append(f"| {a} | {report['variants']['with_map']['agreement_at_5'][a]:.0%} | {report['variants']['without_map']['agreement_at_5'][a]:.0%} | {report['chance'][a]:.0%} |")
+    json.dump(report, open(os.path.join(out, "embed_report.json"), "w"), indent=1)
     open(os.path.join(out, "embed.md"), "w").write("\n".join(L) + "\n")
     print("\n".join(L))
 
