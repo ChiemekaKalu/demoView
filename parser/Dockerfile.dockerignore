@@ -1,0 +1,10 @@
+# The build context is the repo root. Send only the parser module and the
+# stub fixtures, and never demos.
+*
+!parser
+!schema/samples
+parser/testdata
+parser/bin
+**/*.dem
+**/*_test.go
+schema/samples/generate.mjs
