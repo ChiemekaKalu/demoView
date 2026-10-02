@@ -6,8 +6,8 @@ export interface Radar {
   pos_x: number;
   pos_y: number;
   scale: number;
-  // A map with a separate radar per floor, such as Nuke. v1.1 draws
-  // single-level maps only.
+  // A map with a separate radar per floor, such as Nuke. Both floors are
+  // drawn on its main radar until v1.2.
   two_floor: boolean;
 }
 

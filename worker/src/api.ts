@@ -296,7 +296,8 @@ async function runJob(request: Request, env: Env, [name = ""]: string[]): Promis
 }
 
 // GET /api/maps/:name: the numbers that place game positions on the map's
-// radar image.
+// radar image. A two-floor map, such as Nuke, gets its main radar, which
+// both floors are drawn on until a radar per floor comes in v1.2.
 async function getMap(_request: Request, env: Env, [name = ""]: string[]): Promise<Response> {
   if (!isMapName(name)) return error(404, "no radar for this map");
   const [info, image] = await Promise.all([
@@ -305,10 +306,7 @@ async function getMap(_request: Request, env: Env, [name = ""]: string[]): Promi
   ]);
   const radar = info ? parseRadar(await info.text()) : null;
   if (!radar || !image) return error(404, "no radar for this map");
-  // One radar can't show two floors; that needs a layer per floor (v1.2).
-  if (radar.two_floor) return error(404, "no radar for two-floor maps yet");
-  const { pos_x, pos_y, scale } = radar;
-  return json({ name, pos_x, pos_y, scale }, 200, { "cache-control": MAP_CACHE_CONTROL });
+  return json({ name, ...radar }, 200, { "cache-control": MAP_CACHE_CONTROL });
 }
 
 // GET /api/maps/:name/radar.png

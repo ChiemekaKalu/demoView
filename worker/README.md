@@ -34,7 +34,7 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `POST /api/matches/:id/pulse` | `202 { id, parse_id }`: queues a Pulse for the live parse | 401, 404, 409 (Pulse off, or no live parse) |
 | `GET /api/matches/:id/rounds/:n` | `200` round file, cached as `match.json` is | 404 |
 | `POST /api/admin/cron/:job` | `200 { job, ran: true }` after running `sweep`, `reparse` or `cleanup` now, as its cron would | 401, 404 (no such job) |
-| `GET /api/maps/:name` | `200 { name, pos_x, pos_y, scale }`, cached a day. A game position lands on the 1024-pixel radar at `((x - pos_x) / scale, (pos_y - y) / scale)`. | 404 (no radar, or a two-floor map) |
+| `GET /api/maps/:name` | `200 { name, pos_x, pos_y, scale, two_floor }`, cached a day. A game position lands on the 1024-pixel radar at `((x - pos_x) / scale, (pos_y - y) / scale)`. A two-floor map (Nuke, Train, Vertigo) gets its main radar, which both floors share until v1.2. | 404 (no radar) |
 | `GET /api/maps/:name/radar.png` | `200` the radar image, cached a day, with an ETag | 404 |
 
 `players` rows are `{ idx, name, team, kills, deaths, assists, adr, hs_pct }`, ordered by `idx`. Steam ids stay out; `match.json` has them. `rounds` rows are `{ n, winner, reason, side_a }`, ordered by `n`. Timestamps are Unix milliseconds.

@@ -61,7 +61,7 @@ describe("GET /api/maps/:name", () => {
     const res = await get("/api/maps/de_mirage");
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("public, max-age=86400");
-    expect(await res.json()).toEqual({ name: "de_mirage", pos_x: -3230, pos_y: 1713, scale: 5 });
+    expect(await res.json()).toEqual({ name: "de_mirage", pos_x: -3230, pos_y: 1713, scale: 5, two_floor: false });
   });
 
   it.each([
@@ -76,11 +76,11 @@ describe("GET /api/maps/:name", () => {
     expect(await (await get("/api/maps/de_dust")).json()).toEqual({ error: "no radar for this map" });
   });
 
-  it("returns 404 for a two-floor map", async () => {
+  it("gives a two-floor map its main radar, marked as such", async () => {
     await putMap("de_nuke", NUKE);
     const res = await get("/api/maps/de_nuke");
-    expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: "no radar for two-floor maps yet" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ name: "de_nuke", pos_x: -3453, pos_y: 2887, scale: 7, two_floor: true });
   });
 });
 
