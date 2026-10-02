@@ -19,7 +19,7 @@ const DETAILS: Record<string, Detail> = {
   worker: {
     role: 'One Cloudflare Worker with three jobs: the public API, the parse queue consumer, and hosting the viewer. It is the only component that talks to D1.',
     lives: ['worker/', 'worker/migrations/'],
-    notes: ['Five routes: create, confirm, status, match.json and round files.', 'The top of `wrangler.jsonc` is dev. Prod is `--env prod`.', 'Logs one JSON line per status change, and reaches the parser through a `ParserContainer` binding.'],
+    notes: ['Routes for create, confirm (which reuses a duplicate demo), status, match.json, round files and map radars.', 'The top of `wrangler.jsonc` is dev. Prod is `--env prod`.', 'Logs one JSON line per status change, and reaches the parser through a `ParserContainer` binding.'],
     read: [['The Worker', 'worker'], ['Match status', 'worker#match-status']],
   },
   r2: {
