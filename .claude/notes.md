@@ -1,25 +1,21 @@
 # Notes
 
-Running log of decisions, progress and findings. Newest first. Keep entries short; move anything settled and permanent into CLAUDE.md or the spec.
+Running log of decisions, progress and findings. Newest first. Keep entries short; move anything settled and permanent into CLAUDE.md or the spec. Checkpoint status lives in `plan.md`, not here.
 
 ## 2026-10-02
 
 - Workspace initialized: `parser/` (Go module) and `web/` (Vite + Preact + TypeScript). Go 1.27 installed. `parser/demo` reads and validates the demo preamble; tests pass.
-- Spec pasted into `.claude/spec.md`. It settles:
+- Spec pasted into `.claude/spec.md`, reformatted as Markdown, then updated for a **solo build**:
+  - One milestone sequence: M0 schema and fixtures, M1 v0 parser, M2 cloud pipeline on fixture data, M3 viewer, M4 entity decoding.
+  - v1 ships on reference-parser round files by default. My entity decoding swaps in at M4 once it passes the position diff.
+  - Sized for agent-driven work: about 3 to 4 weekends to v1, plus 2 to 3 for M4.
+- Settled by the spec:
   - Cloud: Cloudflare (Worker API, R2, D1, Queues) in front, Cloud Run for the parser.
-  - Frontend: **Vite + Preact**. The spec originally suggested React; we switched to Preact and updated the spec (prod bundle 220 KB -> 11 KB). Use `preact` and `preact/hooks`, not `react`.
+  - Frontend: **Vite + Preact**. The spec originally suggested React; we switched and updated the spec (prod bundle 220 KB -> 11 KB). Use `preact` and `preact/hooks`, not `react`.
   - Map for v1: Mirage.
-  - Protobuf and snappy libraries: compatible with the spec. Only demo-parsing libraries are banned, and they may still be used as test oracles in `tools/`.
-- Current milestone: **M0 (contract)**. Remaining:
-  - [ ] Write schema v1 as JSON Schema in `schema/`, with sample files
-  - [ ] Pick the reference parser and export fixtures from 3 demos (matchmaking, FACEIT or pro, one with overtime)
-  - [ ] Create the Cloudflare and GCP accounts and the dev environment
-  - [x] Create the repo
-  - [x] Pick the map (Mirage)
-- Repo vs spec gaps to close:
-  - [ ] Add `worker/`, `schema/` and `tools/`
-  - [ ] CLI: the binary is `demo` with `parse <file> --out <dir> [--events-only]` and `diff <file> --against <ref.json>`. Today it is `cmd/demoparse` and only checks the header.
-  - [ ] On failure the CLI exits non-zero and prints one JSON error line on stderr.
-  - [ ] Parser HTTP wrapper (`POST /parse`) and Dockerfile
+  - Protobuf and snappy libraries are fine. Only demo-parsing libraries are banned, and those may still run in `tools/` as test oracles.
+- Checkpoints for M0 and M1, plus spec gaps with proposed defaults, are in `.claude/plan.md`.
+- Work split in parallel:
+  - Subagents: frame loop and CLI (`parser/demo`, `parser/cmd`, `parser/match`), vendored protos (`parser/pb`, `go.mod`), bit reader (`parser/bitread`), schema and samples (`schema/`), and reference-parser research.
+  - A peer Claude session: the `worker/` scaffold, committing with `git commit -- worker/`.
 - Still assumed: Go module path `github.com/ChiemekaKalu/demoview/parser`.
-- The spec's other open questions are still open: reference parser choice, Queues on the paid plan, 16 vs 32 Hz, duplicate uploads, Steam ids in public data, public repo.

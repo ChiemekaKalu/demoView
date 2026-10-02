@@ -5,9 +5,11 @@ A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and 
 ## Spec and notes
 
 - `.claude/spec.md` is the full product spec: scope, architecture, schema, API, milestones. If it disagrees with this file, the spec wins; update this file to match. The exception is a deliberate deviation recorded in the notes.
+- `.claude/plan.md` breaks the milestones into checkpoints, tracks their status, and lists spec gaps with proposed defaults. Check items off as they land.
 - `.claude/notes.md` is the running log of decisions, progress and findings. Add a dated entry when a decision is made or something non-obvious is learned.
 
 @.claude/spec.md
+@.claude/plan.md
 @.claude/notes.md
 
 ## Layout
@@ -35,7 +37,7 @@ cd web && npm run lint     # oxlint
 ## Ground rules
 
 - **The parser is from scratch.** Reference parsers (demoinfocs-golang, demoparser, etc.) are test oracles only. They may run in `tools/` to export reference output, but `parser/` never imports them or copies from them. Generic building blocks such as a protobuf runtime and snappy are fine.
-- **The schema is the contract.** Don't change schema files on your own. Schema changes need both maintainers to agree and must bump `schema_version`, so propose the change instead.
+- **The schema is the contract.** Don't change schema files on your own; propose the change to the user first. Any breaking change bumps `schema_version`.
 - **The parser streams.** Never load the whole demo into memory. The targets are under 512 MB and under 60 s for a full match on 1 vCPU.
 - **Never commit demos.** Fixture demos live in a storage bucket. Local copies go in `parser/testdata/demos/`, which is gitignored.
 
