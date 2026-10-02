@@ -1,6 +1,8 @@
 # Demos are large binaries; never commit them
 *.dem
 *.dem.*
+# Reference exports of the fixture demos (tools/oracle), large and derived
+/parser/testdata/reference/
 
 # Go
 /parser/bin/
