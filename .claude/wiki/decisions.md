@@ -72,6 +72,13 @@ Notable design choices:
 
 Those were the six decisions asked of the user, and all six were approved.
 
+**Proposed, needs the user's OK: the first record set** (`710d802`). It is sized for the first two readers, Match Pulse's state version 2 (the bomb timeline) and the story pane's round lines, and anything else waits for a reader.
+
+- **Facts** (what the demo said): players registered, team changes, spawns and disconnects, freeze end, hurt (with health taken as ADR counts it), deaths (with assister, flash assist, weapon and headshot), bomb plant (with the site, present only when the entity stage ran), defuse start, defuse and explosion, and match end.
+- **Derived** (each cites its facts in `basis` and names its rule and version): the live window, round begin (with whether a backup restore replayed it) and end (with how it was decided: event, bomb, elimination, timer, surrender or guess), the running score, the round's bomb story, opening kills, trades (a kill that avenges a teammate within 5 s), multi-kills of 3 or more, and clutches (1vN when a player is last alive, and whether they won).
+- **Notes:** each of match logic's roughly 30 notes becomes a record with a stable `code` and fields rather than a sentence, which keeps the no-rendered-text rule.
+- **Open question:** where the log lives in R2. The approved `parsed/{id}/log/{parser_version}/` predates the per-parse prefixes. Putting it under `parsed/{id}/{parse_id}/log/` would reparse and clean up with the rest of the parse and be listed in that manifest, at the cost of the log's own versioned manifest.
+
 ## Logging audit
 
 `cloud` ran a verified audit of what to log and where. The full report sits in its scratchpad, not in the repo, and **nothing from it is committed yet**. `pipeline` (formerly `terminal`) has the Worker items (W1 to W17) and `parser` (formerly `ide`) has the parser items (P1 to P19). The Worker ones already landing include a `match_status` line with the attempt number, a `dead_letter` line for every message, one `parse_call` line per attempt, and container start/stop/error lines. Guardrails: no per-request access logs, and never log presigned URLs, tokens, `env` or the container's `envVars`.

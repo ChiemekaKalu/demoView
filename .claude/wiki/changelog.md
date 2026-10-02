@@ -2,6 +2,11 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, the small hours after: M4's exit is met
+
+- **M4's exit check is met** (`3176bd6`): prod's match reparsed with our own round files and no fallback in 7.2 s, against 12.7 s with the oracle also running. Dev's shadow verdicts were clean over 3 matches and 48 round files. Wiki: [parser](parser.md).
+- **A first record set for the narrative log is proposed, awaiting the user** (`710d802`): facts and derived records sized for Pulse's bomb timeline and the story pane, notes turned into coded records, and an open question about where the log lives in R2. Wiki: [decisions](decisions.md#narrative-log).
+
 ## 2026-10-02, late night: the gate passes, and prod ships our round files
 
 - **Deployed and confirmed** (per `cloud`): run `37064251547` shipped `93000d4`, and prod's match manifest shows `match_source=parser`, `round_source=parser` and no fallback. M4 is done, and v1 is complete except the user's own desktop scrub check of the viewer. Wiki: [infra](infra.md), [README](README.md).
