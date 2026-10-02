@@ -111,6 +111,7 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
 - [x] **Stage 2, string tables** (`parser/stringtables`). Packet create, update and clear-all messages match every snapshot byte for byte on both demos. `instancebaseline` is ready. *Open:* Mirage also has keys like `43:0`–`43:27` for `CCSGOViewModel`, with an unknown suffix, so look up baselines by the bare class id.
 - [ ] **Stage 3, entity updates.** Field paths, value decoders, and create/update/delete. The position diff runs against the oracle's 64 Hz round files: x/y within 1 unit, yaw within 1°, hp exact. *In progress.*
 - [ ] **Stages 4–5, extraction and round files** at 64 Hz, then swap them in for the oracle's.
+- [ ] **Narrative log groundwork** (`parser/eventlog`, logging.md build step 1 only; user decision 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with tests. No output file, CLI flag, schema or R2 path until the user decides. Off stage 3's critical path. *In progress.*
 
 ## Valve fetch (post-v1; design only)
 
@@ -260,5 +261,5 @@ Things the spec leaves open that the code has to decide. Each one has a proposed
     - demoinfocs `InfernoExpired` is not the flame-out.
     - demoinfocs v6 changes the damage and health semantics.
 - **Queues pricing.** Cloudflare lists Queues on Workers Free, with 24 h retention. Confirm on the account in M2.
-- **Steam ids in public data.** *Built:* stored in D1, left out of the public GET.
+- **Steam ids in public data.** *Decided by the user (2026-10-02): keep them.* They're semi-anonymous behind unlisted links. `match.json` already serves them; the summary GET omits them, which is fine.
 - **Mirage constants (verified):** `pos_x` -3230, `pos_y` 1713, `scale` 5.0, on a 1024×1024 radar. Pixels: `px = (x - pos_x) / scale`, `py = (pos_y - y) / scale`.
