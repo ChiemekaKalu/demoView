@@ -19,8 +19,9 @@ A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and 
 | `parser/` | Go module `github.com/ChiemekaKalu/demoview/parser`: the demo parser and its binaries |
 | `worker/` | Cloudflare Worker: API routes, parse queue consumer, D1 migrations. API response shapes and M2 setup steps are in `worker/README.md` |
 | `web/`    | Viewer: static Vite + Preact + TypeScript single-page app              |
+| `schema/` | The contract: JSON Schema for `match.json` and round files, a validator, and synthetic samples in `schema/samples/` to build against |
 
-Not created yet (see the spec's repo layout): `schema/`, `tools/`.
+Not created yet (see the spec's repo layout): `tools/`.
 
 ## Commands
 
@@ -35,6 +36,10 @@ cd worker && npm test           # vitest in the Workers runtime
 cd worker && npm run typecheck
 cd worker && npm run lint       # oxlint
 cd worker && npm run dev        # wrangler dev, with D1 and Queues emulated locally
+
+# schema
+cd schema && npm test                        # validate the samples (--strict)
+cd schema && npm run validate -- <out dir>   # validate parser output
 
 # web
 cd web && npm run dev      # local dev server
