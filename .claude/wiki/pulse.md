@@ -40,6 +40,8 @@ It runs on **its own queue** after a match is live, so a slow or exhausted model
 
 A CI eval scores the model on 225 moment states and 28 round states drawn from the two public fixtures, built by the real state builder with names blanked (`8335413`). It measures calibration and ranking quality (Brier score, AUC, expected calibration error), how the round was won, and headline precision against the real results. It also checks the fallback, the schema and determinism, and fails past fixed bars. It runs on Pulse changes, weekly and by hand, costs about a cent a run, and skips when the token is absent.
 
+A fallback Pulse file's contents are described in the schema docs (`edf0090`). `pulse.json` is cached briefly, even when a named parse is requested (`e953cd6`). The eval judges canaries within a tolerance for the model's measured jitter and checks headlines per state version, and the state-version-1 headline bar is provisional (`a341aa5`, `6abed7c`, `9e9e98e`).
+
 ## Decided, and not yet built
 
 The experiment spend cap is $12.50 of the $25 loaded. The model may be evaluated locally on the user's own matches. See [decisions](decisions.md).

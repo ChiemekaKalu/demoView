@@ -59,7 +59,7 @@ In dev, after each response is flushed, the server reruns the oracle and diffs i
 
 ## The pro-demo sample
 
-A bulk run over 132 public tournament demos is the only test so far that stresses match logic beyond matchmaking. It found no crashes and fast parses, but segmentation problems on most. See [match-logic](match-logic.md#tournament-gotv-demos-first-fix-landed-the-rest-is-narrowing). A pinned subset is planned for CI, fetched at test time from its public source and never rehosted. The swap-in's default stays on the oracle until this sample passes.
+A bulk run over 132 public tournament demos is the test that stresses match logic beyond matchmaking, and it gated the prod flip. The gate passed on `6782d49`: 0 blocking differences from the reference, with 115 clean, 11 ADR-only, 4 reference-side and 2 with no reference, all 132 parsing at a peak of 115 MB and 7.3 s. See [match-logic](match-logic.md#tournament-gotv-demos-the-gate-passed). The sample is fetched at test time from its public source in CI and never rehosted.
 
 ## Fixtures
 

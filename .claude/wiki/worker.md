@@ -82,7 +82,7 @@ Committed in `9d5ead9` and later. **The crons are on in prod** as of `6e305d0`, 
 - **Build id.** `PARSER_BUILD` is 12 hex characters of a hash of the git trees of `parser/` and `tools/oracle/` (`c7134a1`), not the commit sha, so a web-only merge reparses nothing. It now includes `PARSER_ROUNDS` when set (`bde4f1f`), so switching whose round files ship also counts as a new build and reparses every match once.
 - **Parse ids.** 9 base32 characters of time plus 7 random, one per attempt.
 - **Rate limit.** Uploads and reparses are limited to 10 a minute (`856d8c5`), and the viewer says so when it happens (`94dba79`).
-- **Container settings per environment** (`e439244`). Dev's container runs with `PARSER_ROUNDS=parser` and `PARSER_SHADOW=oracle`, and sleeps after 2 minutes so the compare after each response can finish. Prod stays on the oracle's round files, set explicitly, and an empty value is never passed on.
+- **Container settings per environment** (`e439244`, `93000d4`). Dev's container runs with `PARSER_ROUNDS=parser` and `PARSER_SHADOW=oracle`, and sleeps after 2 minutes so the compare after each response can finish. **Prod now runs `PARSER_ROUNDS=parser` with the shadow compare off.** An empty value is never passed on.
 - **Orphaned demos:** there is deliberately no R2 lifecycle rule, since an expiry on `demos/` would delete the demos a reparse needs. The daily cleanup's removal of unconfirmed uploads covers it (spec, `59fe937`).
 
 ## Data

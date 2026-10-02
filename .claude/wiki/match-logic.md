@@ -88,32 +88,39 @@ These make the diff line up. See [schema](schema.md#conventions) for the file-le
 - Names come from the end-of-match message when it lists the player, which is what the game's scoreboard shows.
 - An assister on the victim's own side is dropped from the kill list, as the oracle does.
 
-## Tournament (GOTV) demos: first fix landed, the rest is narrowing
+## Tournament (GOTV) demos: the gate passed
 
-A bulk run of 132 public pro GOTV demos (builds 9842 to 10847) was run through the parser: no crashes, p95 1.6 s, the largest 61 MB. But match logic is not right on most of them:
+A bulk run of 132 public pro GOTV demos (builds 9842 to 10847) was the first real stress test of match logic beyond matchmaking. At first, round segmentation collapsed to a single round on 113 of them. It took a series of fixes, each judged by a full sweep, to reach a gate that was agreed before flipping production to our own round files: **no demo with a reference may differ in round count, boundaries, winner, reason, side or team, or kills.** The allowed exceptions are the reference's own `unknown` weapons, its ADR on partial recordings, the 2 demos the reference can't parse either, and ADR-only differences, since the reference uses the game's damage counter, which includes rounds before a recording starts.
 
-| Finding | Count |
-| ------- | ----- |
-| Round segmentation collapses to a single round | 113 |
-| Rejected as "no live rounds" (a 422) | 2 |
-| Teams swapped (mostly the oldest build) | 9 |
-| Minor round-1 and ADR differences | a few |
+| Sweep | Collapsed to 1 round | Clean | Blocking |
+| ----- | -------------------- | ----- | -------- |
+| first round fix (`68a02cf`) | 46 | 14 | not yet counted |
+| `84f7bf8` | 0 | 100 | |
+| `91268ae` | 0 | 105 | 12 |
+| `243de41` | 0 | 106 | 11 |
+| `37e41c6` | 0 | 114 | 1 |
+| **`6782d49`** | 0 | **115** | **0: pass** |
 
-**Why prod stays correct today:** the consistency guard (see [parser](parser.md#the-server-and-the-consistency-guard)) ships the oracle's `match.json` whenever ours is implausible or disagrees, so the collapsed and swapped cases come out right. The two "no live rounds" demos still fail.
+**The gate passed** on `6782d49`: 0 blocking of 132, with 115 clean, 11 ADR-only, 4 reference-side and 2 with no reference. All 132 parse, at a peak of 115 MB and 7.3 s. The prod flip followed (`93000d4`, see [parser](parser.md)).
 
-**The cause, confirmed and fixed (`68a02cf`):** tournament GOTV demos fire none of `round_prestart`, `round_start` or `round_poststart` during play. Splitting on the first of those seen anywhere therefore left the whole live window as one round, which is what happened on 113 of 132. The boundary kind is now chosen from the live window itself: the first of `round_prestart`, `round_start`, `round_poststart` and `round_officially_ended` that occurs once for every round after the first (the freeze ends minus one). `round_officially_ended` fires as the next round restarts, so when it is the boundary it ends the round *before* it rather than starting its own. All 10 local demos still diff clean against the oracle, and the user's own matches still equal the game's counters exactly.
+### Tournament quirks, all handled in the timeline stage
 
-**Fixed since, in the research branch's sweeps:** round 1 keeps the spawns and team changes that come before `begin_new_match`, with its start clamped to the demo's first frame tick (`53df3af`). Unknown `E*` enum fields decode as varints, and a projectile class missing from an older build is skipped (`0108c53`). Unknown types named like enums, such as `DecalMode_t`, decode as varints too (`76e0708`), which covered 13 of the 21 entity-stage failures, all one world field. Sides are read at each round's freeze end, as the reference does, because on the oldest build the halftime swap fires before the event that ends round 12 (`4a3d389`). The CLI diff still compares `match.json` when round files fail (`1dd244c`), and `demo inspect --events` prints event counts and a round-structure timeline with event names and ticks only (`ca49811`).
+Segmentation lives in one `normalize` stage (`matchlogic/timeline.go`, `d4c824e`), which returns the live window and its rounds in a standard form. The quirks it absorbs:
 
-**Where the full sweep of 132 stood after the first fix** (`68a02cf`): 46 still collapse to one round, because none of the four boundary events qualifies on them, and the cause stays unknown until the timelines come back. 37 have a boundary or reason difference, 21 fail in the entity stage, and 14 have a clean `match.json`. Parsing is fast: p50 3.5 s, the slowest 7.4 s and 219 MB. A smaller repro sweep showed two round-1 cases where 9 or 10 of 10 players have no round-1 spawn and `begin_new_match` is at tick -1, so the recording probably starts after round 1's spawns. The fix waits on the timelines rather than a guess.
+- **Restart events.** Tournament servers fire none of `round_prestart`, `round_start` or `round_poststart` during play. `round_officially_ended` serves as the boundary (`68a02cf`), or `cs_pre_restart`, 19 ticks before the spawns (`84f7bf8`).
+- **Recordings that start late.** One that starts in round 1's freeze time has no `begin_new_match` and no round-1 spawns, so round 2's players stand in for them (`84f7bf8`). One that starts mid-round 1 keeps that round (`0c5941a`).
+- **Restarts the match never plays.** A `begin_new_match` only at the end (`84f7bf8`), and restarts the demo ends in (`91268ae`), are left out.
+- **Backup restores.** Everyone dies and respawns on one tick, so a restore replays its round and doesn't start one, and the `announce_phase_end` it fires is no halftime (`4e2858a`).
+- **Restart-tick deaths.** A death on the tick a round restarts counts in the round before (`6782d49`).
+- **Sides.** Halftime sides are read at the freeze end (`4a3d389`), and when nothing else shows sides, a bomb planter is observed on T and a defuser on CT (`37e41c6`).
+- **Entity decoding.** Unknown enum-like types read as varints (`0108c53`, `76e0708`).
+- **Server side.** When the reference fails on a demo our parser accepts, our plausible match ships, logged as `fallback_reason=oracle_failed` (`a40a665`).
 
-**Segmentation became its own stage** (`d4c824e`, `2e3d668`): every quirk of how a demo marks rounds now lives in one `normalize` step that returns the live window and its rounds in a standard form, and scoring reads only that timeline and the entries inside its rounds. Since then, a backup restore, which kills and respawns everyone on one tick, is treated as a replay of its round and not a new one: the round's last restore begins the play that decides it, and the `announce_phase_end` a restore fires is no halftime (`4e2858a`). Restarts a demo ends in before any round is played are left out (`91268ae`), and a round 1 the recording starts in the middle of is kept (`0c5941a`).
+### Follow-up: ADR on pro demos
 
-**Then segmentation was extended** (`84f7bf8`): when no other restart event fires each round, rounds split on `cs_pre_restart` and each starts at its spawns. The match starts at a `begin_new_match` that has rounds after it, or otherwise at the first round's restart. When a recording starts inside round 1, round 2's players are taken to have spawned in it.
+Of the 11 ADR-only demos, 6 are partial or restored recordings, where the game's damage counter covers damage the demo doesn't show. The other 5 are full recordings with 2 to 11% gaps for 1 to 7 players, with cause unknown. It doesn't block anything, because prod's guard never compared the scoreboard and so already ships our ADR, which equals the game's counter exactly on the user's own matchmaking games.
 
-**Not ours:** the 2 "no live rounds" demos fail in the reference parser too, so there is nothing to fall back to, and prod returns a 422 just as it would with the reference alone.
-
-**Now:** the timelines are being run on 11 demos (collapsed, round-1, no-live-rounds and controls), then the full 132 again. The 10 local demos still match the reference, and the scoreboard check still matches the game's counters. The swap-in's prod flip waits for the sweep to pass.
+**The rule that made this possible:** no external demos on the user's machine. Every sweep ran through a research workflow in CI, and `demo inspect --events` gives each demo's name-free event timeline.
 
 ## Verified and unverified
 
