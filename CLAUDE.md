@@ -20,8 +20,16 @@ A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and 
 | `worker/` | Cloudflare Worker: API routes, parse queue consumer, D1 migrations. API response shapes and M2 setup steps are in `worker/README.md` |
 | `web/`    | Viewer: static Vite + Preact + TypeScript single-page app              |
 | `schema/` | The contract: JSON Schema for `match.json` and round files, a validator, and synthetic samples in `schema/samples/` to build against |
+| `tools/oracle/` | Separate Go module: the reference exporter, built on demoinfocs v5.2.0, that writes our schema. It's the diff-test oracle and, per the Fallback rule, the v1 round-file source. `parser/` must never import it |
 
-Not created yet (see the spec's repo layout): `tools/`.
+Inside `parser/`:
+- `demo`: frames, decode and packet messages. `bitread`: bitstreams. `pb`: generated Valve protos.
+- `events`: game events. `players`: identity. `match`: output types.
+- `parse`: `parse.Run`, the one parse path shared by the CLI and the server.
+- `store`: R2 and local-dir object store.
+- `cmd/demo`: the CLI. `cmd/server`: the Cloud Run service.
+
+Local demos live in `parser/testdata/demos/` and oracle exports in `parser/testdata/reference/`. Both are gitignored.
 
 ## Commands
 
@@ -30,6 +38,10 @@ Not created yet (see the spec's repo layout): `tools/`.
 cd parser && go test ./...
 cd parser && go run ./cmd/demo parse path/to/match.dem --out out/
 cd parser && go run ./cmd/demo inspect path/to/match.dem   # dev: frame stats
+cd parser && PARSE_SECRET=dev PARSER_STORE_DIR=out/store go run ./cmd/server   # POST /parse on :8080, local store
+
+# oracle (reference exporter)
+cd tools/oracle && go run . export path/to/match.dem --out ../../parser/testdata/reference/<name>
 
 # worker
 cd worker && npm test           # vitest in the Workers runtime
@@ -42,9 +54,11 @@ cd schema && npm test                        # validate the samples (--strict)
 cd schema && npm run validate -- <out dir>   # validate parser output
 
 # web
-cd web && npm run dev      # local dev server
+cd web && npm run dev      # local dev server; /m/sample replays schema/samples
+cd web && VITE_FIXTURES=1 npm run dev   # whole app on fixtures, no backend
 cd web && npm run build    # typecheck + production build
 cd web && npm run lint     # oxlint
+cd web && npm test         # vitest
 ```
 
 ## Ground rules
