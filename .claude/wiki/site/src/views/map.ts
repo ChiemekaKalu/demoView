@@ -41,7 +41,7 @@ const DETAILS: Record<string, Detail> = {
     read: [['The consumer', 'worker#the-consumer']],
   },
   parser: {
-    role: 'The Go parser, written from scratch, and the server that wraps it. The oracle, a reference exporter built on demoinfocs, runs alongside it and currently supplies the round files.',
+    role: 'The Go parser, written from scratch, and the server that wraps it. The oracle, a reference exporter built on demoinfocs, runs alongside it and currently supplies the round files. Our own round files are built and diffed, and the swap-in is next.',
     lives: ['parser/', 'parser/cmd/server/', 'tools/oracle/'],
     notes: ['Streams the demo. Targets are under 512 MB and 60 s.', 'Runs as a Cloudflare Container with a private route that only the Worker can reach. Dev and prod both run it.', '`parser/` never imports the oracle.'],
     read: [['The parser', 'parser'], ['Match logic', 'match-logic'], ['Parser runtime', 'infra#parser-runtime']],
