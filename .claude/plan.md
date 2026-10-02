@@ -161,6 +161,8 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
     - A poller over those 75 minutes made 9,228 requests and saw 0 404s and 0 mismatches between D1, `match.json` and the round files.
     - With the dev-only `FAULT=reject` flag (5994791; prod refuses it, 22b3884), two reparses failed and both matches stayed `ready` on their live parse, with `reparse_error` set.
   - Prod crons were turned on at the user's word (6e305d0).
+  - *Prod (2026-10-02):* its one match was reparsed through the API. It went live on build 9f5be622def2 in 12.2 s and never left `ready`; its files serve at the new `?v=`. That was the last M5 exit check.
+  - `POST /api/admin/cron/:job` (b64b6db) runs the sweeper, reparse batch or cleanup by hand, so checks don't wait for the clock.
 - [x] **5.6 Safe swap.**
   - (parser) Write under a given `parsed/{id}/{parse_id}/` prefix, with `manifest.json` last. *Layout approved by the user (2026-10-02)*, along with the D1 columns and the reparse cron (hourly, 5 per batch, 80% cap, on in prod). It merges once CI passes. Contract proposed to pipeline: the Worker picks `parse_id`; `/parse` takes it as required; rounds, then match.json, then manifest.json last; `parsed_by` = `PARSER_BUILD` (the git sha).
   - (pipeline) Conditional D1 pointer swap, `?v=<parse_id>` URLs, 7-day cleanup by exact key. *Built:* 074f5b7, fff16cd and 9d5ead9. Parse ids are 9 base32 characters of time plus 7 random, one per attempt.
