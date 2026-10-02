@@ -37,7 +37,7 @@ v0 ships a local CLI and v1 ships the hosted product. Anything not listed here i
 - Parser adds grenade throws and detonations
 - Parser writes one replay file per round, at 64 Hz (every tick)
 - Upload goes straight to R2 through a presigned URL
-- A queue and a Cloud Run service run the parse
+- A queue and a Cloudflare Container run the parse
 - D1 holds matches, players, rounds, and kills
 - Match page with scoreboard and round list
 - 2D replay on a canvas: scrubber, play and pause, speed control, player dots with facing direction, kill markers, grenades
@@ -58,20 +58,20 @@ v0 ships a local CLI and v1 ships the hosted product. Anything not listed here i
 
 ## Architecture
 
-Cloudflare is the front door and the storage, and Cloud Run does the parsing. The parser cannot run in a Worker, because a Worker is capped at 128 MB of memory ([Workers limits](https://developers.cloudflare.com/workers/platform/limits/)).
+Cloudflare runs everything: the Worker is the front door, R2 and D1 hold the data, and a Cloudflare Container does the parsing. The parser cannot run in a Worker, because a Worker is capped at 128 MB of memory ([Workers limits](https://developers.cloudflare.com/workers/platform/limits/)).
 
 1. The browser asks the Worker API for a match id and a presigned upload URL.
 2. The browser uploads the demo straight to R2.
 3. The browser confirms the upload and the Worker API enqueues a job.
 4. The queue delivers the job to the consumer Worker.
-5. The consumer calls the parser on Cloud Run and waits for it.
+5. The consumer calls the parser container through its Durable Object and waits for it.
 6. The parser streams the demo from R2 and writes the parsed files back.
 7. The consumer writes the summary to D1 and marks the match ready.
 8. The viewer reads through the Worker API, which serves the scoreboard from D1 and round files from R2.
 
 ## Parser
 
-The parser is one Go binary that reads a demo as a stream and writes files in the project schema. It runs the same way on a laptop and in Cloud Run.
+The parser is one Go binary that reads a demo as a stream and writes files in the project schema. It runs the same way on a laptop and in a Cloudflare Container.
 
 ### CLI contract
 
@@ -216,7 +216,7 @@ parsed/{match_id}/rounds/{NN}.json
 
 ## API
 
-The Worker exposes four public routes and Cloud Run exposes one private route. Viewing is open to anyone with the link, and uploading needs a token.
+The Worker exposes four public routes, and the parser container exposes one private route that only the Worker can reach. Viewing is open to anyone with the link, and uploading needs a token.
 
 ### Worker routes
 
@@ -233,12 +233,12 @@ The Worker exposes four public routes and Cloud Run exposes one private route. V
 ### Queue consumer
 
 1. Receives `{ match_id }` and sets status to `parsing`.
-2. Calls Cloud Run and waits for the response.
+2. Calls the parser container and waits for the response.
 3. On 200, writes players, rounds, and kills to D1 and sets status to `ready`.
 4. On 422, sets status to `failed` with the error and does not retry.
 5. On any other failure, lets the queue retry. After 3 attempts the message goes to a dead letter queue and status becomes `failed`.
 
-### Cloud Run route
+### Parser container route
 
 ```http
 POST /parse
@@ -256,7 +256,7 @@ X-Parse-Secret: <shared secret>
 - The service streams the demo from R2 over the S3 API, parses it, and writes `parsed/{match_id}/...` back to R2.
 - Parsing is idempotent. A retry overwrites the same keys.
 - The service never touches D1. The Worker owns the database.
-- Settings to start: 2 GB memory, 1 vCPU, 10 minute timeout, concurrency 1, minimum instances 0.
+- Settings: the `basic` instance (1/4 vCPU, 1 GiB), one parse at a time (queue `max_concurrency` 1), a short `sleepAfter` so it scales to zero. A parse takes seconds.
 
 ## Viewer
 
@@ -310,22 +310,22 @@ Development happens on a laptop and prod never depends on one. Every deploy goes
 ### Local development
 
 - `wrangler dev` runs the Worker with D1 and Queues emulated locally.
-- The parser runs in Docker from the same image that ships to Cloud Run.
+- The parser runs in Docker from the same image that ships as the container.
 - R2 uses a real dev bucket, even locally. The parser reads over the S3 API, and Wrangler's local R2 emulation is only reachable through Worker bindings.
 - The viewer can be built against the sample files in `/schema` with no backend running.
 
 ### Environments
 
-- Two environments, dev and prod. Each has its own D1 database, R2 bucket, queue, and Cloud Run service.
+- Two environments, dev and prod. Each has its own D1 database, R2 bucket, queue, Worker and parser container.
 - Three secrets per environment: the upload token, the parse secret, and the parser's R2 access key.
-- Put the R2 bucket and the Cloud Run service in the same part of the world, for example western North America and `us-west1`.
+- The R2 buckets use the western North America location hint.
 
 ### CI
 
 | Trigger | Runs |
 | ------- | ---- |
 | Pull request | Go tests, parser diff test on fixtures, schema validation of parser output, TypeScript typecheck and tests |
-| Merge to `main` | Build and push the parser image, deploy Cloud Run, apply D1 migrations, deploy the Worker, build and deploy the viewer |
+| Merge to `main` | Build the parser image, apply D1 migrations, then deploy the Worker with its viewer and parser container, dev first and then prod |
 
 ### Observability
 
@@ -361,7 +361,7 @@ The biggest risk is entity decoding taking far longer than planned, and the fall
 | Entity decoding stalls | v1 already ships on reference data (Fallback rule). Your parser swaps in only when it passes. |
 | Solo project loses momentum during entity decoding | M2 and M3 come before M4, so a working, shareable v1 exists before the hardest part starts. |
 | A game update changes the demo format | Pin the `.proto` version, fail with a clear error on unknown messages, and add a recent demo to the fixtures after each major update. |
-| Long demos exceed memory or the timeout | Stream the file, measure peak memory in M1, and raise Cloud Run limits if needed. |
+| Long demos exceed memory or the timeout | Stream the file, measure peak memory in M1, and raise the container instance size if needed. |
 | Cloud plumbing eats the time meant for the parser | M1 finishes the v0 parser before any cloud work starts. M2 stops at a pipeline that runs on fixture data. |
 | Matchmaking demos stop being downloadable after a while | Download demos soon after playing and keep the raw files in R2. |
 | Strangers upload junk | The upload token. |

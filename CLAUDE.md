@@ -1,6 +1,6 @@
 # demoView
 
-A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and a scrubbable 2D replay of every round. The parser is written from scratch in Go. Everything else is cloud plumbing around it: Cloudflare (Worker API, R2, D1, Queues) in front and Cloud Run for parsing.
+A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and a scrubbable 2D replay of every round. The parser is written from scratch in Go. Everything else is cloud plumbing around it: all on Cloudflare: the Worker API, R2, D1, Queues, and a Container for parsing.
 
 ## Spec and notes
 
@@ -28,7 +28,7 @@ Inside `parser/`:
 - `events`: game events. `players`: identity. `match`: output types.
 - `parse`: `parse.Run`, the one parse path shared by the CLI and the server.
 - `store`: R2 and local-dir object store.
-- `cmd/demo`: the CLI. `cmd/server`: the Cloud Run service.
+- `cmd/demo`: the CLI. `cmd/server`: the parse service that runs in the container.
 
 Local demos live in `parser/testdata/demos/` and oracle exports in `parser/testdata/reference/`. Both are gitignored.
 
