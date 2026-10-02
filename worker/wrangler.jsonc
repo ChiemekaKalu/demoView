@@ -31,10 +31,16 @@
   // PARSER_BUILD names the parser's code, so the reparse cron can find matches
   // parsed by older code. CI sets it at deploy (--var), from the git trees of
   // parser/ and tools/oracle/.
+  // PARSER_ROUNDS picks whose round files ship, and PARSER_SHADOW=oracle
+  // compares ours with the oracle's after each parse. Dev runs ours with the
+  // compare; prod stays on the oracle's (the image default) until ours pass.
+  // An empty value is never passed to the container.
   "vars": {
     "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
     "R2_BUCKET": "demoview-dev",
-    "PARSER_BUILD": "dev"
+    "PARSER_BUILD": "dev",
+    "PARSER_ROUNDS": "parser",
+    "PARSER_SHADOW": "oracle"
   },
   // basic is 1/4 vCPU and 1 GiB: a parse of the largest fixture peaks near
   // 450 MB with round files at 64 Hz.
@@ -104,7 +110,9 @@
       "vars": {
         "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
         "R2_BUCKET": "demoview-prod",
-        "PARSER_BUILD": "dev"
+        "PARSER_BUILD": "dev",
+        "PARSER_ROUNDS": "oracle",
+        "PARSER_SHADOW": ""
       },
       // basic is 1/4 vCPU and 1 GiB: a parse of the largest fixture peaks near
       // 450 MB with round files at 64 Hz.
