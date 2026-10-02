@@ -347,17 +347,19 @@ func (x *exporter) roundFile(r *roundRec, idx map[string]int, killIndex map[*kil
 			detF = clamp(frameOf(det), throwF)
 		}
 		endF := detF
+		fire := g.typ == "molotov" || g.typ == "incendiary"
 		switch g.typ {
 		case "smoke", "decoy", "molotov", "incendiary":
 			switch {
 			case g.endTick >= 0:
 				endF = clamp(frameOf(g.endTick), detF)
-			case g.typ == "molotov" || g.typ == "incendiary":
-				if g.infernoUID == 0 {
-					x.stats.MolotovsWithoutFire++ // no fire, e.g. landed in a smoke
-				} else {
-					endF = last // still burning when the window closed
-				}
+			case fire && g.fire == 0:
+				x.stats.MolotovsWithoutFire++ // no fire, e.g. landed in a smoke
+			case fire:
+				endF = last // still burning when the window closed
+			case g.destroyTick >= 0:
+				// Removed with no end seen, such as a decoy that never went off.
+				endF = clamp(frameOf(g.destroyTick), detF)
 			default:
 				endF = last // still active when the window closed
 			}

@@ -3,9 +3,11 @@ package export
 import (
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
+	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/msg"
 )
 
 // recording samples one round's window: from its freeze end until the next
@@ -21,6 +23,7 @@ type recording struct {
 
 	nades []*grenadeRec
 	byUID map[int64]*grenadeRec
+	burns map[int][2]int // where each fire started, by its entity id
 }
 
 // snapshot is the state at one tick. A match holds one per frame until its
@@ -78,7 +81,7 @@ type grenadeRec struct {
 
 	detTick, destroyTick, endTick int // -1 until seen
 	detPos, destroyPos            [2]int
-	infernoUID                    int64 // the fire a molotov started, or 0
+	fire                          int // entity id of the fire a molotov started, or 0
 }
 
 func (x *exporter) startRecording(r *roundRec) {
@@ -91,7 +94,7 @@ func (x *exporter) startRecording(r *roundRec) {
 		return
 	}
 	t := x.tick()
-	x.rec = &recording{round: r, start: t, step: tickRate / x.hz, next: t, byUID: map[int64]*grenadeRec{}}
+	x.rec = &recording{round: r, start: t, step: tickRate / x.hz, next: t, byUID: map[int64]*grenadeRec{}, burns: map[int][2]int{}}
 	r.rec = x.rec
 }
 
@@ -230,28 +233,61 @@ func (x *exporter) registerGrenades() {
 		thrower, t := playerKey(e.Inferno.Thrower()), x.tick()
 		var best *grenadeRec
 		for _, g := range x.rec.nades {
-			if (g.typ == "molotov" || g.typ == "incendiary") && g.thrower == thrower && g.infernoUID == 0 &&
+			if (g.typ == "molotov" || g.typ == "incendiary") && g.thrower == thrower && g.fire == 0 &&
 				g.throwTick <= t && (g.destroyTick < 0 || t-g.destroyTick <= 16) {
 				best = g // the most recent throw wins
 			}
 		}
 		if best != nil {
-			best.infernoUID = e.Inferno.UniqueID()
+			best.fire = e.Inferno.Entity.ID()
 			if best.detTick < 0 {
 				best.detTick = t
 			}
-		}
-	})
-	x.p.RegisterEventHandler(func(e events.InfernoExpired) {
-		if x.rec == nil || e.Inferno == nil {
-			return
-		}
-		for _, g := range x.rec.nades {
-			if g.infernoUID == e.Inferno.UniqueID() && g.endTick < 0 {
-				g.endTick = x.tick()
+			if pos, ok := x.rec.burns[best.fire]; ok {
+				best.detPos = pos
 			}
 		}
 	})
+
+	// The game's own fire events, by the fire's entity id: where it started,
+	// and when it burned out or a smoke put it out. demoinfocs' InfernoExpired
+	// comes about 13 s after that, when the fire's entity is removed.
+	x.p.RegisterEventHandler(func(e events.GenericGameEvent) {
+		if x.rec == nil {
+			return
+		}
+		switch e.Name {
+		case "inferno_startburn":
+			id := eventInt(e.Data["entityid"])
+			pos := [2]int{roundInt(float64(e.Data["x"].GetValFloat())), roundInt(float64(e.Data["y"].GetValFloat()))}
+			x.rec.burns[id] = pos // for an InfernoStart still to come this tick
+			for _, g := range slices.Backward(x.rec.nades) {
+				if g.fire == id {
+					g.detPos = pos
+					break
+				}
+			}
+		case "inferno_expire", "inferno_extinguish":
+			id := eventInt(e.Data["entityid"])
+			for _, g := range x.rec.nades {
+				if g.fire == id && g.endTick < 0 {
+					g.endTick = x.tick()
+				}
+			}
+		}
+	})
+}
+
+// eventInt reads an integer key of a raw game event, whichever width the
+// game sent it as.
+func eventInt(k *msg.CMsgSource1LegacyGameEventKeyT) int {
+	switch {
+	case k.ValLong != nil:
+		return int(k.GetValLong())
+	case k.ValShort != nil:
+		return int(k.GetValShort())
+	}
+	return int(k.GetValByte())
 }
 
 // findGrenade returns the most recent grenade in the open window with the
