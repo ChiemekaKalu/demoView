@@ -24,7 +24,10 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - Mirage's 73 are 64 live plus 9 post-match `world` self-deaths.
   - Live window: after the last `begin_new_match`, up to `cs_win_panel_match`.
   - *Not yet wired into `parse.Run`.*
-- [ ] **1.6 Player identity** (stage 5). Exit: every kill's attacker, victim and assister resolve to a name, Steam id and team.
+- [x] **1.6 Player identity** (stage 5). `parser/players` reads userinfo snapshots (StringTables and FullPacket; FullPacket tables are deltas) and the end-of-match player list (user message 375, present in both demos).
+  - 10 humans per demo, whose names, Steam ids and final teams match demoparser2.
+  - Bots can stand in for disconnected players and appear in kills.
+  - *Per-kill resolution and per-round sides are checked in 1.7.*
 - [ ] **1.7 Match logic** (stage 6), and the full `match.json`. Exit: the scoreboard matches the in-game one for a match you played.
 - [ ] **1.8 `demo diff` and CI.** Exit: the diff passes on all 3 fixtures. This meets the v0 done-when and closes M1.
 
