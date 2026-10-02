@@ -19,11 +19,11 @@ import (
 // TestRunMatch checks that Run feeds events, string tables, cvars and the
 // end-of-match message to match logic: a one-round 1v1.
 func TestRunMatch(t *testing.T) {
-	got, notes, err := run(context.Background(), bytes.NewReader(parsetest.Match()))
+	got, st, err := RunStats(context.Background(), bytes.NewReader(parsetest.Match()))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, n := range notes {
+	for _, n := range st.Notes {
 		if !strings.HasPrefix(n, "the match ended ") { // a one-round match ends early
 			t.Errorf("note: %s", n)
 		}

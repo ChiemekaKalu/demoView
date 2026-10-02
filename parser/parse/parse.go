@@ -1,6 +1,6 @@
 // Package parse turns a demo stream into match.json. It is the one parse
-// path, shared by the CLI and the Cloud Run server, so both accept and reject
-// exactly the same demos.
+// path, shared by the CLI and the server, so both accept and reject exactly
+// the same demos.
 package parse
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"time"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/events"
@@ -25,29 +26,43 @@ const Version = "0.1.0"
 // checkEvery is how many frames pass between checks for cancellation.
 const checkEvery = 4096
 
+// Stats says how far a parse got and where its time went.
+type Stats struct {
+	BytesRead int64         // demo bytes read from the input
+	Frames    int           // frames read
+	LastTick  int32         // the highest frame tick reached
+	Walk      time.Duration // reading and decoding the frames
+	Build     time.Duration // match logic, once the frames are done
+	Notes     []string      // what match logic had to guess or found inconsistent
+}
+
 // Run reads the demo from r to the end and returns its match.json. It
 // decodes every frame and every packet message, so a malformed demo fails
 // with an error wrapping demo.ErrBadDemo. Errors from r are returned as they
 // are, and so is ctx's error if it is cancelled.
 func Run(ctx context.Context, r io.Reader) (match.File, error) {
-	f, _, err := run(ctx, r)
+	f, _, err := RunStats(ctx, r)
 	return f, err
 }
 
-// run is Run, plus the match logic's notes on what it had to guess.
-func run(ctx context.Context, r io.Reader) (match.File, []string, error) {
+// RunStats is Run, plus Stats, which are filled in as far as the parse got
+// when it fails.
+func RunStats(ctx context.Context, r io.Reader) (match.File, Stats, error) {
+	var st Stats
 	sum := sha256.New()
-	dr, err := demo.NewReader(io.TeeReader(r, sum))
-	if err != nil {
-		return match.File{}, nil, err
-	}
 	p := parser{rec: matchlogic.NewRecorder()}
-	if err := p.walk(ctx, demo.NewDecoder(dr)); err != nil {
-		return match.File{}, nil, err
+	start := time.Now()
+	err := p.walk(ctx, io.TeeReader(r, io.MultiWriter(sum, counter{&st.BytesRead})), &st)
+	st.Walk = time.Since(start)
+	if err != nil {
+		return match.File{}, st, err
 	}
+
+	start = time.Now()
 	res := matchlogic.Build(p.rec.Log(), matchlogic.Options{Map: p.mapName, TickRate: p.tickRate})
+	st.Build, st.Notes = time.Since(start), res.Notes
 	if len(res.Rounds) == 0 {
-		return match.File{}, res.Notes, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
+		return match.File{}, st, fmt.Errorf("%w: no live rounds", demo.ErrBadDemo)
 	}
 	return match.File{
 		SchemaVersion: match.SchemaVersion,
@@ -61,7 +76,15 @@ func run(ctx context.Context, r io.Reader) (match.File, []string, error) {
 		Rounds:     res.Rounds,
 		Kills:      res.Kills,
 		Scoreboard: res.Scoreboard,
-	}, res.Notes, nil
+	}, st, nil
+}
+
+// counter adds the length of everything written to it to *n.
+type counter struct{ n *int64 }
+
+func (c counter) Write(p []byte) (int, error) {
+	*c.n += int64(len(p))
+	return len(p), nil
 }
 
 // parser holds what the stages extract while the demo streams past.
@@ -73,9 +96,14 @@ type parser struct {
 	rec    *matchlogic.Recorder // the events, players and cvars match logic needs
 }
 
-// walk feeds every frame from d, and every message in its packets, to the
-// stages.
-func (p *parser) walk(ctx context.Context, d *demo.Decoder) error {
+// walk feeds every frame of the demo in r, and every message in its
+// packets, to the stages, counting frames and ticks in st.
+func (p *parser) walk(ctx context.Context, r io.Reader, st *Stats) error {
+	dr, err := demo.NewReader(r)
+	if err != nil {
+		return err
+	}
+	d := demo.NewDecoder(dr)
 	var mr demo.MessageReader
 	for n := 0; ; n++ {
 		if n%checkEvery == 0 {
@@ -90,6 +118,8 @@ func (p *parser) walk(ctx context.Context, d *demo.Decoder) error {
 		if err != nil {
 			return err
 		}
+		st.Frames++
+		st.LastTick = max(st.LastTick, f.Tick)
 		switch f.Cmd {
 		case demo.CmdFileHeader:
 			err = p.fileHeader(f)

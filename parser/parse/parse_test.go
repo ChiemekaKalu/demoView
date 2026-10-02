@@ -123,6 +123,28 @@ func TestRunCancelled(t *testing.T) {
 	}
 }
 
+func TestRunStats(t *testing.T) {
+	data := parsetest.Match()
+	_, st, err := RunStats(context.Background(), bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.BytesRead != int64(len(data)) || st.Frames != 8 || st.LastTick != 400 {
+		t.Errorf("stats = %+v, want all %d bytes, 8 frames, last tick 400", st, len(data))
+	}
+
+	// A failed parse reports how far it got.
+	cut := data[:len(data)-3]
+	_, st, err = RunStats(context.Background(), bytes.NewReader(cut))
+	if !errors.Is(err, demo.ErrBadDemo) || st.BytesRead != int64(len(cut)) || st.Frames != 7 || st.LastTick != 300 {
+		t.Errorf("truncated: error %v, stats %+v; want 7 frames to tick 300", err, st)
+	}
+	noRounds := parsetest.Build(parsetest.Frame{Cmd: demo.CmdSignonPacket, Tick: -1, Payload: parsetest.Packet(parsetest.EventList())})
+	if _, st, err = RunStats(context.Background(), bytes.NewReader(noRounds)); err == nil || len(st.Notes) == 0 {
+		t.Errorf("no live rounds: error %v, notes %q; want match logic's notes", err, st.Notes)
+	}
+}
+
 // realDemos are facts about the fixture demos, from the game's own counters
 // and round results (read with demoparser2) and the reference exporter. A
 // demo in testdata/demos that isn't listed is checked for invariants only.
@@ -159,7 +181,7 @@ func TestRealDemos(t *testing.T) {
 			}
 			defer f.Close()
 			start := time.Now()
-			got, notes, err := run(context.Background(), f)
+			got, st, err := RunStats(context.Background(), f)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -167,7 +189,7 @@ func TestRealDemos(t *testing.T) {
 			if !strings.HasPrefix(got.Match.Map, "de_") || got.Match.TickRate != 64 {
 				t.Errorf("Match = %+v, want a de_ map at 64 ticks", got.Match)
 			}
-			for _, n := range notes {
+			for _, n := range st.Notes {
 				t.Logf("note: %s", n)
 			}
 			checkMatch(t, got)
@@ -176,8 +198,8 @@ func TestRealDemos(t *testing.T) {
 			if !ok {
 				return
 			}
-			if len(notes) != want.notes {
-				t.Errorf("%d notes, want %d", len(notes), want.notes)
+			if len(st.Notes) != want.notes {
+				t.Errorf("%d notes, want %d", len(st.Notes), want.notes)
 			}
 			score := map[string]int{}
 			reasons := map[string]int{}
