@@ -16,7 +16,6 @@ export default defineConfig({
           R2_SECRET_ACCESS_KEY: "test-secret-key",
           R2_ACCOUNT_ID: "testaccount",
           R2_BUCKET: "demoview-test",
-          PARSER_URL: "https://parser.test",
         },
       },
     })),

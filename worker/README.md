@@ -1,6 +1,6 @@
 # worker
 
-The Cloudflare Worker: the public API, the parse queue consumer, and the host for the viewer's static files. It owns D1. See the API, Queue consumer and Data model sections of `.claude/spec.md`.
+The Cloudflare Worker: the public API, the parse queue consumer, the parser's container (`src/container.ts`, built from `parser/Dockerfile`), and the host for the viewer's static files. It owns D1. See the API, Queue consumer and Data model sections of `.claude/spec.md`.
 
 ```sh
 npm ci
@@ -10,9 +10,11 @@ npm run lint
 npm run types         # regenerate worker-configuration.d.ts after editing wrangler.jsonc
 npm run dev           # wrangler dev; needs a .dev.vars (copy .dev.vars.example) and a web build
 npm run build:web     # build the viewer into ../web/dist
-npm run deploy:dev    # build the viewer, then deploy dev
-npm run deploy:prod   # build the viewer, then deploy prod
+npm run deploy:dev    # build the viewer, then deploy dev (needs Docker for the parser image)
+npm run deploy:prod   # build the viewer, then deploy prod (needs Docker for the parser image)
 ```
+
+Deploys normally run in CI (`.github/workflows/deploy.yml`), which has Docker.
 
 If npm 10.9 has to resolve the tree without `package-lock.json`, it crashes on Vite 8's optional peers (`Cannot read properties of null (reading 'edgesOut')`). Regenerate the lockfile with `npx npm@11 install` instead.
 
@@ -52,17 +54,12 @@ uploaded --confirm--> queued --consumer--> parsing --200--> ready
 
 A match is `uploaded` from creation until the upload is confirmed. While a retry is pending it is back in `queued`, with the last error in `error`. Every change is logged as one JSON line, `{"event":"match_status",...}`.
 
-## Setup for M2
+## Parser container
 
-Done: the account, the D1 databases (ids in `wrangler.jsonc`, migrations applied to both), the R2 buckets and the four queues. The top level of `wrangler.jsonc` is dev; `--env prod` is prod.
+The queue consumer sends each parse to one container through its Durable Object (`PARSER`), one job at a time (`max_concurrency: 1`). The container gets `PARSE_SECRET` and the R2 credentials from the Worker's secrets at start, and sleeps 30 seconds after its last request, because idle time is billed. Its instance type is `basic` (1/4 vCPU, 1 GiB); the largest fixture peaks near 450 MB. It logs `container_start` and `container_stop`, where exit code 137 means it ran out of memory.
 
-Still to do, per environment:
-
-1. Set `PARSER_URL` in `wrangler.jsonc` once the Cloud Run service exists.
-2. `wrangler secret put` for `UPLOAD_TOKEN`, `PARSE_SECRET`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` (add `--env prod` for prod). The R2 keys come from an R2 API token with Object Read & Write on that environment's bucket.
-3. Allow `PUT` from the Worker's origin (its workers.dev or custom domain) in the bucket's CORS policy, because browsers upload straight to R2.
-4. `npm run deploy:dev` or `npm run deploy:prod`. New migrations go first: `wrangler d1 migrations apply DB --remote` (plus `--env prod`).
+The account, D1 databases (migrations applied), R2 buckets, queues and Worker secrets (`UPLOAD_TOKEN`, `PARSE_SECRET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) exist in both environments, and each bucket's CORS policy allows `PUT` from the Worker's origin, because browsers upload straight to R2. New migrations go first: `wrangler d1 migrations apply DB --remote` (plus `--env prod`).
 
 ## Local development
 
-`npm run dev` runs the API and both queue consumers with D1, R2 and Queues emulated locally. Run `npm run build:web` and `npm run migrate:local` first. Local D1 data is keyed by `database_id`, so migrate again if that changes. To parse locally, set `PARSER_URL=http://localhost:8080` in `.dev.vars` and run the parser container. Presigned URLs always point at real R2, so for a local end-to-end run, put the demo with `wrangler r2 object put demoview-dev/demos/<id>.dem --local --file <demo>` instead.
+`npm run dev` runs the API and both queue consumers with D1, R2 and Queues emulated locally. Run `npm run build:web` and `npm run migrate:local` first. Local D1 data is keyed by `database_id`, so migrate again if that changes. The parser container is off in `wrangler dev` (`dev.enable_containers`), since it needs Docker; set it to `true` with Docker running to parse locally. Presigned URLs always point at real R2, so for a local end-to-end run, put the demo with `wrangler r2 object put demoview-dev/demos/<id>.dem --local --file <demo>` instead.

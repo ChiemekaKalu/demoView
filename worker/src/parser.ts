@@ -1,4 +1,4 @@
-// The parser service, behind an interface so tests can stub it.
+// The parse service, behind an interface so tests can stub it.
 
 export interface ParseRequest {
   match_id: string;
@@ -25,12 +25,15 @@ export interface Parser {
   parse(request: ParseRequest, attempt?: ParseAttempt): Promise<ParseResult>;
 }
 
-// Cloud Run gives up after 10 minutes. Stop waiting a little after that, well
-// inside the queue consumer's 15-minute limit.
+// Stop waiting well inside the queue consumer's 15-minute limit. Parses take
+// seconds.
 const TIMEOUT_MS = 11 * 60 * 1000;
 
-// Calls `POST /parse` on the Cloud Run service.
-export function cloudRunParser(baseUrl: string, secret: string, fetcher: typeof fetch = fetch): Parser {
+export type Fetcher = (input: URL, init: RequestInit) => Promise<Response>;
+
+// Calls `POST /parse` on the parse service at baseUrl through fetcher: the
+// container's Durable Object in production, any HTTP host otherwise.
+export function httpParser(baseUrl: string, secret: string, fetcher: Fetcher): Parser {
   return {
     async parse(request, attempt) {
       const headers: Record<string, string> = { "content-type": "application/json", "x-parse-secret": secret };

@@ -242,22 +242,28 @@ describe("dead letter consumer", () => {
 });
 
 describe("Worker queue handler", () => {
-  async function deliver(queue: string) {
+  async function deliver(queue: string, e: Env = env) {
     const b = batch(queue, { match_id: ID });
     const ctx = createExecutionContext();
-    await worker.queue(b, env);
+    await worker.queue(b, e);
     return getQueueResult(b, ctx);
   }
 
-  it("calls Cloud Run for parse jobs", async () => {
-    await insertMatch(ID, "queued");
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(Response.json({ error: "truncated demo" }, { status: 422 }));
+  // Containers can't run in tests, so the parser binding is a fake whose
+  // container answers every request with response.
+  function fakeParser(response: Response) {
+    const fetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => response);
+    const binding = { idFromName: (name: string) => name, get: () => ({ fetch }) };
+    return { env: { ...env, PARSER: binding as unknown as Env["PARSER"] }, fetch };
+  }
 
-    await deliver(QUEUE);
-    const [url, init] = fetchSpy.mock.calls[0] ?? [];
-    expect(String(url)).toBe("https://parser.test/parse");
+  it("sends parse jobs to the parser container", async () => {
+    await insertMatch(ID, "queued");
+    const { env: e, fetch } = fakeParser(Response.json({ error: "truncated demo" }, { status: 422 }));
+
+    await deliver(QUEUE, e);
+    const [url, init] = fetch.mock.calls[0] ?? [];
+    expect(String(url)).toBe("http://parser/parse");
     expect(new Headers(init?.headers).get("x-parse-secret")).toBe("test-parse-secret");
     expect(await matchRow(ID)).toMatchObject({ status: "failed", error: "truncated demo" });
   });

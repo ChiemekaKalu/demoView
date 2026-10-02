@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { cloudRunParser } from "../src/parser";
+import { httpParser, type Fetcher } from "../src/parser";
 
 const JOB = { match_id: "0123456789abc", demo_key: "demos/0123456789abc.dem" };
 
@@ -8,10 +8,10 @@ function parserReturning(response: Response | Error) {
     if (response instanceof Error) throw response;
     return response;
   });
-  return { parser: cloudRunParser("https://parser.test", "s3cret", fetcher as typeof fetch), fetcher };
+  return { parser: httpParser("https://parser.test", "s3cret", fetcher as Fetcher), fetcher };
 }
 
-describe("cloudRunParser", () => {
+describe("httpParser", () => {
   it("POSTs the job to /parse with the shared secret", async () => {
     const { parser, fetcher } = parserReturning(Response.json({ ok: true }));
     await parser.parse(JOB);

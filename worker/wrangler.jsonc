@@ -1,9 +1,11 @@
 // The top level is the dev environment, so `wrangler dev` and a bare
 // `wrangler deploy` never touch prod. Prod is `wrangler deploy --env prod`.
-// Bindings and vars are not inherited by environments, so prod repeats them.
+// Bindings, vars and containers are not inherited by environments, so prod
+// repeats them.
 //
-// The account, D1 databases, R2 buckets and queues exist. Still a
-// placeholder: PARSER_URL, the Cloud Run service URL (see README.md).
+// The parser runs as a Cloudflare Container (src/container.ts). wrangler
+// deploy builds its image from parser/Dockerfile, which needs Docker, so
+// deploys run in CI (.github/workflows/deploy.yml).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "demoview-api-dev",
@@ -12,8 +14,10 @@
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
-    "logs": { "enabled": true, "invocation_logs": true },
-    "traces": { "enabled": true }
+    "redact_query_string": false,
+    "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": true, "persist": true },
+    "traces": { "enabled": true, "head_sampling_rate": 1, "persist": true },
+    "issues": { "enabled": true }
   },
   // The viewer, served by this same Worker so the API needs no CORS. Build
   // it first (`npm run build:web`). Requests for /api/* always reach the
@@ -25,10 +29,29 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    "PARSER_URL": "https://demoview-parser-dev.example.run.app",
     "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
     "R2_BUCKET": "demoview-dev"
   },
+  // basic is 1/4 vCPU and 1 GiB: a parse of the largest fixture peaks near
+  // 450 MB with round files at 64 Hz.
+  "containers": [
+    {
+      "class_name": "ParserContainer",
+      "image": "../parser/Dockerfile",
+      "image_build_context": "..",
+      "instance_type": "basic",
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "PARSER", "class_name": "ParserContainer" }]
+  },
+  "exports": {
+    "ParserContainer": { "type": "durable-object", "storage": "sqlite" }
+  },
+  // wrangler dev would need Docker to run the container; without it, parses
+  // fail and retry. Set to true with Docker running to parse locally.
+  "dev": { "enable_containers": false },
   "d1_databases": [
     {
       "binding": "DB",
@@ -39,14 +62,16 @@
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "demoview-dev" }],
   // A message is delivered once plus max_retries times before it moves to the
   // dead letter queue, so max_retries 2 gives the spec's 3 attempts
-  // (MAX_ATTEMPTS in src/consumer.ts). One job per batch, since a parse can
-  // take minutes. The Worker also consumes the DLQ to mark matches failed.
+  // (MAX_ATTEMPTS in src/consumer.ts). One job at a time, since every parse
+  // shares the one container. The Worker also consumes the DLQ to mark
+  // matches failed.
   "queues": {
     "producers": [{ "binding": "PARSE_QUEUE", "queue": "demoview-dev-parse" }],
     "consumers": [
       {
         "queue": "demoview-dev-parse",
         "max_batch_size": 1,
+        "max_concurrency": 1,
         "max_retries": 2,
         "retry_delay": 30,
         "dead_letter_queue": "demoview-dev-parse-dlq"
@@ -60,13 +85,31 @@
       "observability": {
         "enabled": true,
         "head_sampling_rate": 1,
-        "logs": { "enabled": true, "invocation_logs": true },
-        "traces": { "enabled": true }
+        "redact_query_string": false,
+        "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": true, "persist": true },
+        "traces": { "enabled": true, "head_sampling_rate": 1, "persist": true },
+        "issues": { "enabled": true }
       },
       "vars": {
-        "PARSER_URL": "https://demoview-parser.example.run.app",
         "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
         "R2_BUCKET": "demoview-prod"
+      },
+      // basic is 1/4 vCPU and 1 GiB: a parse of the largest fixture peaks near
+      // 450 MB with round files at 64 Hz.
+      "containers": [
+        {
+          "class_name": "ParserContainer",
+          "image": "../parser/Dockerfile",
+          "image_build_context": "..",
+          "instance_type": "basic",
+          "max_instances": 1
+        }
+      ],
+      "durable_objects": {
+        "bindings": [{ "name": "PARSER", "class_name": "ParserContainer" }]
+      },
+      "exports": {
+        "ParserContainer": { "type": "durable-object", "storage": "sqlite" }
       },
       "d1_databases": [
         {
@@ -82,6 +125,7 @@
           {
             "queue": "demoview-prod-parse",
             "max_batch_size": 1,
+            "max_concurrency": 1,
             "max_retries": 2,
             "retry_delay": 30,
             "dead_letter_queue": "demoview-prod-parse-dlq"
