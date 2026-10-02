@@ -12,22 +12,22 @@ From the spec, and the reason most things look the way they do:
 ## Components
 
 ```mermaid
-flowchart TB
+flowchart LR
+    B[Browser<br/>Preact SPA] --> W
     subgraph CF[Cloudflare]
-        direction TB
-        W[Worker<br/>API + consumer + static viewer]
+        W[Worker<br/>API, consumer, viewer]
         D1[(D1<br/>summaries)]
-        R2[(R2<br/>demos + parsed files)]
-        Q[[Queues + DLQ]]
+        R2[(R2<br/>demos and parsed files)]
+        Q[[Queue and DLQ]]
     end
     subgraph PC[Parser runtime]
-        S[cmd/server<br/>POST /parse] --> PR[parse.Run<br/>our parser]
-        S --> OR[oracle subprocess<br/>round files]
+        S[server<br/>POST /parse] --> PR[our parser]
+        S --> OR[oracle<br/>fallback]
     end
-    B[Browser<br/>Preact SPA] --> W
     W --- D1
     W --- R2
-    W --> Q --> W
+    W -- enqueue --> Q
+    Q -- deliver --> W
     W -- calls --> S
     S -- S3 API --> R2
 ```
@@ -64,7 +64,7 @@ sequenceDiagram
     P->>R: stream demo, parse
     P->>R: write rounds/NN.json, match.json, then manifest.json last
     P-->>W: 200 match.json
-    W->>D: save players, rounds, kills; status ready
+    W->>D: save players, rounds and kills, then status ready
     loop every few seconds
         B->>W: GET /api/matches/:id
     end
