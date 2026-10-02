@@ -128,13 +128,16 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
   - A few have minor round-1 and ADR differences.
   - *Prod today:* the oracle guard ships the oracle's match.json for the collapsed and swapped cases, so they're correct. The 2 "no live rounds" demos fail with a 422.
   - **The swap-in default stays `oracle` until the pro sample passes.** Then: a pinned pro set in CI (pipeline), downloaded from HF at test time, never rehosted.
-  - **Stopped here (2026-10-02, 05:10 PT; resume 08:11).** No code changes yet; `matchlogic` is at its last passing state, and the user's 8 demos still match the game counters ("ALL MATCH").
-    - Repro: anubis, build 10072 (oracle: 22 rounds). Ours gives 1 round from begin_new_match at tick 559 to round 1's freeze end at 23437, with all 144 kills in it.
-    - *Hypothesis, unconfirmed:* `boundaryKind` picks the first of `round_prestart`/`round_start`/`round_poststart` seen anywhere, and `segmentRounds` splits only on that kind. If a tournament server fires it once, the window collapses. A second suspect is a misplaced `begin_new_match` (knife round, restarts, a 6-minute gap before the first freeze end).
-    - **Rule: no external demos on the user's machine.** Iterate only through aiguy's GitHub Actions research workflow in "parser" mode: push a parser branch, then cloud points the config at it, with a `paths` list of the repros plus controls.
-    - *Next:* (1) a workflow run that dumps the round-boundary events with ticks on the repros; (2) a general boundary rule or live-window fix, with synthetic tests; (3) the team swap (build 9842) and the minor round-1 cases; (4) a guard on the 10 local demos plus the scoreboard check, then a full re-run of all 132.
+  - **Rule: no external demos on the user's machine.** Iterate only through aiguy's GitHub Actions research workflow in "parser" mode: push branch `parser/pro-rounds` (tell cloud first), then send aiguy the `parser_ref` directly.
+  - *Fixed so far:*
+    - 68a02cf: tournament GOTV fires no restart event in play, so `round_officially_ended` splits the rounds. This fixed the collapse (sweep 37051718863).
+    - 53df3af: round 1 keeps the spawns and team changes before `begin_new_match`, and its start is clamped to the demo's first frame tick.
+    - 0108c53: unknown `E*` enum fields decode as varints, and a projectile class missing from the build is skipped (build 9842: `EGrenadeThrowState`, `CFlashbangProjectile`).
+    - 1dd244c: the CLI diff still compares match.json when the round files fail.
+  - *Not ours:* the 2 "no live rounds" demos are rejected by the oracle too. Grenade diffs at the research branch base come from the old oracle (fixed in 5d0c7fe).
+  - *Now:* aiguy is sweeping 1dd244c (the 10 repros, then all 132). Guards: the 10 local demos match the reference (`TestReferenceDiff`, `TestReferenceRounds`), and the scoreboard check gives "ALL MATCH".
 - [ ] **Swap-in** (1587e55, de2ff27). The code is done and tested: `PARSER_ROUNDS=parser` (opt-in) ships our round files, falling back to the oracle on `entity_error` (6.5, tested) or `implausible_match`. `PARSER_SHADOW=oracle` diffs after a flushed response (6.6); a Mirage smoke run was a full match, 10 rounds and 0 mismatches.
-  - *Remaining:* pipeline sets dev envVars (`PARSER_ROUNDS=parser`, `PARSER_SHADOW=oracle`); dev shadow lines come back clean; the pro sweep passes on the round fix (68a02cf); then prod flips to `parser`. Never pass an empty `PARSER_ROUNDS` in prod.
+  - *Remaining:* pipeline sets dev envVars (`PARSER_ROUNDS=parser`, `PARSER_SHADOW=oracle`); dev shadow lines come back clean; the pro sweep passes (parser/pro-rounds); then prod flips to `parser`. Never pass an empty `PARSER_ROUNDS` in prod.
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
 
 ## M5: every map and safe reparse (v1.1)
