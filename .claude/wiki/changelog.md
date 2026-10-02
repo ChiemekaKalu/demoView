@@ -2,6 +2,14 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, midday: entities decode, and the pipeline looks after itself
+
+- **M4 stage 3 is done** (`1abbf6d`, `d455cbf`, `f771df1`): pawn position, view angle and health agree with the oracle on 100% of frames on all 10 demos, every entity packet is consumed exactly, and the largest demo decodes in about 1.5 s. The comparison found an oracle bug, fixed in `df7dced`. Fuzzing field paths and entity updates is in (`1a5a988`), and it found two entity bugs, being fixed. Wiki: [parser](parser.md), [testing](testing.md).
+- **Budget closed:** the server caps the oracle at 400 MiB (`fe09822`), and the full path measures 270 MiB at one CPU. Wiki: [parser](parser.md).
+- **Pipeline self-care** (`9d5ead9`, `1df36df`, `5994791`, `22b3884`): a stuck-match sweeper, an hourly reparse batch, a daily cleanup, and per-match history in D1 shown on the match page (`ed9700b`). **Crons are on in dev only** until the exit checks pass, and CI refuses to deploy prod with the dev-only fault flag set. Wiki: [worker](worker.md), [reparse runbook](runbook-reparse.md), [stuck-match runbook](runbook-stuck-matches.md).
+- **Limits:** uploads and reparses are capped at 10 a minute, and the viewer says so (`856d8c5`, `94dba79`). A reparse with fewer rounds is tested to hide the old extras (`16c8041`).
+- The experiment spend cap for Match Pulse is $12.50 of the $25 loaded. Wiki: [decisions](decisions.md).
+
 ## 2026-10-02, morning: safe swap and hardening land
 
 - **Safe swap, Worker side:** every attempt writes under its own prefix and the match goes live by one conditional pointer swap (`074f5b7`, migration `0003`). A reparse route exists (`a37fc0d`), the viewer asks for files by parse id (`fff16cd`), and CI passes the parser's build id to the deploy (`c7134a1`). The `attempted_build` column is now named. Wiki: [R2 layout](r2-layout.md), [reparse runbook](runbook-reparse.md), [worker](worker.md), [big-picture](big-picture.md).

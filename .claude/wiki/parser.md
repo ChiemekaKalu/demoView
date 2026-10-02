@@ -94,9 +94,9 @@ The server logs one JSON line for every parse and no longer leaks secrets into l
 | Item | State |
 | ---- | ----- |
 | A stream that ends without a Stop frame is `bad_demo` ("truncated: no Stop frame") | Done (`27de943`). All 2,000 truncations of the two public demos are rejected with no panic. |
-| Fuzz targets | `bitread`, `FuzzFrames` (frame loop, decoder, messages) and `FuzzApply` (string tables) are done and crash-free at 60 s. Field paths wait for M4 stage 3. |
+| Fuzz targets | Done: `bitread`, `FuzzFrames` (frame loop, decoder, messages), `FuzzApply` (string tables and entities) and `FuzzFieldPaths`, crash-free at 60 s (`1a5a988`). Reading the code turned up two entity bugs, a dynamic-array write past its length and an unbounded baseline cache, which is a memory-exhaustion risk from crafted demos. Both are being fixed in the stage 4 and 5 work. |
 | Two parses in separate processes are byte-identical | Done: `match.json` is identical on all 10 local demos. |
-| Budget at `GOMAXPROCS=1` | Events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB. The full path with the oracle was over budget at 640 MiB, which was the oracle holding its whole timeline. A fix (`23e232c`) brought the peak to about 269 to 318 MiB at the same speed with byte-identical output. Re-measure when entity decoding swaps in. |
+| Budget at `GOMAXPROCS=1` | Events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB. The full path with the oracle was over budget at 640 MiB, because the oracle held its whole timeline. Compacting its samples (`23e232c`) brought it to **8.3 s and about 270 MiB** with byte-identical output, and the server now runs the oracle under a 400 MiB memory limit (`fe09822`). The full v1 path fits the budget. Re-measure when our own entity path swaps in. |
 | Per-map diff coverage | Done (`3c86e04`): one subtest per map and demo, all OK. |
 
 The narrative log's groundwork (`parser/eventlog`, `06ca637`) is done: facts, derived records and notes as NDJSON with a gzip whose mtime is 0, floats and times impossible by construction, golden and run-twice tests, about 0.5 microseconds per record. The rest of that design is v1.2.
@@ -107,8 +107,8 @@ Entity decoding (M4) is the hardest part of the project, and it has started earl
 
 - **Stage 1, classes and serializers** (`parser/entities`): done (`bf09f8f`). Field layouts exist for every class on both demos: 211 and 218 classes, about 1.5k distinct fields. A pawn's position is `m_skeletonInstance.m_vecOrigin` (cell plus offset per axis), and the view angle, health and life state are `m_angEyeAngles`, `m_iHealth` and `m_lifeState`. Still unverified until real data is read: the health clamp encoding, `minusone`, sim-time fields by name, pointer presence bits, and how a polymorphic pointer picks its type.
 - **Stage 2, string tables** (`parser/stringtables`): done. In-packet create, update and clear messages match every snapshot byte for byte on both demos (`c9e9bd7`). Open item: Mirage has instance-baseline keys like `43:0` to `43:27` with an unknown suffix, so baselines are looked up by the bare class id.
-- **Stage 3, entity updates** (field paths, value decoders, create/update/delete): in progress. The position diff runs against the oracle's round files.
-- **Stages 4 and 5, extraction and round files** at 64 Hz: then swap them in for the oracle's.
+- **Stage 3, entity updates** (`1abbf6d`, `d455cbf`): done. Pawn x, y, yaw and hp agree with the oracle on **100% of frames on all 10 demos**. Every `svc_PacketEntities` message is consumed exactly (1.18 million), and one demo's 351 thousand full-packet values equal the state built from deltas. The largest-class demo decodes in about 1.5 s on one CPU at a 31 MB peak. Field paths use a 40-op Huffman table whose tie-break rule was found empirically (6 ops never occur in the 10 demos). The stage 1 unknowns resolved: the health clamp is zigzag, pointer presence is one bit, a polymorphic pointer is a type index, and sim-time fields are varint ticks. One note for stage 4: apply only the *first* full packet's entities, because later ones omit fields.
+- **Stages 4 and 5, extraction and round files** at 64 Hz: next, then swap them in for the oracle's. Comparing against the oracle also exposed an oracle bug, fixed in `df7dced`: a world death before round 1's freeze end, such as a reconnect, held the player dead from frame 0.
 
 Entity decoding also decides exact round winners and teams, which events can only infer.
 

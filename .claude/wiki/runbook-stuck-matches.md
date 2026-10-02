@@ -1,6 +1,6 @@
 # Runbook: stuck and failed matches
 
-For a match that sits in `queued` or `parsing`, or ends `failed` and shouldn't have. **The sweeper is v1.1 (`6d603ba`) and not recorded as built. Its `status_changed_at` column exists** (migration `0003`, backfilled from `parsed_at` or `created_at`). Coded errors have landed: the Worker stores a code with every failed match's error (`2f91766`), and the match page explains failed matches and unreadable data formats (`ed662e1`). Recovery today is the queue's own retries and the dead letter queue, described first.
+For a match that sits in `queued` or `parsing`, or ends `failed` and shouldn't have. **The sweeper is built (`9d5ead9`), and its cron is on in dev only for now.** `status_changed_at` exists (migration `0003`). Coded errors have landed: the Worker stores a code with every failed match's error (`2f91766`), and the match page explains failed matches and unreadable data formats (`ed662e1`).
 
 ## What exists today
 
@@ -23,11 +23,13 @@ The Worker logs one JSON line for every change, every parse attempt, every dead 
 | `parse_call` | One per attempt: status code, attempt of 3, whether it is the final one, duration, result |
 | `dead_letter` | A message that used up its attempts, with the last error |
 | `confirm_rejected` | An upload confirm that was refused, with the reason (wrong status, demo missing, concurrent) |
+| `match_events` (D1) | Not a log line but a table: every status change, parse attempt, reparse request and cleanup per match, served by `GET /api/matches/:id/events` and shown on the match page (`1df36df`, `ed9700b`). It outlasts the Worker logs |
 | `job_skipped` | A redelivered message for a match that is already finished, acked and ignored |
 | `container_start`, `container_stop`, `container_error` | The parser container's lifecycle. Exit code 137 is an out-of-memory kill |
 
 ## Diagnosing a stuck match
 
+0. **Start with the match's history.** The match page shows its pipeline history, and `GET /api/matches/:id/events` returns the same rows.
 1. **Which status, and since when?** Read the match's row. A `queued` match with an error text is waiting for a retry, which is normal for up to 30 s per attempt.
 2. **Look at its `match_status` and `parse_call` lines** in the Worker logs. They give the attempt number and what the parser answered.
 3. **A 422** means the demo is invalid. The match is `failed` and will not retry. That is correct.

@@ -1,6 +1,6 @@
 # R2 layout and versioned parses
 
-> **Approved by the user** (recorded in `notes.md`, `4e06e12`), together with its D1 columns. **The parser side (`1a02084`) and the Worker's pointer swap, versioned URLs and reparse route (`074f5b7`, `a37fc0d`, `fff16cd`) are committed.** The 7-day cleanup is not recorded as landed. The *current* layout is in the first section.
+> **Approved by the user** (recorded in `notes.md`, `4e06e12`), together with its D1 columns. **The parser side (`1a02084`) and the Worker's pointer swap, versioned URLs and reparse route (`074f5b7`, `a37fc0d`, `fff16cd`) are committed.** The 7-day cleanup is built too (`9d5ead9`, daily). The *current* layout is in the first section.
 
 ## Today
 
@@ -77,6 +77,5 @@ A reparse with fewer rounds leaves no old round file reachable, because the new 
 
 ## Still to do
 
-- The 7-day cleanup by exact key.
 - The spec's own R2 layout section must change to match.
 - The Worker's round and `match.json` routes and the viewer's cache keys have to follow the pointer.

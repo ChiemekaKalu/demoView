@@ -1,6 +1,6 @@
 # Runbook: reparsing matches
 
-For when a parser build changes and existing matches should be parsed again. **This describes v1.1 as specified (`6d603ba`).** The reparse route (`a37fc0d`), the pointer swap (`074f5b7`) and the D1 columns (migration `0003`) are committed. The hourly cron is not recorded as landed. Raw demos are always kept in R2, so a reparse never needs a new upload.
+For when a parser build changes and existing matches should be parsed again. **This describes v1.1 as specified (`6d603ba`).** The reparse route (`a37fc0d`), the pointer swap (`074f5b7`), the D1 columns (migration `0003`) and the hourly cron (`9d5ead9`) are committed. **The crons are on in dev only**; prod's turn on after the dev exit checks.
 
 ## How it is meant to work
 
@@ -18,8 +18,8 @@ flowchart TB
 
 Properties worth knowing before touching anything:
 
-- **Keyed on the build, not on `match.json`.** A match's `parser_version` can be an oracle version, so the cron compares the *last attempted build*, the `attempted_build` column. Each match therefore gets one try per build, and a failing match can't block the rest.
-- **The deployed build is injected at deploy**, from the same source as the container image tag. CI now passes the parser's build id to the deploy (`c7134a1`).
+- **Keyed on the build, not on `match.json`.** A match's `parser_version` can be an oracle version, so the cron compares the *last attempted build*, the `attempted_build` column, and the cron waits while anything is queued or parsing. Each match therefore gets one try per build, and a failing match can't block the rest.
+- **The deployed build is injected at deploy**, from the same source as the container image tag. CI passes the parser's build id to the deploy (`c7134a1`). The id is 12 hex characters of a hash of the git trees of `parser/` and `tools/oracle/`, not the commit sha, so a change that touches neither doesn't reparse anything.
 - **A failed reparse never takes a match off `ready`.** The match keeps its live parse and its status. The failure lands in `reparse_error` and `reparse_build`.
 - **The sweeper and the dead-letter handler don't touch these matches.** They only act on matches that have never been `ready`.
 - **Pace.** The cron runs hourly, 5 matches a batch, and pauses at 80% of the monthly container allowance. The user approved exactly these numbers, and approved leaving the cron on in prod. One `basic` instance at about 30 s a parse makes a batch about 3 minutes, so a new upload waits behind at most one batch.

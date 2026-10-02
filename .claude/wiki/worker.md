@@ -13,7 +13,8 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/matches/:id` | Status, scoreboard and round list from D1, `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | The parser's `match.json` from R2, 5 min cache with ETag | 404 until `ready` |
 | `GET /api/matches/:id/rounds/:n` | A round file from R2. With `?v=<parse_id>` it is that parse's file, immutable. Without it, the live parse's file (`074f5b7`) | 404 |
-| `POST /api/matches/:id/reparse` | Queue a reparse. The match stays `ready` on its live parse while it runs (`a37fc0d`) | 401 |
+| `GET /api/matches/:id/events` | The match's pipeline history from D1: every status change, parse attempt (build, parse id, outcome, time), reparse request and cleanup (`1df36df`) | 404 |
+| `POST /api/matches/:id/reparse` | Queue a reparse. The match stays `ready` on its live parse while it runs (`a37fc0d`) | 401, and 429 past the rate limit |
 | `GET /api/maps/:name` | `{ name, pos_x, pos_y, scale }`, cached a day (`091b2b5`) | 404 no radar, or a two-floor map |
 | `GET /api/maps/:name/radar.png` | The radar image, cached a day, with an ETag | 404 |
 
@@ -65,9 +66,24 @@ flowchart TB
 - The Worker also consumes the DLQ to mark matches failed.
 - The consumer reaches the parser through a `ParserContainer` binding. See [infra](infra.md#parser-runtime).
 
+## Background jobs and limits
+
+Committed in `9d5ead9` and later. **The crons are on in dev only** until the dev exit checks pass: a poller watching across an hourly batch, and a deliberately failing build simulated with a dev-only `FAULT` flag (`5994791`). CI refuses to deploy prod with that flag set (`22b3884`). Prod's crons turn on after those checks.
+
+| Job | What it does |
+| --- | ------------ |
+| Sweeper | Requeues or fails matches stuck in `queued` or `parsing`, using `status_changed_at`. |
+| Reparse batch, hourly | Takes up to 5 `ready` matches whose `attempted_build` isn't the deployed build, waits while anything is queued or parsing, and stops at 80% of the month's container allowance. |
+| Cleanup, daily | Deletes superseded parses after 7 days, and uploads left unconfirmed for a day, with their demo. |
+
+- **Build id.** `PARSER_BUILD` is 12 hex characters of a hash of the git trees of `parser/` and `tools/oracle/` (`c7134a1`), not the commit sha, so a web-only merge reparses nothing.
+- **Parse ids.** 9 base32 characters of time plus 7 random, one per attempt.
+- **Rate limit.** Uploads and reparses are limited to 10 a minute (`856d8c5`), and the viewer says so when it happens (`94dba79`).
+- **Left for `cloud`:** the R2 lifecycle rule for orphaned demos.
+
 ## Data
 
-D1 holds `matches`, `players`, `rounds` and `kills` (migration `0001_init.sql`). Timestamps are Unix ms, and 1 GB means 1024³ bytes. The scoreboard score (`score_a`, `score_b`) is computed by counting round winners. Reparse caching is handled in the viewer: URLs carry `?v=<parsed_at>`, so a reparse never serves stale files.
+D1 holds `matches`, `players`, `rounds` and `kills` (migration `0001_init.sql`), plus `match_events` (a row per status change, parse attempt, reparse request and cleanup, so a match's history outlasts the Worker logs) and `container_usage` (container time per month), from migration `0004`. Timestamps are Unix ms, and 1 GB means 1024³ bytes. The scoreboard score (`score_a`, `score_b`) is computed by counting round winners. Reparse caching is handled in the viewer: URLs carry `?v=<parsed_at>`, so a reparse never serves stale files.
 
 ## Environments
 

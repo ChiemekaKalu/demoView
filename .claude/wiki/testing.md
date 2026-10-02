@@ -75,9 +75,11 @@ The two public demos were an *interim* choice, and they are still the ones CI ca
 | Diff | CI `diff` job | Our output equals the oracle's on real demos. |
 | Truncation | `TestTruncated` | Every public fixture cut at 1,000 offsets is `bad_demo`, with no panic. |
 | Run twice | `TestRunTwiceIdentical` | Two separate processes give byte-identical `match.json` on all 10 local demos. |
-| Budget | `TestBudget` | The largest demo at `GOMAXPROCS=1` stays far under 512 MiB and 60 s on the events-only path. |
+| Budget | `TestBudget` | The largest demo at `GOMAXPROCS=1` stays far under 512 MiB and 60 s on the events-only path. The full path with the oracle measured 270 MiB. |
 | Per-map diff | `TestReferenceDiff` | One subtest per map and demo, five maps, all OK. |
-| Fuzzing | `bitread`, `FuzzFrames`, `FuzzApply` | Corrupted input is rejected, never a crash. Corpora are generated at test time, so no demo bytes are committed. |
+| Fuzzing | `bitread`, `FuzzFrames`, `FuzzApply`, `FuzzFieldPaths` | Corrupted input is rejected, never a crash. Corpora are generated at test time, so no demo bytes are committed. |
+| Entity state | `parser/entities` tests | Decoded pawn position, view angle and health agree with the oracle on every frame of all 10 demos, and full-packet state equals state built from deltas. |
+| Reparse | Worker tests | A reparse with fewer rounds hides the old extra rounds (`16c8041`). |
 
 Tests that need real demos skip when the files are absent, so CI stays green on forks. The CI `diff` job also skips with a notice when the fixture secrets are missing.
 
