@@ -86,8 +86,13 @@ func (o *oracle) environ() []string {
 		"PATH=" + os.Getenv("PATH"),
 		"TMPDIR=" + os.TempDir(),
 		"HOME=" + os.TempDir(),
+		"GOMEMLIMIT=" + oracleMemLimit,
 	}, o.env...)
 }
+
+// oracleMemLimit is a soft memory limit for the oracle, so its GC works
+// harder before the parse outgrows the 512 MiB budget. It peaks near 270 MiB.
+const oracleMemLimit = "400MiB"
 
 // oracleError is the message from the oracle's JSON error line on stderr,
 // or the tail of stderr when there is none.

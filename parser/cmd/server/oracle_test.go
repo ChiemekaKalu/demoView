@@ -143,6 +143,9 @@ func TestOracleEnvironment(t *testing.T) {
 	if !slices.Contains(rf.Env, "ORACLE_HELPER=agree") || !slices.ContainsFunc(rf.Env, func(v string) bool { return strings.HasPrefix(v, "PATH=") }) {
 		t.Errorf("oracle environment %q lacks PATH or its own variable", rf.Env)
 	}
+	if !slices.Contains(rf.Env, "GOMEMLIMIT="+oracleMemLimit) {
+		t.Errorf("oracle environment %q lacks the memory limit", rf.Env)
+	}
 	for _, v := range rf.Env {
 		if strings.Contains(v, "sentinel") {
 			t.Errorf("oracle environment has %s", v)
