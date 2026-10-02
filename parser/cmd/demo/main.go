@@ -6,12 +6,18 @@
 //	demo diff <file.dem> --against <reference.json>
 //	demo inspect <file.dem>
 //
-// parse writes <dir>/match.json. diff parses the demo and compares the result
-// with a reference match.json, printing the report on stdout. inspect prints
+// parse writes <dir>/match.json and, unless --events-only, one
+// <dir>/rounds/NN.json per round. If the entity stage fails, match.json is
+// still written and the error names why the round files aren't: code
+// unknown_entity for a class, field or decoder this parser doesn't know,
+// bad_demo otherwise. diff parses the demo and compares the result with a
+// reference match.json, and with the reference's round files when a rounds
+// directory sits beside it, printing the report on stdout. inspect prints
 // frame, file header and packet message statistics; it is a development aid
 // and not part of the CLI contract. Flags may come before or after the file.
 // On failure demo writes one JSON line, {"error":"...","code":"..."}, to
-// stderr and exits 1 (bad_demo or mismatch), 2 (usage) or 3 (internal).
+// stderr and exits 1 (bad_demo, unknown_entity or mismatch), 2 (usage) or 3
+// (internal).
 package main
 
 import (
@@ -23,11 +29,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/diff"
+	"github.com/ChiemekaKalu/demoview/parser/entities"
 	"github.com/ChiemekaKalu/demoview/parser/match"
 	"github.com/ChiemekaKalu/demoview/parser/parse"
+	"github.com/ChiemekaKalu/demoview/parser/roundfile"
 )
 
 const (
@@ -64,6 +73,8 @@ type errorLine struct {
 func classify(err error) (int, string) {
 	var ue *usageError
 	switch {
+	case errors.Is(err, entities.ErrUnknown):
+		return 1, "unknown_entity"
 	case errors.Is(err, demo.ErrBadDemo):
 		return 1, "bad_demo"
 	case errors.Is(err, errMismatch):
@@ -118,8 +129,6 @@ func cmdParse(args []string, stdout io.Writer) error {
 	return parseDemo(pos[0], *out, *eventsOnly)
 }
 
-// parseDemo parses the demo at path with parse.Run and writes match.json to
-// outDir. eventsOnly has no effect yet, because round files are not produced.
 func cmdDiff(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
 	against := fs.String("against", "", "compare with the reference match.json at `path`")
@@ -139,28 +148,36 @@ func cmdDiff(args []string, stdout io.Writer) error {
 // errMismatch means diff found differences; the report is on stdout.
 var errMismatch = errors.New("output differs from the reference")
 
+// diffDemo parses the demo at path and diffs it against the match.json at
+// refPath, and against the round files in the rounds directory beside it,
+// if there is one.
 func diffDemo(path, refPath string, stdout io.Writer) error {
 	ref, err := os.ReadFile(refPath)
 	if err != nil {
 		return err
 	}
-	f, err := os.Open(path)
+	refRounds := filepath.Join(filepath.Dir(refPath), roundfile.Dir)
+	fi, err := os.Stat(refRounds)
+	withRounds := err == nil && fi.IsDir()
+	out, err := parseFile(path, withRounds)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-
-	file, err := parse.Run(context.Background(), f)
-	if err != nil {
-		return err
+	if out.RoundsErr != nil {
+		return out.RoundsErr
 	}
 	var ours bytes.Buffer
-	if err := match.Write(&ours, file); err != nil {
+	if err := match.Write(&ours, out.Match); err != nil {
 		return err
 	}
 	report, err := diff.Compare(ours.Bytes(), ref)
 	if err != nil {
 		return err
+	}
+	if withRounds {
+		if err := diffRounds(&report, ours.Bytes(), ref, out.Rounds, refRounds); err != nil {
+			return err
+		}
 	}
 	if _, err := fmt.Fprintln(stdout, report); err != nil {
 		return err
@@ -171,18 +188,70 @@ func diffDemo(path, refPath string, stdout io.Writer) error {
 	return nil
 }
 
+// diffRounds adds to r the differences between our round files and those
+// in refDir. A round file on only one side is a difference too.
+func diffRounds(r *diff.Report, ourMatch, refMatch []byte, rounds []roundfile.File, refDir string) error {
+	names := map[string]bool{}
+	for _, rf := range rounds {
+		name := roundfile.Name(rf.Round)
+		names[name] = true
+		ref, err := os.ReadFile(filepath.Join(refDir, name))
+		if errors.Is(err, os.ErrNotExist) {
+			r.Mismatches = append(r.Mismatches, diff.Mismatch{Path: "rounds/" + name, Ours: "present", Ref: "absent"})
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		var ours bytes.Buffer
+		if err := roundfile.Write(&ours, rf); err != nil {
+			return err
+		}
+		rr, err := diff.CompareRound(ourMatch, refMatch, ours.Bytes(), ref)
+		if err != nil {
+			return fmt.Errorf("rounds/%s: %w", name, err)
+		}
+		r.Mismatches = append(r.Mismatches, rr.Mismatches...)
+	}
+	refs, err := filepath.Glob(filepath.Join(refDir, "*.json"))
+	if err != nil {
+		return err
+	}
+	for _, p := range refs {
+		if name := filepath.Base(p); !names[name] {
+			r.Mismatches = append(r.Mismatches, diff.Mismatch{Path: "rounds/" + name, Ours: "absent", Ref: "present"})
+		}
+	}
+	return nil
+}
+
+// parseDemo parses the demo at path and writes match.json and, unless
+// eventsOnly, the round files to outDir. match.json is written even when
+// the round files fail, and the error says why they did.
 func parseDemo(path, outDir string, eventsOnly bool) error {
+	out, err := parseFile(path, !eventsOnly)
+	if err != nil {
+		return err
+	}
+	if err := match.WriteFile(outDir, out.Match); err != nil {
+		return err
+	}
+	for _, rf := range out.Rounds {
+		if err := roundfile.WriteFile(outDir, rf); err != nil {
+			return err
+		}
+	}
+	return out.RoundsErr
+}
+
+func parseFile(path string, rounds bool) (parse.Output, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return err
+		return parse.Output{}, err
 	}
 	defer f.Close()
-
-	file, err := parse.Run(context.Background(), f)
-	if err != nil {
-		return err
-	}
-	return match.WriteFile(outDir, file)
+	out, _, err := parse.Parse(context.Background(), f, parse.Options{Rounds: rounds})
+	return out, err
 }
 
 // parseArgs parses args against fs and returns the positional arguments.

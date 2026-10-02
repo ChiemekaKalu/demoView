@@ -59,11 +59,11 @@ var matchDemo = parsetest.Match()
 func TestParseFlagOrder(t *testing.T) {
 	file := writeTemp(t, "x.dem", matchDemo)
 	orders := [][]string{
-		{"parse", file, "--out", "DIR"},
-		{"parse", "--out", "DIR", file},
 		{"parse", file, "--out", "DIR", "--events-only"},
+		{"parse", "--events-only", "--out", "DIR", file},
+		{"parse", file, "--events-only", "--out", "DIR"},
 		{"parse", "--events-only", file, "-out=DIR"},
-		{"parse", "--out=DIR", "--", file},
+		{"parse", "--out=DIR", "--events-only", "--", file},
 	}
 	for _, args := range orders {
 		dir := filepath.Join(t.TempDir(), "out")
@@ -84,7 +84,7 @@ func TestParseFlagOrder(t *testing.T) {
 func TestParseWritesMatchJSON(t *testing.T) {
 	file := writeTemp(t, "x.dem", matchDemo)
 	dir := filepath.Join(t.TempDir(), "nested", "out")
-	code, stdout, stderr := runCLI("parse", file, "--out", dir)
+	code, stdout, stderr := runCLI("parse", file, "--out", dir, "--events-only")
 	if code != 0 || stdout != "" || stderr != "" {
 		t.Fatalf("exit %d, stdout %q, stderr %q", code, stdout, stderr)
 	}
@@ -104,10 +104,44 @@ func TestParseWritesMatchJSON(t *testing.T) {
 	}
 }
 
+// Without --events-only, a demo with no entities still gets its
+// match.json, and the error says why it has no round files.
+func TestParseWithoutEntities(t *testing.T) {
+	file := writeTemp(t, "x.dem", matchDemo)
+	dir := filepath.Join(t.TempDir(), "out")
+	code, stdout, stderr := runCLI("parse", file, "--out", dir)
+	if code != 1 || stdout != "" || !strings.Contains(stderr, "no class info") {
+		t.Fatalf("exit %d, stdout %q, stderr %q", code, stdout, stderr)
+	}
+	checkErrLine(t, stderr, "bad_demo")
+	if _, err := os.Stat(filepath.Join(dir, "match.json")); err != nil {
+		t.Error(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "rounds")); !os.IsNotExist(err) {
+		t.Errorf("rounds directory: %v, want none", err)
+	}
+}
+
+// Entity classes this parser doesn't know are a coded error, after
+// match.json is written.
+func TestParseUnknownEntity(t *testing.T) {
+	data := parsetest.Build(append(parsetest.ClassFrames("CCSPlayerController"), parsetest.MatchFrames()...)...)
+	file := writeTemp(t, "x.dem", data)
+	dir := filepath.Join(t.TempDir(), "out")
+	code, _, stderr := runCLI("parse", file, "--out", dir)
+	if code != 1 {
+		t.Fatalf("exit %d, stderr %q", code, stderr)
+	}
+	checkErrLine(t, stderr, "unknown_entity")
+	if _, err := os.Stat(filepath.Join(dir, "match.json")); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestDiff(t *testing.T) {
 	file := writeTemp(t, "x.dem", matchDemo)
 	dir := filepath.Join(t.TempDir(), "out")
-	if code, _, stderr := runCLI("parse", file, "--out", dir); code != 0 {
+	if code, _, stderr := runCLI("parse", file, "--out", dir, "--events-only"); code != 0 {
 		t.Fatalf("parse: exit %d, stderr %s", code, stderr)
 	}
 	ref := filepath.Join(dir, "match.json")
