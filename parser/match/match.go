@@ -57,7 +57,7 @@ type Round struct {
 type Kill struct {
 	Round    int    `json:"round"`
 	Tick     int    `json:"tick"`
-	Attacker int    `json:"attacker"`
+	Attacker *int   `json:"attacker"` // nil for a world death (fall, bomb, disconnect); Victim for a suicide
 	Victim   int    `json:"victim"`
 	Assister *int   `json:"assister"` // nil when nobody assisted
 	Weapon   string `json:"weapon"`

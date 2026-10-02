@@ -56,9 +56,9 @@ func TestSpecExample(t *testing.T) {
 	}
 }
 
-func TestWriteEmptyArraysAndAssister(t *testing.T) {
-	five := 5
-	f := File{Kills: []Kill{{Assister: &five}, {}}}
+func TestWriteEmptyArraysAndNullablePlayers(t *testing.T) {
+	two, five := 2, 5
+	f := File{Kills: []Kill{{Attacker: &two, Assister: &five}, {}}}
 	var buf bytes.Buffer
 	if err := Write(&buf, f); err != nil {
 		t.Fatal(err)
@@ -73,11 +73,19 @@ func TestWriteEmptyArraysAndAssister(t *testing.T) {
 	if got.Players == nil || got.Rounds == nil || got.Scoreboard == nil {
 		t.Fatalf("nil slices must encode as [], got %s", buf.Bytes())
 	}
-	if a, ok := got.Kills[0]["assister"]; !ok || a != 5.0 {
-		t.Errorf("assister = %v, want 5", a)
-	}
-	if a, ok := got.Kills[1]["assister"]; !ok || a != nil {
-		t.Errorf("assister = %v, want null", a)
+	for _, c := range []struct {
+		kill int
+		key  string
+		want any
+	}{
+		{0, "attacker", 2.0},
+		{0, "assister", 5.0},
+		{1, "attacker", nil},
+		{1, "assister", nil},
+	} {
+		if v, ok := got.Kills[c.kill][c.key]; !ok || v != c.want {
+			t.Errorf("kill %d %s = %v (present %v), want %v", c.kill, c.key, v, ok, c.want)
+		}
 	}
 }
 
