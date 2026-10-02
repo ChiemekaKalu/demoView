@@ -20,7 +20,7 @@ How the spec gets built, checkpoint by checkpoint. The spec says what to build. 
     - Nuke: 19 rounds, 2 warnings from kills during freeze time (see Spec gaps).
   - *All 10 local demos diff OK against the oracle,* the overtime match included.
 
-## M1: v0 parser
+## M1: v0 parser (done 2026-10-02)
 
 Each checkpoint maps to a v0 stage in the spec and ends with a check against real demos.
 
@@ -37,13 +37,17 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - 10 humans per demo, whose names, Steam ids and final teams match demoparser2.
   - Bots can stand in for disconnected players and appear in kills.
   - *Per-kill resolution and per-round sides are checked in 1.7.*
-- [ ] **1.7 Match logic** (stage 6), and the full `match.json`. Exit: the scoreboard matches the in-game one for a match you played.
+- [x] **1.7 Match logic** (stage 6), and the full `match.json`. Exit: the scoreboard matches the in-game one for a match you played.
   - *Done on both interim demos.* `parser/matchlogic` records events while the demo streams, then builds players, rounds, kills and scoreboard.
   - Against the game's own counters: K/D/A, headshot kills and raw damage are exact for every player, and so is every round's winner, reason and end tick.
   - Kills match the oracle row for row. `demo parse` output passes the strict schema check.
   - A demo with no live rounds is a bad demo (exit 1, HTTP 422).
-  - *Open:* a screenshot of the de_ancient final scoreboard, the user ("father") at 17/12/10 and 105.9 ADR, to confirm the exit check. Choices to confirm are under Spec gaps → Match logic.
-- [ ] **1.8 `demo diff` and CI.** Exit: the diff passes on all 3 fixtures. This meets the v0 done-when and closes M1.
+  - *Exit met (2026-10-02):* on all 8 of the user's own MM/Premier matches, K/A/D, HS kills and ADR equal the game's scoreboard counters at the win panel exactly, for 80/80 players. Those counters are what the in-game scoreboard reads. The counters were read with demoparser2 as a black box.
+  - *Cross-check against the user's Leetify screenshot* of the Sep 4 de_ancient match: kills and deaths match all 10 players.
+    - Leetify's assists are lower by exactly each player's flash assists (2, 2 and 1). The game counts flash assists in A; Leetify lists them separately.
+    - Leetify's ADR is a whole number and 0–1.5 below ours, from its own damage calculation.
+  - Choices to confirm are under Spec gaps → Match logic.
+- [x] **1.8 `demo diff` and CI.** Exit: the diff passes on all 3 fixtures. This meets the v0 done-when and closes M1.
   - *Done:* package `parser/diff`. `Compare` checks match.json:
     - players by `steam_id` (bots by name);
     - rounds by `n`, all fields exact;
