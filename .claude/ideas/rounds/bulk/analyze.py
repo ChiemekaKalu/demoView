@@ -464,7 +464,35 @@ def robustness(recs):
     out["category_examples"] = dict(examples)
     out["diff_kinds_demos"] = dict(kinds.most_common(30))
     out["round_files_differ"] = sum(1 for r in recs if any(k.startswith("round[]") for k in ((r.get("diff") or {}).get("kinds") or {})))
+    out["flip_check"] = flip_check(recs)
     return out
+
+
+def flip_check(recs):
+    """Per demo, the match.json differences that would block switching prod to
+    our parser's rounds: round count, boundaries, winner, reason, side, teams
+    and kills. ADR-only demos are listed apart; round files never block."""
+    res = {"clean": [], "blocking": [], "adr_only": [], "no_reference": [], "parse_failed": [], "reference_side": []}
+    for r in sorted(recs, key=lambda r: r["path"]):
+        parse, diff = r.get("parse") or {}, r.get("diff") or {}
+        name = os.path.basename(r["path"])
+        if parse.get("rc") not in (0, None):
+            res["parse_failed"].append({"path": r["path"], "err": (parse.get("err") or "")[:160]})
+            continue
+        if "diff" not in r:
+            res["no_reference"].append(r["path"])
+            continue
+        match = sorted(k for k in diff.get("kinds", {}) if not k.startswith("round[]"))
+        if name in REFERENCE_SIDE:
+            res["reference_side"].append({"path": r["path"], "kinds": match, "why": REFERENCE_SIDE[name]})
+        elif not match:
+            res["clean"].append(r["path"])
+        elif match == ["scoreboard[].adr"]:
+            res["adr_only"].append(r["path"])
+        else:
+            res["blocking"].append({"path": r["path"], "kinds": match, "rounds": diff.get("rounds")})
+    res["counts"] = {k: len(v) for k, v in res.items() if isinstance(v, list)}
+    return res
 
 
 def category(r):
@@ -547,6 +575,15 @@ def markdown(rep):
     if rb:
         L += ["## Our parser on these demos", "", f"Parser ref: {rep.get('parser_ref') or 'branch base'}.", "",
               "| Outcome | Demos |", "| --- | --- |"] + [f"| {k} | {v} |" for k, v in rb.get("categories", {}).items()] + [""]
+        fc = rb.get("flip_check")
+        if fc:
+            L += ["## Flip check (match.json only; round files never block)", "",
+                  " · ".join(f"{k.replace('_', ' ')}: {v}" for k, v in fc["counts"].items()), ""]
+            L += [f"- BLOCKING `{b['path']}`: {', '.join(b['kinds'])}" + (f" (rounds ours {b['rounds'][0]} vs ref {b['rounds'][1]})" if b.get("rounds") else "") for b in fc["blocking"]]
+            L += [f"- ADR only `{p}`" for p in fc["adr_only"]]
+            L += [f"- reference-side `{x['path']}`: {', '.join(x['kinds']) or 'none'} ({x['why']})" for x in fc["reference_side"]]
+            L += [f"- no reference `{p}`" for p in fc["no_reference"]]
+            L += [f"- parse failed `{x['path']}`: {x['err']}" for x in fc["parse_failed"]] + [""]
         L += ["```", json.dumps({k: rb[k] for k in ("demos", "download_failed", "parse", "diff", "categories_by_build", "diff_kinds_demos") if k in rb}, indent=1), "```", "",
               f"Over budget (> 512 MB or > 60 s): {len(rb.get('over_budget', []))}.", ""]
     if rep.get("errors"):
