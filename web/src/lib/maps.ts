@@ -11,18 +11,39 @@ export interface MapInfo {
   posY: number
   scale: number
   size: number
-  // Path under the site root. The image is optional; a placeholder is drawn
-  // when it is missing.
+  // The radar image's URL. The image is optional; a placeholder is drawn when
+  // it is missing.
   radar: string | null
   // True when the constants were fitted to the data instead of known.
   fitted?: boolean
 }
 
-// Radar images in public/radar/ come from MurkyYT/cs2-map-icons
-// (images/radars/<map>_radar_psd.png, commit ae7ed6a), which extracts them from
-// the CS2 depot. The constants match that repo's data/radar_info/<map>.txt.
+// Maps bundled with the viewer, so fixtures mode has a radar with no backend.
+// Every other map comes from the API (apiMap). The image in public/radar/ is
+// from MurkyYT/cs2-map-icons (images/radars/<map>_radar_psd.png, commit
+// ae7ed6a), which extracts it from the CS2 depot, and the constants match that
+// repo's data/radar_info/<map>.txt.
 export const MAPS: Record<string, MapInfo> = {
-  de_mirage: { title: 'Mirage', posX: -3230, posY: 1713, scale: 5, size: 1024, radar: 'radar/de_mirage.png' },
+  de_mirage: {
+    title: 'Mirage',
+    posX: -3230,
+    posY: 1713,
+    scale: 5,
+    size: 1024,
+    radar: `${import.meta.env.BASE_URL}radar/de_mirage.png`,
+  },
+}
+
+// GET /api/maps/:name, whose numbers fit a radar 1024 pixels square.
+export interface RadarInfo {
+  name: string
+  pos_x: number
+  pos_y: number
+  scale: number
+}
+
+export function apiMap(info: RadarInfo, radar: string): MapInfo {
+  return { title: mapTitle(info.name), posX: info.pos_x, posY: info.pos_y, scale: info.scale, size: 1024, radar }
 }
 
 export function mapTitle(name: string | null | undefined): string {
@@ -66,6 +87,3 @@ export function fitMap(round: RoundFile, size = 1024, margin = 0.06): MapInfo {
   return { title: 'Fitted', posX: cx - span / 2, posY: cy + span / 2, scale: span / size, size, radar: null, fitted: true }
 }
 
-export function mapFor(name: string | null | undefined, round: RoundFile): MapInfo {
-  return (name && MAPS[name]) || fitMap(round)
-}

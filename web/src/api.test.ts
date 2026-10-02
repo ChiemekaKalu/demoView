@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, getMatchFile, getRound, getSummary } from './api'
+import { ApiError, getMap, getMatchFile, getRound, getSummary } from './api'
+import { MAPS } from './lib/maps'
 
 // The module caches per match id, so each test uses its own id.
 let fetchMock: ReturnType<typeof vi.fn>
@@ -90,5 +91,35 @@ describe('getRound and getMatchFile', () => {
     fetchMock.mockRejectedValueOnce(new TypeError('offline')).mockImplementation(async () => json({ round: 2 }))
     await expect(getRound('aaaaaaaaaaaa7', 2)).rejects.toThrow('Could not reach the server.')
     expect(await getRound('aaaaaaaaaaaa7', 2)).toEqual({ round: 2 })
+  })
+})
+
+describe('getMap', () => {
+  it('builds the map from the API, radar URL included', async () => {
+    fetchMock.mockResolvedValue(json({ name: 'de_inferno', pos_x: -2087, pos_y: 3870, scale: 4.9 }))
+    expect(await getMap('de_inferno')).toEqual({
+      title: 'Inferno',
+      posX: -2087,
+      posY: 3870,
+      scale: 4.9,
+      size: 1024,
+      radar: '/api/maps/de_inferno/radar.png',
+    })
+  })
+
+  it('falls back to the bundled radar, and keeps a 404 for the session', async () => {
+    fetchMock.mockResolvedValue(json({ error: 'no radar for this map' }, 404))
+    expect(await getMap('de_mirage')).toBe(MAPS.de_mirage)
+    expect(await getMap('de_nuke')).toBeNull()
+    expect(await getMap('de_nuke')).toBeNull()
+    expect(urls().filter((u) => u.endsWith('/de_nuke'))).toHaveLength(1)
+  })
+
+  it('tries again after a network failure', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('offline')).mockResolvedValue(
+      json({ name: 'de_overpass', pos_x: -4831, pos_y: 1781, scale: 5.2 }),
+    )
+    expect(await getMap('de_overpass')).toBeNull()
+    expect(await getMap('de_overpass')).toMatchObject({ title: 'Overpass', scale: 5.2 })
   })
 })

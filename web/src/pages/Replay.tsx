@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
-import { getMatchFile, getRound, getSummary, hasReplay, isFixture, prefetchRound, SAMPLE_ROUNDS } from '../api'
+import { getMap, getMatchFile, getRound, getSummary, hasReplay, isFixture, prefetchRound, SAMPLE_ROUNDS } from '../api'
 import { reasonLabel, SIDE_GLYPH, sideOf } from '../lib/format'
-import { mapFor, mapTitle } from '../lib/maps'
+import { fitMap, mapTitle, type MapInfo } from '../lib/maps'
 import { SPEEDS } from '../lib/clock'
 import { formatClock, parseT, roundDuration, roundKills, tickToFrame, urlWithT } from '../lib/timeline'
 import type { MatchFile, MatchSummary, RoundFile, Side } from '../lib/types'
@@ -17,7 +17,7 @@ type Load =
   | { kind: 'error'; message: string }
   | { kind: 'not-ready'; summary: MatchSummary }
   | { kind: 'missing'; summary: MatchSummary; exists: boolean }
-  | { kind: 'ready'; summary: MatchSummary; round: RoundFile; file: MatchFile | null }
+  | { kind: 'ready'; summary: MatchSummary; round: RoundFile; file: MatchFile | null; map: MapInfo | null }
 
 export function Replay({ id, n }: { id: string; n: number }) {
   const [load, setLoad] = useState<Load>({ kind: 'loading' })
@@ -33,10 +33,14 @@ export function Replay({ id, n }: { id: string; n: number }) {
       if (!summary.rounds.some((r) => r.n === n)) return { kind: 'missing', summary, exists: false } as const
       // match.json is optional: without it the replay shows what the round
       // file alone can (victims, not attackers or weapons).
-      const [round, file] = await Promise.all([getRound(id, n), getMatchFile(id).catch(() => null)])
+      const [round, file, map] = await Promise.all([
+        getRound(id, n),
+        getMatchFile(id).catch(() => null),
+        summary.map ? getMap(summary.map) : null,
+      ])
       if (!round) return { kind: 'missing', summary, exists: true } as const
       if (hasReplay(id, n + 1, summary)) prefetchRound(id, n + 1)
-      return { kind: 'ready', summary, round, file } as const
+      return { kind: 'ready', summary, round, file, map } as const
     })().then(
       (next) => live && setLoad(next),
       (err: unknown) => live && setLoad({ kind: 'error', message: err instanceof Error ? err.message : String(err) }),
@@ -96,7 +100,14 @@ export function Replay({ id, n }: { id: string; n: number }) {
       return (
         <main class="page wide">
           <RoundHeader id={id} n={n} summary={load.summary} />
-          <ReplayView key={`${id}/${n}`} n={n} summary={load.summary} round={load.round} file={load.file} />
+          <ReplayView
+            key={`${id}/${n}`}
+            n={n}
+            summary={load.summary}
+            round={load.round}
+            file={load.file}
+            map={load.map}
+          />
         </main>
       )
   }
@@ -173,9 +184,11 @@ interface ViewProps {
   summary: MatchSummary
   round: RoundFile
   file: MatchFile | null
+  // Null draws the round on a plain background, framed to fit it.
+  map: MapInfo | null
 }
 
-function ReplayView({ n, summary, round, file }: ViewProps) {
+function ReplayView({ n, summary, round, file, map }: ViewProps) {
   const hz = round.hz
   const duration = roundDuration(round)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -199,7 +212,7 @@ function ReplayView({ n, summary, round, file }: ViewProps) {
       if (!sides.has(p.idx)) sides.set(p.idx, sideOf(p.team, sideA))
     }
     const kills = roundKills(round, file)
-    const scene: Scene = { round, map: mapFor(summary.map ?? file?.match.map, round), names, sides, kills }
+    const scene: Scene = { round, map: map ?? fitMap(round), names, sides, kills }
     const name = (idx: number | null) => (idx === null ? 'Unknown' : (names.get(idx) ?? `Player ${idx}`))
     const side = (idx: number | null) => (idx === null ? null : (sides.get(idx) ?? null))
     const markers: Marker[] = kills.map((k) => ({
@@ -211,7 +224,7 @@ function ReplayView({ n, summary, round, file }: ViewProps) {
     const info = file?.rounds.find((r) => r.n === n)
     const endT = info && file ? tickToFrame(info.end_tick, round.start_tick, file.match.tick_rate, hz) / hz : null
     return { scene, kills, name, side, markers, endT }
-  }, [summary, round, file, n, hz])
+  }, [summary, round, file, map, n, hz])
 
   // The stage lives as long as this view.
   useEffect(() => {

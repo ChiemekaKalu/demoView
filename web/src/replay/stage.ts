@@ -110,20 +110,20 @@ export class Stage {
   }
 }
 
-// Radar images by path, loaded once. Resolves to null when there is none.
+// Radar images by URL, loaded once. Resolves to null when there is none.
 const radars = new Map<string, Promise<HTMLImageElement | null>>()
 
-export function loadRadar(path: string): Promise<HTMLImageElement | null> {
-  let p = radars.get(path)
+export function loadRadar(url: string): Promise<HTMLImageElement | null> {
+  let p = radars.get(url)
   if (!p) {
     p = new Promise((resolve) => {
       const img = new Image()
       img.decoding = 'async'
       img.onload = () => resolve(img.naturalWidth > 0 ? img : null)
       img.onerror = () => resolve(null)
-      img.src = `${import.meta.env.BASE_URL}${path}`
+      img.src = url
     })
-    radars.set(path, p)
+    radars.set(url, p)
   }
   return p
 }

@@ -4,6 +4,7 @@
 // id "sample" (never a real id: those are 13 base32 characters).
 
 import { deriveSummary, roundFileName } from './lib/fixtures'
+import { apiMap, MAPS, type MapInfo, type RadarInfo } from './lib/maps'
 import type { MatchFile, MatchSummary, RoundFile } from './lib/types'
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
@@ -139,6 +140,30 @@ export function getRound(id: string, n: number, opts: { background?: boolean } =
 
 export function prefetchRound(id: string, n: number): void {
   getRound(id, n, { background: true }).catch(() => {})
+}
+
+const maps = new Map<string, Promise<MapInfo | null>>()
+
+// A map's radar from GET /api/maps/:name, else the one bundled with the
+// viewer, else null and the replay draws on a plain background. Only a 404 is
+// kept for the session; another failure is tried again next time.
+export function getMap(name: string): Promise<MapInfo | null> {
+  let p = maps.get(name)
+  if (!p) {
+    const bundled = MAPS[name] ?? null
+    const url = `${API_BASE}/api/maps/${enc(name)}`
+    p = FIXTURES
+      ? Promise.resolve(bundled)
+      : request<RadarInfo>(url).then(
+          (info) => apiMap(info, `${url}/radar.png`),
+          (err: unknown) => {
+            if (!(err instanceof ApiError && err.status === 404)) maps.delete(name)
+            return bundled
+          },
+        )
+    maps.set(name, p)
+  }
+  return p
 }
 
 // ---- Uploading -----------------------------------------------------------
