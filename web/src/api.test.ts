@@ -81,16 +81,21 @@ describe('getRound and getMatchFile', () => {
   })
 
   it('fetch each round once', async () => {
-    fetchMock.mockImplementation(async () => json({ round: 2 }))
+    fetchMock.mockImplementation(async () => json({ schema_version: 1, round: 2 }))
     await getRound('aaaaaaaaaaaa6', 2)
     await getRound('aaaaaaaaaaaa6', 2)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('reject a file in a data format this viewer does not read', async () => {
+    fetchMock.mockImplementation(async () => json({ schema_version: 2, round: 2 }))
+    await expect(getRound('aaaaaaaaaaab1', 2)).rejects.toThrow(/format 2.*Reload/)
+  })
+
   it('retry a round whose fetch failed', async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError('offline')).mockImplementation(async () => json({ round: 2 }))
+    fetchMock.mockRejectedValueOnce(new TypeError('offline')).mockImplementation(async () => json({ schema_version: 1, round: 2 }))
     await expect(getRound('aaaaaaaaaaaa7', 2)).rejects.toThrow('Could not reach the server.')
-    expect(await getRound('aaaaaaaaaaaa7', 2)).toEqual({ round: 2 })
+    expect(await getRound('aaaaaaaaaaaa7', 2)).toEqual({ schema_version: 1, round: 2 })
   })
 })
 

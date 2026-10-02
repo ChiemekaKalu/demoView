@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 import { ApiError, getSummary, hasReplay, isAbort, isFixture, SAMPLE_ROUNDS } from '../api'
+import { explainFailure, schemaProblem } from '../lib/errors'
 import { reasonLabel, reasonShort, SIDE_GLYPH, sideOf } from '../lib/format'
 import { mapTitle } from '../lib/maps'
 import type { MatchSummary, SummaryPlayer } from '../lib/types'
@@ -84,6 +85,7 @@ export function Match({ id }: { id: string }) {
   }
 
   if (summary.status === 'failed') {
+    const { message, detail } = explainFailure(summary.error)
     return (
       <main class="page">
         <Link href="/" class="back">
@@ -91,13 +93,15 @@ export function Match({ id }: { id: string }) {
         </Link>
         <h1>The parse failed</h1>
         <p class="error" role="alert">
-          {summary.error ?? 'No error message was recorded.'}
+          {message}
         </p>
+        {detail && <p class="muted small">Details: {detail}</p>}
       </main>
     )
   }
 
   const startSide = sideOf('A', summary.rounds[0]?.side_a)
+  const unreadable = schemaProblem(summary.schema_version)
   return (
     <main class="page">
       <Link href="/" class="back">
@@ -114,6 +118,11 @@ export function Match({ id }: { id: string }) {
         </p>
         {isFixture(id) && <p class="muted small">Sample data: a synthetic match from schema/samples.</p>}
       </header>
+      {unreadable && (
+        <p class="notice" role="status">
+          {unreadable}
+        </p>
+      )}
 
       <section aria-labelledby="scoreboard">
         <h2 id="scoreboard">Scoreboard</h2>

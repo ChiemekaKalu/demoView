@@ -4,6 +4,7 @@
 // id "sample" (never a real id: those are 13 base32 characters).
 
 import { deriveSummary, roundFileName } from './lib/fixtures'
+import { schemaProblem } from './lib/errors'
 import { apiMap, MAPS, type MapInfo, type RadarInfo } from './lib/maps'
 import type { MatchFile, MatchSummary, RoundFile } from './lib/types'
 
@@ -53,6 +54,14 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 const enc = encodeURIComponent
 
+// A file in a data format this viewer doesn't read fails with a message
+// saying how to fix it.
+function readable<T extends { schema_version: number }>(file: T): T {
+  const problem = schemaProblem(file.schema_version)
+  if (problem) throw new Error(problem)
+  return file
+}
+
 // ---- Reading -------------------------------------------------------------
 
 const matchFiles = new Map<string, Promise<MatchFile | null>>()
@@ -74,8 +83,8 @@ export function getMatchFile(id: string): Promise<MatchFile | null> {
   let p = matchFiles.get(key)
   if (!p) {
     p = isFixture(id)
-      ? request<MatchFile>(`${SAMPLES}/match.json`)
-      : request<MatchFile>(`${API_BASE}/api/matches/${enc(id)}/match.json${version(id)}`).catch((err: unknown) => {
+      ? request<MatchFile>(`${SAMPLES}/match.json`).then(readable)
+      : request<MatchFile>(`${API_BASE}/api/matches/${enc(id)}/match.json${version(id)}`).then(readable, (err: unknown) => {
           if (err instanceof ApiError && err.status === 404) return null
           throw err
         })
@@ -128,7 +137,7 @@ export function getRound(id: string, n: number, opts: { background?: boolean } =
   const url = fixture
     ? `${SAMPLES}/rounds/${roundFileName(n)}`
     : `${API_BASE}/api/matches/${enc(id)}/rounds/${n}${version(id)}`
-  p = request<RoundFile>(url, { priority: opts.background ? 'low' : 'auto' }).catch((err: unknown) => {
+  p = request<RoundFile>(url, { priority: opts.background ? 'low' : 'auto' }).then(readable, (err: unknown) => {
     if (err instanceof ApiError && err.status === 404) return null
     throw err
   })
