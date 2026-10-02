@@ -9,6 +9,9 @@ import (
 	"github.com/ChiemekaKalu/demoview/parser/stringtables"
 )
 
+// CachedBaselines returns how many decoded baselines s holds.
+func (s *State) CachedBaselines() int { return len(s.baselines) }
+
 // Mismatch is a value that a snapshot and the state disagree on.
 type Mismatch struct {
 	Entity          int

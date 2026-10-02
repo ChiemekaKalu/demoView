@@ -144,17 +144,16 @@ func set(r *bitread.Reader, s *Serializer, n *node, p *fieldPath) error {
 			}
 			n, f = n.kid(i, f), ser.Fields[next]
 		case FixedArray, DynamicArray:
-			size := maxArrayLen
-			if f.Decoder.Kind == FixedArray {
-				size = f.Decoder.Count
+			size := f.Decoder.Count
+			if f.Decoder.Kind == DynamicArray {
+				size = int(n.vals[i].u) // its length; the node below has as many slots
 			}
 			if next < 0 || next >= size {
 				return pathErr(p, d, "%s has no element %d", f.FullName(), next)
 			}
 			n, f = n.kid(i, f), f.Elem
-			if next >= len(n.vals) {
-				n.resize(next + 1)
-			}
+		case Unknown:
+			return unknownf("%v", pathErr(p, d-1, "%s has no decoder for type %q", f.FullName(), f.Type))
 		default:
 			return pathErr(p, d, "%s is a %s, not a struct or array", f.FullName(), f.Decoder)
 		}
@@ -162,7 +161,9 @@ func set(r *bitread.Reader, s *Serializer, n *node, p *fieldPath) error {
 	}
 
 	switch f.Decoder.Kind {
-	case Unknown, FixedArray, Table:
+	case Unknown:
+		return unknownf("%v", pathErr(p, p.last, "%s has no decoder for type %q", f.FullName(), f.Type))
+	case FixedArray, Table:
 		return pathErr(p, p.last, "%s: can't read a %s value", f.FullName(), f.Decoder)
 	}
 	v := readValue(r, f)

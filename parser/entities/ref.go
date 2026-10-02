@@ -1,7 +1,6 @@
 package entities
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -23,11 +22,12 @@ func (r Ref) Field() *Field { return r.fields[r.path.last] }
 // For example, "m_iHealth",
 // "CBodyComponent.m_skeletonInstance.m_vecOrigin.m_cellX" or
 // "m_pWeaponServices.m_hMyWeapons.0". A polymorphic pointer resolves through
-// its own serializer.
+// its own serializer. A name that doesn't resolve gives an error matching
+// ErrUnknown.
 func (c *Class) Ref(name string) (Ref, error) {
 	r := Ref{ser: c.Serializer}
 	if !r.resolve(c.Serializer, name, 0) {
-		return Ref{}, fmt.Errorf("entities: class %s has no field %q", c.Name, name)
+		return Ref{}, unknownf("entities: class %s has no field %q", c.Name, name)
 	}
 	return r, nil
 }

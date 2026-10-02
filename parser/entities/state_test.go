@@ -278,6 +278,30 @@ func TestStateAlternateBaseline(t *testing.T) {
 	}
 }
 
+// Alternate baseline indexes that name no table entry, negative ones or
+// any without a table, mean the class's own baseline, so they don't grow
+// the cache.
+func TestStateBaselineCache(t *testing.T) {
+	classes := testClasses(t)
+	for _, table := range []*stringtables.Table{baselines(item("1", func(w *entities.BitWriter) { w.FieldPaths() })), nil} {
+		s := entities.NewState(classes)
+		for i := range int32(50) {
+			m := message(false, create(3, thingClass, 1, func(w *entities.BitWriter) { w.FieldPaths() }))
+			alt := -2 - i
+			if table == nil {
+				alt = i
+			}
+			m.AlternateBaselines = []*pb.CSVCMsg_PacketEntitiesAlternateBaselineT{{EntityIndex: proto.Int32(3), BaselineIndex: proto.Int32(alt)}}
+			if err := s.Apply(m, table); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if n := s.CachedBaselines(); n != 1 {
+			t.Errorf("table %v: %d baselines cached, want 1", table != nil, n)
+		}
+	}
+}
+
 func TestStateOlderFormat(t *testing.T) {
 	classes := testClasses(t)
 	value := ref(t, classes.ByID(thingClass), "m_nValue")
@@ -342,6 +366,11 @@ func TestStateErrors(t *testing.T) {
 		{"bad path", message(false, create(0, thingClass, 1, func(w *entities.BitWriter) {
 			w.FieldPaths([]int{1})
 		})), "Thing has 1 fields"},
+		{"past the end of a list", message(false, create(0, pawnClass, 1, func(w *entities.BitWriter) {
+			w.FieldPaths([]int{4}, []int{4, 5})
+			w.VarUint(2)
+			w.VarUint(99)
+		})), "m_vecList has no element 5"},
 		{"alternate baseline of another class", func() *pb.CSVCMsg_PacketEntities {
 			m := message(false, create(0, thingClass, 1, empty))
 			m.AlternateBaselines = []*pb.CSVCMsg_PacketEntitiesAlternateBaselineT{{EntityIndex: proto.Int32(0), BaselineIndex: proto.Int32(0)}}
@@ -356,6 +385,42 @@ func TestStateErrors(t *testing.T) {
 				t.Errorf("got %v, want ErrBadDemo with %q", err, tc.want)
 			}
 		})
+	}
+}
+
+// What a game update brings, a field with no decoder that entity data sets,
+// a class id past the list, or a field gone from a class, is ErrUnknown.
+func TestStateUnknown(t *testing.T) {
+	var b flat
+	b.serializer("Future", 0,
+		b.field(field{name: "m_nKnown", typ: "uint32"}),
+		b.field(field{name: "m_future", typ: "CFutureType"}),
+	)
+	b.serializer("Other", 0)
+	classes, err := entities.NewClasses(classInfo(class{0, "Future"}, class{1, "Other"}), b.build(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	empty := func(w *entities.BitWriter) { w.FieldPaths() }
+	for name, m := range map[string]*pb.CSVCMsg_PacketEntities{
+		"field with no decoder":  message(false, create(0, 0, 1, func(w *entities.BitWriter) { w.FieldPaths([]int{1}) })),
+		"class id past the list": message(false, create(0, 3, 1, empty)),
+	} {
+		err := entities.NewState(classes).Apply(m, nil)
+		if !errors.Is(err, entities.ErrUnknown) || !errors.Is(err, demo.ErrBadDemo) {
+			t.Errorf("%s: got %v, want ErrUnknown", name, err)
+		}
+	}
+
+	known := message(false, create(0, 0, 1, func(w *entities.BitWriter) {
+		w.FieldPaths([]int{0})
+		w.VarUint(7)
+	}))
+	if err := entities.NewState(classes).Apply(known, nil); err != nil {
+		t.Errorf("a class with an unknown field that isn't sent: %v", err)
+	}
+	if _, err := classes.ByName("Future").Ref("m_gone"); !errors.Is(err, entities.ErrUnknown) || !errors.Is(err, demo.ErrBadDemo) {
+		t.Errorf("Ref of a missing field: got %v, want ErrUnknown", err)
 	}
 }
 

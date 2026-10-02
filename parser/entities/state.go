@@ -96,8 +96,9 @@ func (s *State) All() iter.Seq[*Entity] {
 // players' match stats, which applying them would reset.
 //
 // Entity data that doesn't decode, or that leaves a byte or more unread,
-// gives an error wrapping demo.ErrBadDemo. The entries before the bad one
-// stay applied.
+// gives an error wrapping demo.ErrBadDemo, and one about a class or decoder
+// this package doesn't know wraps ErrUnknown. The entries before the bad
+// one stay applied.
 func (s *State) Apply(m *pb.CSVCMsg_PacketEntities, baselines *stringtables.Table) error {
 	if !m.GetLegacyIsDelta() {
 		clear(s.list)
@@ -107,7 +108,7 @@ func (s *State) Apply(m *pb.CSVCMsg_PacketEntities, baselines *stringtables.Tabl
 	for n := range int(m.GetUpdatedEntries()) {
 		idx += int(s.r.ReadUBitVar()) + 1
 		if err := s.entry(idx, m, baselines); err != nil {
-			return fmt.Errorf("%w: packet entities: entry %d of %d, entity %d: %v", demo.ErrBadDemo, n, m.GetUpdatedEntries(), idx, err)
+			return fmt.Errorf("%w: packet entities: entry %d of %d, entity %d: %v", cause(err), n, m.GetUpdatedEntries(), idx, err)
 		}
 	}
 	if err := s.skipIndexList(m); err != nil {
@@ -162,7 +163,7 @@ func (s *State) entry(idx int, m *pb.CSVCMsg_PacketEntities, baselines *stringta
 		s.r.ReadVarUint32() // small, and not used here
 		c := s.classes.ByID(id)
 		if c == nil {
-			return fmt.Errorf("create with class id %d of %d", id, s.classes.Len())
+			return unknownf("create with class id %d of %d", id, s.classes.Len())
 		}
 		base, err := s.baseline(c, altBaseline(m, idx), baselines)
 		if err != nil {
@@ -187,7 +188,7 @@ func (s *State) entry(idx int, m *pb.CSVCMsg_PacketEntities, baselines *stringta
 func (s *State) read(e *Entity) error {
 	var err error
 	if s.paths, err = readFields(&s.r, e.Class.Serializer, e.root, s.paths); err != nil {
-		return fmt.Errorf("%s: %v", e.Class.Name, err)
+		return fmt.Errorf("%s: %w", e.Class.Name, err)
 	}
 	return nil
 }
@@ -233,9 +234,13 @@ type baseline struct {
 
 // baseline returns class c's baseline state, or the alternate baseline in
 // entry if it is 0 or more, which must be one of c's. It decodes a
-// baseline again only when its string-table value has changed. A class
-// with no baseline starts with every field zero.
+// baseline again only when its string-table value has changed, and caches
+// at most one more than the table has entries per class. A class with no
+// baseline, or no table, starts with every field zero.
 func (s *State) baseline(c *Class, entry int, baselines *stringtables.Table) (*node, error) {
+	if entry < 0 || baselines == nil {
+		entry = -1
+	}
 	id := strconv.Itoa(c.ID)
 	var data []byte
 	switch {
@@ -258,7 +263,7 @@ func (s *State) baseline(c *Class, entry int, baselines *stringtables.Table) (*n
 		r := bitread.New(data)
 		var err error
 		if s.paths, err = readFields(r, c.Serializer, state, s.paths); err != nil {
-			return nil, fmt.Errorf("%s baseline: %v", c.Name, err)
+			return nil, fmt.Errorf("%s baseline: %w", c.Name, err)
 		}
 		if left := r.BitsLeft(); left > maxPadBits {
 			return nil, fmt.Errorf("%s baseline: %d bits left over", c.Name, left)
