@@ -155,11 +155,15 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
 - [x] **5.4 Duplicate upload** (pipeline, 25c96a6, 4498e20). `crypto.DigestStream` on confirm, indexed `demo_sha256`, existing id returned, duplicate object deleted.
   - The claim is one conditional UPDATE, so of two confirms of the same demo at once, only one parses. The new match row is deleted with the object.
   - Verified on dev and prod: a re-upload returns the original id with `duplicate: true`.
-- [ ] **5.5 Reparse route and cron** (pipeline). Keyed on the last attempted build, injected at deploy. Hourly, 5 per batch, paused at 80% of the container allowance. A failed reparse never takes a match off `ready`.
+- [x] **5.5 Reparse route and cron** (pipeline). Keyed on the last attempted build, injected at deploy. Hourly, 5 per batch, paused at 80% of the container allowance. A failed reparse never takes a match off `ready`.
   - *Built:* the route (a37fc0d), the cron (9d5ead9), and container time per month in `container_usage` (1df36df).
   - `PARSER_BUILD` is 12 hex of a hash of the git trees of `parser/` and `tools/oracle/` (c7134a1), not the commit sha, so a web-only merge reparses nothing.
-  - Crons are on in dev only. Prod's turn on after the dev exit checks: a poller across the hourly batch, and a failing build simulated with the dev-only `FAULT` flag (5994791, refused in prod by 22b3884).
-- [ ] **5.6 Safe swap.**
+  - *Dev exit checks passed (2026-10-02):*
+    - The 12:00 UTC batch moved all three dev matches, one of them a v1 match, onto new parses with nothing run by hand.
+    - A poller over those 75 minutes made 9,228 requests and saw 0 404s and 0 mismatches between D1, `match.json` and the round files.
+    - With the dev-only `FAULT=reject` flag (5994791; prod refuses it, 22b3884), two reparses failed and both matches stayed `ready` on their live parse, with `reparse_error` set.
+  - Prod crons were turned on at the user's word (6e305d0).
+- [x] **5.6 Safe swap.**
   - (parser) Write under a given `parsed/{id}/{parse_id}/` prefix, with `manifest.json` last. *Layout approved by the user (2026-10-02)*, along with the D1 columns and the reparse cron (hourly, 5 per batch, 80% cap, on in prod). It merges once CI passes. Contract proposed to pipeline: the Worker picks `parse_id`; `/parse` takes it as required; rounds, then match.json, then manifest.json last; `parsed_by` = `PARSER_BUILD` (the git sha).
   - (pipeline) Conditional D1 pointer swap, `?v=<parse_id>` URLs, 7-day cleanup by exact key. *Built:* 074f5b7, fff16cd and 9d5ead9. Parse ids are 9 base32 characters of time plus 7 random, one per attempt.
 - [ ] **5.7 Self-recovery** (pipeline). A 30-minute stuck-match sweeper on `status_changed_at`, coded errors on the match page, an unknown-`schema_version` message, an upload rate limit, and an orphaned-demo lifecycle rule. The parser side is the error codes in its responses.
