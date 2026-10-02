@@ -50,11 +50,19 @@ cd web && npm run lint     # oxlint
 - **The parser streams.** Never load the whole demo into memory. The targets are under 512 MB and under 60 s for a full match on 1 vCPU.
 - **Never commit demos.** Fixture demos live in a storage bucket. Local copies go in `parser/testdata/demos/`, which is gitignored.
 
+## Commits
+
+- Conventional Commits in small logical parts. Scope by top-level directory, e.g. `feat(parser): ...` or `docs(worker): ...`.
+- **No `Co-Authored-By: Claude ...` trailer** (the user's instruction, until they say otherwise).
+- Several sessions share this working tree. Commit only your own paths: `git commit -m "..." -- <paths>`. Never use `git add -A` or `git commit -a`.
+
 ## CS2 demo format notes
 
 - **Preamble:** `PBDEMS2\0` followed by two little-endian int32 offsets (file info, spawn groups). See `parser/demo/header.go`.
 - **Command stream:** varint command type, varint tick, varint size, then a protobuf payload from `demo.proto`. If bit `0x40` of the command type is set, the payload is snappy-compressed.
 - **Net messages:** `DEM_Packet` and `DEM_SignonPacket` wrap a bitstream of net messages. Each one is a ubitvar type, a varint size, then the protobuf body.
 - **Entities:** serializers come from `DEM_SendTables` (`CSVCMsg_FlattenedSerializer`). Updates arrive in `svc_PacketEntities` with Huffman-coded field paths.
-- **Game events:** descriptors are in `CMsgSource1LegacyGameEventList`, and events arrive as `CMsgSource1LegacyGameEvent`.
+- **Game events:** descriptors are in `CMsgSource1LegacyGameEventList` (msg 205), and events arrive as `CMsgSource1LegacyGameEvent` (msg 207). Event ids shift between game patches, so always map them by name from the descriptor list. Since about Feb 2024, `round_start`, `round_end`, `round_mvp` and `cs_win_panel_round` are never fired, even though their descriptors remain.
+- **Player identity:** an event's `userid & 0xFF` is the player slot. The `userinfo` string table is keyed by that slot, and its values are `CMsgPlayerInfo`, whose `xuid` is the SteamID64 (0 for bots). It arrives as plain protobuf in `DEM_StringTables` and in each `DEM_FullPacket`.
+- **Ticks:** use the demo-frame tick. `net_Tick` runs on a different, offset clock.
 - **Protobuf schemas:** SteamDatabase/GameTracking-CS2 on GitHub (`Protobufs/`). Pin the version used.
