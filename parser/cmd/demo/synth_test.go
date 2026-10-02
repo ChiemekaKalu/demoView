@@ -69,10 +69,14 @@ var (
 	tickBody = pbBytes(&pb.CNETMsg_Tick{Tick: proto.Uint32(5)})
 
 	// testSignon and testPacket are the messages of testDemo's two
-	// non-empty packets.
+	// non-empty packets. The game event in testPacket ({0x08, 0x17} decodes
+	// as event id 0 with no keys) needs the descriptor list in testSignon.
 	testSignon = []testMsg{
 		{uint32(pb.SVC_Messages_svc_ServerInfo), pbBytes(&pb.CSVCMsg_ServerInfo{TickInterval: proto.Float32(1.0 / 64)})},
 		{uint32(pb.NET_Messages_net_Tick), tickBody},
+		{uint32(pb.EBaseGameEvents_GE_Source1LegacyGameEventList), pbBytes(&pb.CMsgSource1LegacyGameEventList{
+			Descriptors: []*pb.CMsgSource1LegacyGameEventListDescriptorT{{Eventid: proto.Int32(0), Name: proto.String("synthetic_event")}},
+		})},
 	}
 	testPacket = []testMsg{
 		{uint32(pb.NET_Messages_net_Tick), tickBody},

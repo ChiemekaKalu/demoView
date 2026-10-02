@@ -49,7 +49,7 @@ func TestInspect(t *testing.T) {
 		"network:  protocol=14091 build=10599",
 		// FileInfo
 		"playback: ticks=96 frames=48 time=1.500s\n",
-		fmt.Sprintf("packets:  3 holding 6 messages, max trailing bits %d\n", max(signonPad, packetPad)),
+		fmt.Sprintf("packets:  3 holding 7 messages, max trailing bits %d\n", max(signonPad, packetPad)),
 	} {
 		if !strings.Contains(stdout, want) {
 			t.Errorf("output lacks %q:\n%s", want, stdout)
@@ -86,6 +86,7 @@ func TestInspect(t *testing.T) {
 		40:  "svc_ServerInfo",
 		55:  "svc_PacketEntities",
 		123: "MsgType(123)",
+		205: "GE_Source1LegacyGameEventList",
 		207: "GE_Source1LegacyGameEvent",
 	}
 	var wantMsgs [][]string
