@@ -1,42 +1,48 @@
 # Round dynamics in pro CS2
 
-What decides a round, how much it depends on the map, and which situations are balanced. Written 2026-10-02 by the `aiguy` session under `cloud`, from GitHub Actions run 37003041437 on branch `research/bulk-demos`.
+What decides a round, how much it depends on the map, and which situations are balanced. Written 2026-10-02 by the `aiguy` session under `cloud`. The numbers come from the full-dataset run 37054356072 on branch `research/bulk-demos`. A first pass on 130 demos (runs 37003041437 and 37051653572) pointed the same way. One map moved: Dust2 read 53% CT on the small sample and is 48% here.
 
 ## Data and caveats
 
-- **Sample:** 132 public pro demos from the Hugging Face dataset `skkwowee/chimera-cs2`, at revision `69b9cbaafa`.
-  - Map-balanced: 16 each of Mirage, Dust2, Inferno, Nuke, Overpass and Anubis, 14 usable on Ancient, and all available on Train (11) and Vertigo (9).
-  - 130 demos had rounds: 2,700 rounds, 2,575 of them regulation, and 20,491 decision moments (round start plus every kill).
+- **Sample:** every usable demo in the public Hugging Face dataset `skkwowee/chimera-cs2`, at revision `69b9cbaafa`. That's 541 demos, 11,423 rounds (10,862 of them regulation) and 86,474 decision moments (round start plus every kill), across nine maps.
 - **These are pro GOTV demos.** Tournament play has coordinated utility, stacked economies and fewer throws. The numbers may not transfer to matchmaking or Premier.
-- **Facts come from demoinfocs,** the same library as the oracle, through a name-free extractor. Players appear only as a per-demo index. The run happened entirely in the cloud: each demo was streamed, read and deleted. The results live in `demoview-dev` under `research/bulk/37003041437/`.
-- **Win rates come with Wilson 95% intervals.** Train and Vertigo have about 200 rounds each, so their intervals are wide (±7 points).
+- **Facts come from demoinfocs,** the same library as the oracle, through a name-free extractor. Players appear only as a per-demo index. The run happened entirely in GitHub Actions: each demo was streamed, read and deleted. Results live in `demoview-dev` under `research/bulk/<run>/`.
+- **Win rates come with Wilson 95% intervals.** Train (11 demos) and Vertigo (9) are the whole dataset's supply for those maps, so their intervals stay wide (±7 points).
 - **Events like "threw more smokes" are correlations, not causes.** Players who stay alive longer throw more utility, so these partly measure who was already winning.
 
 ## Headlines
 
-1. **The man advantage at the plant decides post-plants.** A T side that plants up a player wins 91%, up two 98%. Planting while down one wins 34%, down two 9%.
-2. **The opening kill is worth about 21 points.** The side that gets it wins 71% (CT 70%, T 72%). Trading it back within 5 seconds lifts the side that lost the opener from about 29% to 43%.
-3. **Economy dominates before the first kill.** An eco beats a full buy 12% of the time; a force buy, 34%. The pistol-round winner wins the next round 80% of the time.
-4. **Map balance spans 20 points.** Nuke is the most CT-sided map (59% CT), and Vertigo (39%) and Anubis (42%) are T-sided.
-5. **Pistol rounds are coin flips:** CT 52% overall. So is the T side's flash advantage (52%).
-6. **Knowing the map barely improves predictions.** Once alive counts, the bomb and time are known, adding the map changes Brier from 0.1466 to 0.1464. Adding economy improves it to 0.139. Anubis is the exception, because of its T-side lean.
+1. **The man advantage at the plant decides post-plants.**
+
+   | T alive − CT alive at the plant | −3 | −2 | −1 | 0 | +1 | +2 | +3 |
+   | --- | --- | --- | --- | --- | --- | --- | --- |
+   | T win | 2% | 14% | 34% | 66% | 91% | 98% | 100% |
+
+   Across all plants with a T advantage of any size, the Ts win 96%.
+2. **The opening kill is worth about 22 points.** The side that gets it wins 72% (CT 71%, T 73%). Trading it back within 5 seconds lifts the side that lost the opener from about 28% to 41%.
+3. **Economy dominates before the first kill.**
+   - An eco beats a full buy 12% of the time; a force buy, 34%.
+   - A full-buy CT side beats a T eco 97% of the time.
+   - The pistol-round winner takes the next round 80% of the time.
+4. **Map balance spans 18 points.** Nuke is the most CT-sided map (57%), Mirage and Inferno follow, and Vertigo (39%), Anubis (44%) and Dust2 (48%) lean T.
+5. **Pistol rounds are exact coin flips** (CT 50%), and so is the T side's flash advantage (53%).
+6. **Clutches are rare.** A lone T wins a 1v1 71% of the time and a lone CT 58%; 1v2s are won 15–24% of the time; a 1v3 or worse, 1–2%.
+7. **Knowing the map barely improves predictions.** Once alive counts, the bomb and time are known, adding the map moves Brier from 0.1465 to 0.1460. Adding each side's economy moves it to 0.1377, and it helps on every map.
 
 ## Map balance (regulation rounds)
 
 | Map | Demos | Rounds | CT win | 95% CI | Pistol CT win | Plant rate |
 | --- | --- | --- | --- | --- | --- | --- |
-| Nuke | 16 | 309 | 59% | 53–64% | 61% | 42% |
-| Mirage | 16 | 340 | 57% | 52–62% | 50% | 51% |
-| Overpass | 16 | 338 | 55% | 50–60% | 64% | 40% |
+| Nuke | 82 | 1,707 | 57% | 55–60% | 55% | 45% |
+| Mirage | 126 | 2,608 | 56% | 54–58% | 52% | 47% |
+| Inferno | 83 | 1,594 | 55% | 52–57% | 46% | 56% |
 | Train | 11 | 210 | 54% | 48–61% | 62% | 50% |
-| Ancient | 14 | 260 | 54% | 48–60% | 44% | 57% |
-| Dust2 | 16 | 307 | 53% | 47–58% | 55% | 50% |
-| Inferno | 16 | 281 | 52% | 46–57% | 57% | 59% |
-| Anubis | 16 | 346 | 42% | 37–47% | 34% | 57% |
+| Overpass | 29 | 623 | 53% | 49–57% | 57% | 42% |
+| Ancient | 60 | 1,152 | 53% | 50–56% | 45% | 54% |
+| Dust2 | 104 | 2,065 | 48% | 46–50% | 49% | 52% |
+| Anubis | 37 | 719 | 44% | 40–47% | 41% | 61% |
 | Vertigo | 9 | 184 | 39% | 32–46% | 39% | 55% |
-| **All** | 130 | 2,575 | 52% | 50–54% | 52% | 51% |
-
-Pistol-round samples are about 30 per map, so those cells are ±17 points.
+| **All** | 541 | 10,862 | 53% | 52–54% | 50% | 50% |
 
 ## Events, from least to most balanced
 
@@ -44,23 +50,25 @@ The win rate for the side the event favours, all maps. "Spread" is the gap betwe
 
 | Event | n | Win rate | 95% CI | Spread across maps |
 | --- | --- | --- | --- | --- |
-| T plants with a man advantage | 788 | 96% | 94–97% | 5 pts |
-| Eco vs full buy (eco side) | 503 | 12% | 10–16% | 12 pts |
-| Bomb planted (T) | 1,310 | 78% | 75–80% | 15 pts |
-| Plant at B (T) | 645 | 77% | 73–80% | **31 pts** |
-| Flash-assisted opening kill | 269 | 74% | 68–79% | — |
-| Opening kill (T) | 1,088 | 73% | 70–75% | 19 pts |
-| T plants while down players | 226 | 27% | 22–34% | — |
-| Opening kill with an AWP | 318 | 72% | 67–77% | 6 pts |
-| Opening kill (CT) | 1,483 | 70% | 68–72% | 18 pts |
-| T has more AWPs | 250 | 67% | 61–73% | 5 pts |
-| Won the previous round (CT) | 1,207 | 67% | 64–70% | 11 pts |
-| Won the previous round (T) | 1,119 | 64% | 61–67% | 17 pts |
-| CT has more AWPs | 806 | 61% | 57–64% | 24 pts |
-| Opening kill traded within 5 s (traded side) | 669 | 43% | 40–47% | 23 pts |
-| Pistol round (CT) | 249 | 52% | 46–58% | — |
+| T plants with a man advantage | 3,214 | 96% | 95–96% | 3 pts |
+| Eco vs full buy (eco side) | 2,145 | 12% | 11–14% | 8 pts |
+| Plant at B (T) | 2,584 | 77% | 76–79% | **30 pts** |
+| Bomb planted (T) | 5,484 | 77% | 76–78% | 14 pts |
+| Plant at A (T) | 2,900 | 76% | 75–78% | 19 pts |
+| Opening kill (T) | 4,438 | 73% | 72–74% | 18 pts |
+| Opening kill with an AWP | 1,459 | 73% | 70–75% | 10 pts |
+| T plants while down players | 967 | 28% | 25–31% | 8 pts |
+| Flash-assisted opening kill | 1,098 | 72% | 69–74% | 16 pts |
+| Opening kill (CT) | 6,399 | 71% | 70–72% | 12 pts |
+| Won the previous round (CT) | 5,165 | 67% | 65–68% | 8 pts |
+| T has more AWPs | 1,032 | 64% | 62–67% | 18 pts |
+| CT has more AWPs | 3,426 | 62% | 61–64% | 18 pts |
+| Won the previous round (T) | 4,650 | 62% | 61–63% | 17 pts |
+| Opening kill traded within 5 s (traded side) | 2,785 | 41% | 39–43% | 18 pts |
+| More enemy blind time (T) | 3,300 | 53% | 51–54% | 20 pts |
+| Pistol round (CT) | 1,047 | 50% | 47–53% | 16 pts |
 
-Utility counts ("more smokes thrown", 64–74%) are left out of the headlines because survivors throw more, which confounds them.
+The utility counts ("more smokes thrown", 63–74%) are left out because survivors throw more, which confounds them.
 
 ## Man advantage and clutches
 
@@ -68,110 +76,90 @@ The CTs' chance to win after a kill, no bomb planted:
 
 | State (CT v T) | All | Lowest map | Highest map |
 | --- | --- | --- | --- |
-| 5v4 | 71% | Anubis 58% | Nuke 77% |
-| 4v5 | 28% | Vertigo 18% | Ancient 35% |
-| 4v4 | 48% | Anubis and Vertigo 38% | Mirage 56% |
-| 3v3 | 48% | Anubis 35% | Mirage 58% |
-| 2v2 | 54% | Anubis 35% | Ancient 66% |
-| 1v1 | 69% | | |
-| 2v1 / 1v2 | 91% / 22% | | |
+| 5v4 | 71% (n=6,675) | Anubis 62% | Mirage 74% |
+| 4v5 | 28% (n=4,584) | Vertigo 18% | Train 34% |
+| 4v4 | 47% (n=5,404) | Vertigo 38% | Train 53% |
+| 3v3 | 47% (n=3,336) | Anubis 39% | Train 55% |
+| 2v2 | 54% (n=1,689) | Anubis 45% | Vertigo 64% |
+| 1v1 | 65% (n=553) | Inferno 57% | Overpass 76% |
+| 2v1 / 1v2 | 90% / 19% | | |
 
-- **The man advantage converts differently by map.** A CT 5v4 converts 77% of the time on Nuke but 58% on Anubis. On Anubis, even trades favour the Ts at every level.
-- **After a plant, the odds flip toward the T side:**
-  - 2v2 is 30% for the CTs and 1v1 is 33%.
-  - A 1v2 retake succeeds 5% of the time.
-  - Holding the plant 2v1 down a player, Ts still win 30%.
+After a plant, the odds tilt to the T side:
+- 2v2 is 28% for the CTs, 1v1 33% and 3v3 21%.
+- A 1v2 retake succeeds 7% of the time.
+- Holding the plant 2v1 down a player, Ts still win 33%.
 
-## After the plant
-
-| Map | Plants | T win | Site A | Site B | Mean plant time | Defuses with a kit |
-| --- | --- | --- | --- | --- | --- | --- |
-| Anubis | 208 | 85% | 83% | 86% | 1:19 | 48% |
-| Overpass | 138 | 83% | 76% | **90%** | 1:22 | 39% |
-| Vertigo | 108 | 83% | 84% | 83% | 1:13 | 56% |
-| Dust2 | 155 | 78% | 81% | 74% | 1:21 | 56% |
-| Inferno | 169 | 77% | 76% | 78% | 1:22 | 51% |
-| Nuke | 141 | 76% | 80% | 72% | 1:13 | 74% |
-| Train | 113 | 71% | **86%** | **59%** | 1:14 | 42% |
-| Ancient | 148 | 70% | 71% | 70% | 1:10 | 77% |
-| Mirage | 196 | 70% | 68% | 73% | 1:15 | 75% |
-
-**T win rate by (T alive − CT alive) at the plant:**
-
-| T alive − CT alive | −3 | −2 | −1 | 0 | +1 | +2 | +3 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| T win | 0% | 9% | 34% | 67% | 91% | 98% | 100% |
-
-- **Site matters most on Train:** an A plant holds 86% of the time, a B plant 59%.
-- **Overpass B is the strongest plant in the sample:** 90%.
-
-## Clutches
-
-Each side's first 1vN of a round, counted once, and how often the lone player's side won it (analyze-only run 37051653572):
+Each side's first 1vN of a round, counted once:
 
 | Situation | Lone CT wins | Lone T wins |
 | --- | --- | --- |
-| 1v1 | 60% (n=205) | 70% (n=157) |
-| 1v2 | 14% (n=278) | 22% (n=300) |
-| 1v3 or worse | 2% (n=706) | 2% (n=1,092) |
+| 1v1 | 58% (n=815) | 71% (n=677) |
+| 1v2 | 15% (n=1,217) | 24% (n=1,273) |
+| 1v3 or worse | 1% (n=2,880) | 2% (n=4,737) |
 
-- **The lone T clutches better.** The likely reason, not split out here, is that many T clutches come after a plant, where the clock works for them.
-- **A 1v3 is effectively lost:** 2 in 100.
+The lone T clutches better. The likely reason, not split out here, is that many T clutches come after a plant, where the clock works for them.
 
-## Plant timing
+## After the plant
 
-T win rate after the plant, by when it went down (round clock from freeze end):
+| Map | Plants | T win | Site A | Site B | Mean plant time | CT defuses with a kit |
+| --- | --- | --- | --- | --- | --- | --- |
+| Overpass | 278 | 86% | 81% | **89%** | 1:24 | 45% |
+| Vertigo | 108 | 83% | 84% | 83% | 1:13 | 56% |
+| Dust2 | 1,118 | 81% | 80% | 83% | 1:18 | 56% |
+| Anubis | 455 | 80% | 78% | 81% | 1:18 | 50% |
+| Mirage | 1,301 | 75% | 73% | 79% | 1:12 | 61% |
+| Inferno | 930 | 74% | 74% | 74% | 1:20 | 63% |
+| Nuke | 823 | 74% | 79% | 68% | 1:15 | 59% |
+| Ancient | 668 | 71% | 67% | 75% | 1:08 | 64% |
+| Train | 113 | 71% | **86%** | **59%** | 1:14 | 42% |
 
-| Plant time | T win |
-| --- | --- |
-| Early (before 0:45) | 79% (n=165) |
-| Mid (0:45–1:15) | 80% (n=473) |
-| Late (after 1:15) | 74% (n=738) |
-
-Late plants hold a little worse. Plausible reasons, not yet tested: the CTs have had time to rotate, and a late plant often comes from a T side that's already lost players.
+- **Site matters most on Train** (A holds 86%, B 59%; small sample) **and on Nuke** (A 79%, B 68%).
+- **Overpass B is the strongest plant in the dataset:** 89%.
+- **Plant timing:** T win rate after the plant is 78% before 0:45, 79% between 0:45 and 1:15, and 74% after 1:15. The likely reasons, not yet tested: the CTs have had time to rotate, and a late plant often comes from a T side that's already lost players.
 
 ## Where the first duel happens
 
-The victim's callout for each map's opening kill, and how often the side that won that duel took the round. Spots with at least 12 openings; all maps together average 71%.
+The victim's callout for each map's most common opening kill, and how often the side that won that duel took the round. All maps together average 72%.
 
-| Map | Most common opening | Share of openings | Round won | Notable |
+| Map | Most common opening | Share of openings | Round won | Also notable |
 | --- | --- | --- | --- | --- |
-| Inferno | Banana, won by CT | 22% | 59% | The weakest opening anywhere: winning the Banana fight barely helps the CTs |
-| Nuke | Outside, won by CT | 19% | 79% | Outside picks are decisive for both sides (T 74%) |
-| Ancient | Middle, won by CT | 14% | 77% | Winning Middle as T is worth much less (61%) |
-| Anubis | Canal, won by CT | 13% | 60% | A T opener on B is worth 77% |
-| Train | A site, won by T | 13% | 68% | A CT opener on B wins only 47% |
-| Vertigo | Bridge, won by CT | 11% | 67% | A T opener on A is worth 87% |
-| Dust2 | Long Doors, won by CT | 10% | 77% | A CT pick on B site is worth 81% |
-| Mirage | Top of Mid, won by CT | 10% | 76% | A T opener on A site is worth only 56% |
-| Overpass | Lower Park, won by CT | 10% | 65% | CT picks at Fountain (90%) and Canal (87%) nearly end the round |
+| Nuke | Outside, won by CT | 21% | 77% | T openers Outside are worth less (66%) |
+| Inferno | Banana, won by CT | 21% | 67% | Below average: winning the Banana fight is worth less than an average opener |
+| Ancient | Middle, won by CT | 13% | 74% | Winning Middle as T is worth 64% |
+| Anubis | Canal, won by CT | 12% | 67% | A T opener on B is worth 78% |
+| Overpass | Lower Park, won by CT | 11% | 68% | CT picks at Fountain (82%) and Canal (79%) |
+| Mirage | Top of Mid, won by CT | 10% | 76% | A T opener on A site is worth 73% |
+| Dust2 | Long Doors, won by CT | 9% | 65% | T openers in Long A are worth 78% |
+
+On Dust2, Anubis and Vertigo, the T side's opener is worth far more than the CT's (79% / 78% / 82% against 67% / 62% / 65%). Those are the same maps that lean T.
 
 ## Economy
 
 | Map | Eco beats full | Force beats full | Pistol winner wins the next round |
 | --- | --- | --- | --- |
-| Train | 11% | **46%** | 62% |
-| Inferno | 18% | 39% | 63% |
-| Vertigo | 7% | 38% | 78% |
-| Anubis | 10% | 36% | 88% |
-| Nuke | 11% | 36% | 81% |
-| Mirage | 9% | 30% | 81% |
-| Overpass | 14% | 30% | 87% |
-| Dust2 | 19% | 29% | 77% |
-| Ancient | 12% | 21% | 100% (n=25) |
-| **All** | 12% | 34% | 80% |
+| Train | 11% | **46%** | 62% (n=21) |
+| Vertigo | 7% | 38% | 78% (n=18) |
+| Dust2 | 16% | 36% | 79% |
+| Inferno | 13% | 35% | 73% |
+| Overpass | 13% | 34% | 88% |
+| Ancient | 8% | 33% | 83% |
+| Anubis | 10% | 32% | 80% |
+| Nuke | 13% | 32% | 82% |
+| Mirage | 11% | 30% | 84% |
+| **All** | 12% | 34% | 80% (n=1,044) |
 
 The CTs' win rate by matchup, all maps:
 
 | Matchup | CT win |
 | --- | --- |
-| CT full v T full | 53% |
-| CT full v T force | 62% |
-| CT full v T semi | 78% |
-| CT full v T eco | 94% |
-| CT force v T full | 29% |
-| CT semi v T full | 20% |
-| CT eco v T full | 3% |
+| CT full v T full | 52% (n=5,133) |
+| CT full v T force | 67% |
+| CT full v T semi | 79% |
+| CT full v T eco | 97% |
+| CT force v T force | 30% |
+| CT force v T full | 34% |
+| CT semi v T full | 19% |
+| CT eco v T full | 6% |
 
 ## Predictability
 
@@ -179,36 +167,39 @@ A logistic model trained on four demo groups and tested on the fifth. Brier scor
 
 | Map | Moments | Base (alive, bomb, time) | + map | + economy | Round start only (+ economy) |
 | --- | --- | --- | --- | --- | --- |
-| Vertigo | 1,502 | 0.137 | 0.139 | **0.128** | 0.205 |
-| Nuke | 2,463 | 0.139 | 0.139 | 0.134 | 0.226 |
-| Train | 1,665 | 0.142 | 0.144 | 0.138 | 0.227 |
-| Mirage | 3,050 | 0.147 | 0.147 | 0.138 | 0.217 |
-| Overpass | 2,626 | 0.148 | 0.146 | 0.140 | 0.221 |
-| Dust2 | 2,365 | 0.148 | 0.149 | 0.139 | 0.220 |
-| Inferno | 2,113 | 0.148 | 0.148 | 0.148 | 0.232 |
-| Anubis | 2,707 | 0.152 | 0.146 | 0.141 | 0.216 |
-| Ancient | 2,000 | **0.155** | 0.159 | 0.143 | 0.212 |
-| **All** | 20,491 | 0.147 | 0.146 | 0.139 | |
+| Vertigo | 1,502 | 0.138 | 0.138 | **0.128** | 0.203 |
+| Nuke | 13,818 | 0.140 | 0.139 | 0.132 | 0.221 |
+| Mirage | 21,029 | 0.141 | 0.141 | 0.131 | 0.213 |
+| Train | 1,665 | 0.142 | 0.142 | 0.137 | 0.225 |
+| Dust2 | 16,034 | 0.147 | 0.146 | 0.140 | 0.219 |
+| Overpass | 4,933 | 0.151 | 0.151 | 0.144 | 0.218 |
+| Ancient | 9,431 | 0.152 | 0.152 | 0.140 | 0.214 |
+| Anubis | 5,608 | 0.153 | 0.150 | 0.143 | 0.216 |
+| Inferno | 12,454 | **0.155** | 0.156 | 0.148 | 0.223 |
+| **All** | 86,474 | 0.147 | 0.146 | 0.138 | |
 
-- **Most predictable:** Vertigo and Nuke, where the advantage converts.
-- **Least predictable:** Ancient, where rounds stay open longest.
-- **Economy is worth more than the map** everywhere except Inferno, where it adds nothing.
-- **For Match Pulse:** a map-agnostic model plus economy is the right shape. A per-map term only pays off on T-sided maps.
+- **Most predictable:** Vertigo, Nuke and Mirage.
+- **Least predictable:** Inferno, then Anubis and Ancient.
+- **Economy helps on every map.** The map term pays off noticeably only on Anubis, the strongest T lean.
+- **For Match Pulse:** a map-agnostic model plus economy is the right shape. Jev on pro play, in [../jev/experiments.md](../jev/experiments.md) E5, is beaten by exactly this kind of model.
 
 ## Our parser on pro demos
 
-- The same run put every demo through our `demo parse` and `demo diff` against the oracle.
-- **Speed and memory are no concern:** at most 2.6 s and 61 MB.
-- **Round logic collapsed on 113 of 132 demos,** across game builds 9961 to 10847. Ours finds exactly 1 round where the reference finds 18 or more. The cause is match rules tuned on matchmaking, Premier and FACEIT servers, which tournament GOTV breaks.
-- **Also:**
-  - 2 demos failed with "no live rounds"
-  - 9 swapped team assignments, mostly on build 9842
-  - only 5 diffed clean
-- **Status:** sent to the parser session with dataset paths. It's now the parser's top priority and gates the M4 round-file swap. A parser-only re-run on the same sample is the regression check.
+The sweeps run our `demo parse` and `demo diff` against the oracle, demo by demo, in the cloud ("parser mode" on the research branch):
+
+| Build | Sample | Rounds collapsed | match.json clean | Entity failures | Notes |
+| --- | --- | --- | --- | --- | --- |
+| main at 22b3884 (baseline) | full run, 545 | 474 | 17 diff OK | — | Events-only rules tuned on matchmaking break tournament GOTV |
+| main at 22b3884 | 132 | 113 | 5 | — | Run 37003041437 |
+| `parser/pro-rounds` 68a02cf | 132 | 46 | 14 | 21 | Run 37054367353; round files now on |
+| `parser/pro-rounds` 1dd244c | 132 | 46 | 35 | 13 | Run 37056136267 |
+| `parser/pro-rounds` ca49811 | 11 hard cases | 5 of 5 still | halftime and CWorld fixed | 0 | Run 37057084416; the full-132 run with event timelines follows |
+
+- **Speed and memory stay far inside budget:** at most 7.4 s and 219 MB with round files on.
+- **The remaining collapse family ends round 1 near tick 8,635 as "time expired"** and finds no later round. Parser is working on it from the event timelines.
 
 ## Next
 
-- **Parser mode is live** on the research branch: `demo` is built from any ref and diffed against the oracle in the cloud. Parser's fix (`parser/pro-rounds`) is being swept first on 10 repro and control demos, then on all 132.
-- **Jev on a pro sample** (24 demos, from the stored facts) tests whether its calibration (T = 0.54, fitted on matchmaking) holds for pro play.
-- **A full pass** over all ~545 usable demos in the dataset, for per-map statistics with tighter intervals.
+- **The ca49811 full-132 parser sweep,** with event timelines on every demo, then whatever parser sends next.
+- **Model comparison on pro rounds:** Jev, gpt-oss-120b, Claude Opus 5.5 and the trained model on the same 400 moments, plus fact-checked recaps and "rounds like this one" embeddings. Results in a follow-up.
 - **Interactive page:** a private claude.ai page, Round Odds, shows these results.
