@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:demoview:schema:match:v1",
+  "title": "demoView match.json (schema_version 1)",
+  "description": "One per match, written by the parser (v0 writes only this file). Teams are A and B for the whole match because sides swap at half; each round records which side team A played. Players are referenced everywhere by idx. Cross-field rules JSON Schema cannot express (unique idx/n, references that must exist, tick ordering) are checked by validate.mjs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "parser_version", "match", "players", "rounds", "kills", "scoreboard"],
+  "properties": {
+    "schema_version": {
+      "description": "Goes up on any breaking change to match.json or the round files.",
+      "const": 1
+    },
+    "parser_version": {
+      "description": "Version of the parser that wrote the file (semver), so matches from older parsers can be found and reparsed.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "match": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["map", "tick_rate", "demo_sha256"],
+      "properties": {
+        "map": { "description": "Map name, e.g. de_mirage.", "type": "string", "minLength": 1 },
+        "tick_rate": { "description": "Server ticks per second (64 for CS2).", "type": "integer", "minimum": 1 },
+        "demo_sha256": { "description": "Hex SHA-256 of the demo file.", "type": "string", "pattern": "^[0-9a-fA-F]{64}$" }
+      }
+    },
+    "players": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/player" }
+    },
+    "rounds": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/round" }
+    },
+    "kills": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/kill" }
+    },
+    "scoreboard": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/scoreRow" }
+    }
+  },
+  "$defs": {
+    "idx": {
+      "description": "A player index: the idx of an entry in match.json players.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "tick": {
+      "description": "A demo tick.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "team": {
+      "description": "Team for the whole match. Sides swap at half, so this is not CT/T.",
+      "enum": ["A", "B"]
+    },
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["idx", "steam_id", "name", "team"],
+      "properties": {
+        "idx": { "$ref": "#/$defs/idx" },
+        "steam_id": {
+          "description": "SteamID64 as a decimal string (a string, because it does not fit a JS number).",
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "name": { "type": "string" },
+        "team": { "$ref": "#/$defs/team" }
+      }
+    },
+    "round": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "start_tick", "freeze_end_tick", "end_tick", "winner", "reason", "side_a"],
+      "properties": {
+        "n": { "description": "Round number, starting at 1.", "type": "integer", "minimum": 1 },
+        "start_tick": { "$ref": "#/$defs/tick" },
+        "freeze_end_tick": { "$ref": "#/$defs/tick" },
+        "end_tick": { "$ref": "#/$defs/tick" },
+        "winner": { "$ref": "#/$defs/team" },
+        "reason": {
+          "description": "Why the round ended, e.g. bomb_defused. The full value set is not fixed yet.",
+          "type": "string",
+          "minLength": 1
+        },
+        "side_a": { "description": "The side team A played this round.", "enum": ["CT", "T"] }
+      }
+    },
+    "kill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["round", "tick", "attacker", "victim", "assister", "weapon", "headshot"],
+      "properties": {
+        "round": { "description": "The n of the round this kill belongs to.", "type": "integer", "minimum": 1 },
+        "tick": { "$ref": "#/$defs/tick" },
+        "attacker": {
+          "description": "Killer's idx. Null is allowed until it is decided how world, fall and bomb deaths are recorded.",
+          "oneOf": [{ "$ref": "#/$defs/idx" }, { "type": "null" }]
+        },
+        "victim": { "$ref": "#/$defs/idx" },
+        "assister": {
+          "description": "Assisting player's idx, or null when nobody assisted.",
+          "oneOf": [{ "$ref": "#/$defs/idx" }, { "type": "null" }]
+        },
+        "weapon": { "description": "Weapon name, e.g. ak47.", "type": "string", "minLength": 1 },
+        "headshot": { "type": "boolean" }
+      }
+    },
+    "scoreRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["player", "kills", "deaths", "assists", "adr", "hs_pct"],
+      "properties": {
+        "player": { "$ref": "#/$defs/idx" },
+        "kills": {
+          "description": "No minimum: the in-game scoreboard subtracts team kills and suicides, so it can go negative.",
+          "type": "integer"
+        },
+        "deaths": { "type": "integer", "minimum": 0 },
+        "assists": { "type": "integer", "minimum": 0 },
+        "adr": { "description": "Average damage per round.", "type": "number", "minimum": 0 },
+        "hs_pct": {
+          "description": "Headshot percentage. Bounded 0..100 because the 0-1 vs 0-100 scale is not decided yet.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    }
+  }
+}

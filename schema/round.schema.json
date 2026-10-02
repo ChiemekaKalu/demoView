@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:demoview:schema:round:v1",
+  "title": "demoView rounds/NN.json (schema_version 1)",
+  "description": "One per round (v1), downsampled to hz frames per second. Per-player values are stored as columns so the viewer can index a frame directly: x[i], y[i], yaw[i] and hp[i] all describe frame i, and every column has exactly `frames` values. Players are referenced by their match.json idx. Cross-field rules (column lengths, frame ranges, references into match.json) are checked by validate.mjs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "round", "hz", "start_tick", "frames", "players", "grenades", "events"],
+  "properties": {
+    "schema_version": {
+      "description": "Goes up on any breaking change to match.json or the round files.",
+      "const": 1
+    },
+    "round": { "description": "The n of this round in match.json rounds.", "type": "integer", "minimum": 1 },
+    "hz": { "description": "Frames per second (16 in v1).", "type": "integer", "minimum": 1 },
+    "start_tick": { "description": "Demo tick of frame 0.", "type": "integer", "minimum": 0 },
+    "frames": { "description": "Number of frames; the length of every per-player column.", "type": "integer", "minimum": 1 },
+    "players": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/playerTrack" }
+    },
+    "grenades": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/grenade" }
+    },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" }
+    }
+  },
+  "$defs": {
+    "idx": {
+      "description": "A player index: the idx of an entry in match.json players.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "frame": {
+      "description": "A frame index in [0, frames).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "coord": {
+      "description": "A position in integer game units.",
+      "type": "integer"
+    },
+    "playerTrack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["idx", "x", "y", "yaw", "hp"],
+      "properties": {
+        "idx": { "$ref": "#/$defs/idx" },
+        "x": { "type": "array", "items": { "$ref": "#/$defs/coord" } },
+        "y": { "type": "array", "items": { "$ref": "#/$defs/coord" } },
+        "yaw": {
+          "description": "View direction. Units and range are not fixed yet.",
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "hp": {
+          "description": "Health; 0 means dead.",
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0, "maximum": 100 }
+        }
+      }
+    },
+    "grenade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "thrower", "throw_frame", "detonate_frame", "end_frame", "path"],
+      "properties": {
+        "type": {
+          "description": "Grenade kind, e.g. smoke, flash, he, molotov. The full value set is not fixed yet.",
+          "type": "string",
+          "minLength": 1
+        },
+        "thrower": { "$ref": "#/$defs/idx" },
+        "throw_frame": { "$ref": "#/$defs/frame" },
+        "detonate_frame": { "$ref": "#/$defs/frame" },
+        "end_frame": { "$ref": "#/$defs/frame" },
+        "path": {
+          "description": "Flight path as [x, y] points in game units.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/coord" },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frame", "type"],
+      "properties": {
+        "frame": { "$ref": "#/$defs/frame" },
+        "type": {
+          "description": "Event kind. Only kill is defined so far.",
+          "type": "string",
+          "minLength": 1
+        },
+        "kill": {
+          "description": "For type kill: index into match.json kills.",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "if": { "properties": { "type": { "const": "kill" } }, "required": ["type"] },
+      "then": { "required": ["kill"] },
+      "else": { "not": { "required": ["kill"] } }
+    }
+  }
+}
