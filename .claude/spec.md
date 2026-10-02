@@ -45,7 +45,7 @@ v0 ships a local CLI and v1 ships the hosted product. Anything not listed here i
 - Unlisted share links, no login
 - CI deploys both the Worker and the parser container
 
-**Done when** a link to a round you played opens on a phone or laptop and scrubs smoothly, and nothing ran on your machine after the upload.
+**Done when** a link to a round you played opens on a desktop browser and scrubs smoothly, and nothing ran on your machine after the upload.
 
 ### Out of scope through v1
 
@@ -287,7 +287,7 @@ A plain Vite and Preact build is the starting point. Preact has React's componen
 
 - Data is 64 Hz (every tick) and the canvas draws at the display's refresh rate, interpolating between frames.
 - Opening a round fetches one file. The next round is prefetched in the background.
-- The canvas scales to the screen width and the scrubber works by touch.
+- The viewer targets desktop browsers. The canvas scales to the window width, and a phone is not a requirement.
 
 ### Map choice
 
@@ -343,7 +343,7 @@ Five milestones in one sequence. The schema and fixture files from M0 let the pi
 | **M0: schema and fixtures** | Write schema v1. Export fixture files from 3 demos with the reference parser. Create the repo and pick the map. | Fixture files validate against the schema. |
 | **M1: v0 parser** | Header, frames, game events, player identity, scoreboard. | v0 done-when is met. |
 | **M2: cloud pipeline** | Create both cloud accounts and the dev environment. Deploy the full pipeline with a stub parser that returns fixture data. CI deploys on merge. | A fake upload flows end to end in dev, and a merge to `main` deploys it. |
-| **M3: viewer** | Upload flow, match page, and replay viewer, all built against fixtures. Swap the stub for real parsing: your v0 parser writes `match.json` and the reference parser writes round files. Polish and mobile check. | v1 done-when is met, with round files from the reference parser. |
+| **M3: viewer** | Upload flow, match page, and replay viewer, all built against fixtures. Swap the stub for real parsing: your v0 parser writes `match.json` and the reference parser writes round files. Polish and a desktop browser check. | v1 done-when is met, with round files from the reference parser. |
 | **M4: entity decoding** | Serializers, string tables, entity decoding, grenades, round files, position diff tests passing. Swap your parser in for round files. | The position diff passes on all fixtures, and prod round files come from your parser. |
 
 Rough sizing, for one person driving coding agents: M0 takes a day, M1 a weekend, M2 a weekend, and M3 one to two weekends. That is about 3 to 4 weekends to v1 on reference data. M4 adds 2 to 3 more.
