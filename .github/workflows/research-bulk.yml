@@ -15,9 +15,10 @@ on:
 permissions:
   contents: read
 
+# Pushes queue rather than cancel, so a parser sweep never kills a running study.
 concurrency:
   group: research-bulk
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   GO_VERSION: "1.27"

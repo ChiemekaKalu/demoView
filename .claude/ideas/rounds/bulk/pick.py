@@ -31,7 +31,8 @@ def main():
     files = {x["path"]: x for x in tree if x.get("type") == "file" and x["path"].endswith(".dem")}
 
     parser_mode = cfg["mode"] == "parser"
-    paths = cfg.get("paths") or (cfg.get("parser_paths") if parser_mode else None)
+    repro = parser_mode and cfg.get("parser_sample", "repro") == "repro"
+    paths = cfg.get("paths") or (cfg.get("parser_paths") if repro else None)
     if paths:
         items = [{"path": p, "map": map_of(p), "size": (files[p].get("lfs") or {}).get("size", files[p].get("size", 0))}
                  for p in paths if p in files]

@@ -1,13 +1,13 @@
 {
-  "mode": "analyze",
+  "mode": "parser",
   "source_run": "37003041437",
+  "parser_ref": "68a02cf1957917fd09364479a480bb5c1a989e40",
+  "parser_sample": "repro",
   "dataset": "skkwowee/chimera-cs2",
   "seed": 2026,
   "per_map": 16,
   "shards": 12,
-  "parser_ref": null,
   "paths": null,
-  "jev": {"enabled": true, "demos": 24, "rps": 4, "workers": 4, "max_input_tokens": 12000000, "minutes": 24, "seed": 2026, "temperature": 0.54},
   "parser_shards": 5,
   "parser_paths": [
     "demos/2375775/vitality-vs-g2-m1-anubis.dem",
@@ -20,5 +20,15 @@
     "demos/2367258/g2-vs-ence-m1-ancient.dem",
     "demos/2377047/g2-vs-spirit-m3-nuke.dem",
     "demos/the-mongolz-vs-parivision-m1-dust2.dem"
-  ]
+  ],
+  "jev": {
+    "enabled": true,
+    "demos": 24,
+    "rps": 4,
+    "workers": 4,
+    "max_input_tokens": 12000000,
+    "minutes": 24,
+    "seed": 2026,
+    "temperature": 0.54
+  }
 }
