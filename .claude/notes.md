@@ -4,6 +4,11 @@ Running log of decisions, progress and findings. Newest first. Keep entries shor
 
 ## 2026-10-02
 
+- **v1.1 and v1.2 scope, decided by the user:**
+  - Keep Steam ids in public match data, since it's semi-anonymous behind unlisted links.
+  - M5 is the agreed set: duplicate-upload reuse by `demo_sha256`, a reparse path for older `parser_version`s, and more single-level maps.
+  - The contested items go to v1.2, because they're a lot of work and need credentials: the Steam/Valve fetch, and two-floor maps (Nuke, Vertigo).
+  - Narrative log: groundwork lands in M4 (the `parser/eventlog` package and its tests, with no new output file yet). The real build waits for later.
 - **Parser runtime: Cloudflare Containers, not Cloud Run.** Deliberate deviation from the spec. It's a hobby project and the $5/month Workers Paid plan buys one cloud, no public parser endpoint and no shared `PARSE_SECRET`. Cloud Run only if the project grows.
   - Containers: `standard-2` is 1 vCPU and 6 GiB, scale to zero after a 10-minute inactivity timeout, and the Worker calls it through a Durable Object.
   - Unconfirmed: the docs give no request-duration limit. A stub that holds a multi-minute request settles it. Update the spec once it passes, and fall back to Cloud Run if it fails.

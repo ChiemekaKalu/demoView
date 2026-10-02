@@ -373,5 +373,5 @@ The biggest risk is entity decoding taking far longer than planned, and the fall
 - [ ] Does Cloudflare Queues need the paid Workers plan on this account?
 - [x] Is 16 Hz smooth enough for the replay, or should round files be 32 Hz? 64 Hz, every tick: both fixture demos record entity updates on every tick, and the viewer targets desktop.
 - [ ] Should a duplicate upload (same demo hash) reuse the existing match?
-- [ ] Demos include the other 8 players. Keep their Steam ids in public match data or strip them?
+- [x] Demos include the other 8 players. Keep their Steam ids in public match data or strip them? Keep them: match data is semi-anonymous behind unlisted links.
 - [ ] Is the repo public from day one?
