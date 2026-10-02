@@ -57,6 +57,13 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 
 ## M3 groundwork (pulled forward)
 
+- [x] Reference round files in the Cloud Run pipeline.
+  - **Image:** it carries an `oracle` binary, and `PARSER_ROUNDS=oracle` is set in the image.
+  - **Flow:** after `parse.Run`, the server streams a second R2 GET of the demo into `oracle export -`, uploads its round files, then uploads `match.json` last.
+  - **Consistency guard:** ours ships only when its players, rounds and kills agree with the oracle's. Otherwise the oracle's `match.json` ships, plus a warning, so the files always agree with each other. The log line records `match_source`.
+  - **On the real demos** with the 1.7 work in the tree, ours agreed and shipped.
+  - **Cost:** Nuke takes 3.7 s, with the oracle child at a 219 MB peak.
+
 - [x] `web/`: upload, match and replay pages, built against `schema/samples` (fixtures mode: `VITE_FIXTURES=1` or id `sample`). Every spec replay bullet is in. Bundle 45.7 KB raw / 17.7 KB gzip. 50 vitest tests.
 - [x] Mirage radar image at `web/public/radar/de_mirage.png`, from MurkyYT/cs2-map-icons @ ae7ed6a (1024×1024, extracted from the CS2 depot; the repo has no license, so these are Valve assets). Alignment verified by plotting real Mirage positions from the oracle export: trails follow the corridors, and spawns and bombsites match the overview file.
 
