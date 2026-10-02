@@ -25,8 +25,22 @@
     }
   ],
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "demoview-dev" }],
+  // A message is delivered once plus max_retries times before it moves to the
+  // dead letter queue, so max_retries 2 gives the spec's 3 attempts
+  // (MAX_ATTEMPTS in src/consumer.ts). One job per batch, since a parse can
+  // take minutes. The Worker also consumes the DLQ to mark matches failed.
   "queues": {
-    "producers": [{ "binding": "PARSE_QUEUE", "queue": "demoview-dev-parse" }]
+    "producers": [{ "binding": "PARSE_QUEUE", "queue": "demoview-dev-parse" }],
+    "consumers": [
+      {
+        "queue": "demoview-dev-parse",
+        "max_batch_size": 1,
+        "max_retries": 2,
+        "retry_delay": 30,
+        "dead_letter_queue": "demoview-dev-parse-dlq"
+      },
+      { "queue": "demoview-dev-parse-dlq" }
+    ]
   },
   "env": {
     "prod": {
@@ -45,7 +59,17 @@
       ],
       "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "demoview-prod" }],
       "queues": {
-        "producers": [{ "binding": "PARSE_QUEUE", "queue": "demoview-prod-parse" }]
+        "producers": [{ "binding": "PARSE_QUEUE", "queue": "demoview-prod-parse" }],
+        "consumers": [
+          {
+            "queue": "demoview-prod-parse",
+            "max_batch_size": 1,
+            "max_retries": 2,
+            "retry_delay": 30,
+            "dead_letter_queue": "demoview-prod-parse-dlq"
+          },
+          { "queue": "demoview-prod-parse-dlq" }
+        ]
       }
     }
   }

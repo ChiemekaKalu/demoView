@@ -1,5 +1,7 @@
 // D1 access for the spec's four tables. The Worker is the only writer.
 
+import type { MatchFile } from "./match-file";
+
 export type MatchStatus = "uploaded" | "queued" | "parsing" | "ready" | "failed";
 
 export interface MatchRow {
@@ -77,6 +79,72 @@ export async function getMatchPage(
     players: (players?.results ?? []) as PlayerRow[],
     rounds: (rounds?.results ?? []) as RoundRow[],
   };
+}
+
+// Replaces the match's players, rounds and kills with the parse result and
+// marks it ready, in one transaction, so a reparse overwrites cleanly.
+//
+// Each table gets one INSERT that reads a JSON array through json_each. D1
+// counts every statement in a batch toward its per-invocation query limit (50
+// on the Free plan), so a statement per kill would not fit.
+export async function saveParsedMatch(
+  db: D1Database,
+  id: string,
+  file: MatchFile,
+  now: number,
+): Promise<void> {
+  const scores = new Map(file.scoreboard.map((s) => [s.player, s]));
+  const players = file.players.map((p) => ({ ...scores.get(p.idx), ...p }));
+  const scoreA = file.rounds.filter((r) => r.winner === "A").length;
+  const scoreB = file.rounds.filter((r) => r.winner === "B").length;
+  const field = (name: string) => `json_extract(value, '$.${name}')`;
+  const insertFrom = (table: string, columns: string[]) =>
+    `INSERT INTO ${table} (match_id, ${columns.join(", ")}) ` +
+    `SELECT ?1, ${columns.map(field).join(", ")} FROM json_each(?2)`;
+  await db.batch([
+    db.prepare("DELETE FROM players WHERE match_id = ?").bind(id),
+    db.prepare("DELETE FROM rounds WHERE match_id = ?").bind(id),
+    db.prepare("DELETE FROM kills WHERE match_id = ?").bind(id),
+    db
+      .prepare(
+        insertFrom("players", [
+          "idx",
+          "steam_id",
+          "name",
+          "team",
+          "kills",
+          "deaths",
+          "assists",
+          "adr",
+          "hs_pct",
+        ]),
+      )
+      .bind(id, JSON.stringify(players)),
+    db
+      .prepare(insertFrom("rounds", ["n", "winner", "reason", "side_a"]))
+      .bind(id, JSON.stringify(file.rounds)),
+    // json_extract turns the JSON booleans in headshot into 1 and 0.
+    db
+      .prepare(insertFrom("kills", ["round", "tick", "attacker", "victim", "weapon", "headshot"]))
+      .bind(id, JSON.stringify(file.kills)),
+    db
+      .prepare(
+        `UPDATE matches SET status = 'ready', error = NULL, map = ?, score_a = ?, score_b = ?,
+           demo_sha256 = ?, parser_version = ?, schema_version = ?, parsed_at = ?
+         WHERE id = ?`,
+      )
+      .bind(
+        file.match.map,
+        scoreA,
+        scoreB,
+        file.match.demo_sha256 ?? null,
+        file.parser_version,
+        file.schema_version,
+        now,
+        id,
+      ),
+  ]);
+  logStatus(id, "ready");
 }
 
 export interface StatusChange {
