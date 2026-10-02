@@ -33,7 +33,7 @@ http.server.ThreadingHTTPServer(("", 8080), Handler).serve_forever()
 
 export class StubContainer extends Container<Env> {
   defaultPort = 8080;
-  sleepAfter = "2m";
+  sleepAfter = "30s";
   entrypoint = ["python", "-u", "-c", SERVER];
 }
 
