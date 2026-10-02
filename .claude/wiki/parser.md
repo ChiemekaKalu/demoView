@@ -99,3 +99,5 @@ Entity decoding (M4) is the hardest part of the project, and it has started earl
 - **Stages 4 and 5, extraction and round files** at 64 Hz: then swap them in for the oracle's.
 
 Entity decoding also decides exact round winners and teams, which events can only infer.
+
+Alongside it, `parser/eventlog` is the approved groundwork for the narrative log: an envelope, an emitter interface with a no-op, a spool and a deterministic finalizer, with tests. It writes no output yet. See [decisions](decisions.md#narrative-log).

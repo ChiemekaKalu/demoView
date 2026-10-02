@@ -74,6 +74,6 @@ Kills during freeze time (Nuke has 2 bot deaths during a tactical pause) clamp t
 
 ## Open questions touching the schema
 
-- **Steam ids in public data.** Stripping them would make `steam_id` nullable, which is a schema change. For now they're stored in D1 and left out of the public GET.
+- **Steam ids in public data: decided, keep them.** The user judged them semi-anonymous behind unlisted links. `match.json` serves them, the summary GET omits them, and `steam_id` stays non-nullable, so there is no schema change.
 - **Round-file rate: decided, 64 Hz.** Both fixture demos record entity updates on every tick, and the viewer targets desktop. The spec says 64, and the oracle (`9ab7e1f`) and the regenerated samples (`83d1e20`) now write 64. The oracle's files are compact: at most 1.5 MB raw, about 100 KB gzipped. `hz` is in the file, so this is a parser setting and not a schema break.
 - **Narrative log.** Proposed as a new output with its own `log.schema.json`, independent of `schema_version`. See [decisions](decisions.md#narrative-log).

@@ -36,8 +36,9 @@ flowchart LR
 
 - **The viewer on a real parse.** It has only been run against the synthetic samples so far.
 - **CI diff on fixtures.** Optional: set the read-only fixtures secrets so that job runs instead of skipping.
-- **Fetching your own demos from Valve.** In scope, but after v1. The design is in `plan.md`, and nothing is started.
-- **Narrative log.** The proposal is in `../logging.md` and awaits the user's six decisions. Don't build logging into the parser before then.
+- **Fetching your own demos from Valve.** Decided for v1.2, along with two-floor maps (Nuke, Vertigo). The design is in `plan.md`, and nothing is started.
+- **v1.1.** The agreed set is reuse of a duplicate upload by demo hash, a reparse path for older parser versions, and more single-level maps. A fuller draft is being worked out and is not in the spec yet.
+- **Narrative log.** Only the groundwork (`parser/eventlog`, with tests, no output) is approved. The rest of `../logging.md` waits for later.
 
 ## The learning center
 

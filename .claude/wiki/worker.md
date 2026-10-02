@@ -14,7 +14,7 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/matches/:id/match.json` | The parser's `match.json` from R2, 5 min cache with ETag | 404 until `ready` |
 | `GET /api/matches/:id/rounds/:n` | A round file from R2, immutable for a year | 404 |
 
-The last two weren't in the original spec. The viewer needs `match.json` for the kill feed, and kills in D1 lack assisters. The public GET leaves Steam ids out.
+The last two weren't in the original spec. The viewer needs `match.json` for the kill feed, and kills in D1 lack assisters. The summary GET leaves Steam ids out. `match.json` carries them, by the user's decision to keep them.
 
 **Presigning.** Uploads go straight to R2 via a presigned PUT, so the Worker needs R2 S3 credentials as secrets. The bucket CORS rule allows `PUT` from the Worker's origin.
 

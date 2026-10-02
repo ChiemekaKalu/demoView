@@ -2,6 +2,13 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, evening: scope decisions and viewer polish
+
+- **Decided by the user** (`74fc4c0`, `6e71214`): keep Steam ids in public match data. v1.1 is duplicate-upload reuse, a reparse path and more single-level maps. The Valve fetch and two-floor maps move to v1.2. The narrative log gets groundwork only (`parser/eventlog`, no output). Wiki: [decisions](decisions.md), [schema](schema.md), [worker](worker.md), [parser](parser.md).
+- **Viewer polish** from the pipeline session: player names avoid overlapping (`eb51eb1`), playback text updates ten times a second (`17c2e4f`), uploads cancel when you leave (`c277646`), unused helpers removed (`295e73e`), and the data layer's caching and URL versioning are tested (`06b3e02`). Wiki: [viewer](viewer.md).
+- Docs commits: `7890f65` and `a49509a` put this wiki and its learning center in git.
+- In progress, untracked: more of `parser/entities` (field paths, quantized values, state, tables, value decoders) for M4 stage 3.
+
 ## 2026-10-02, later: M1 and M2 close, prod is live
 
 - **M1 is closed** (`3bd6548`): on all 8 of the user's matches, K/A/D, headshot kills and ADR equal the game's scoreboard counters for 80 of 80 players. A third-party stats site differs only by listing flash assists separately and rounding ADR. The post-win-panel death question is settled. Wiki: [match-logic](match-logic.md), [README](README.md).

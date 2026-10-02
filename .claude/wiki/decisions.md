@@ -12,6 +12,8 @@ The *why* behind the shape of the project, newest first within each group. The d
 | **Vite + Preact, not React or Next.js** | A viewer that is mostly one canvas. The bundle went from 220 KB to 11 KB at the time of the switch. | spec |
 | **Mirage for v1** | Single level. Nuke and Vertigo need a second radar layer. | spec |
 | **Round files at 64 Hz, every tick** (user) | Both fixture demos record entity updates on every tick, and the viewer targets desktop. Superseded 16 Hz, then a brief 32 Hz. Cost: about 2 MB per long round before compression. | 10-02 |
+| **Keep Steam ids in public match data** (user) | The data is semi-anonymous behind unlisted links. `match.json` already serves them, and the summary GET omits them, which is fine. Settles the old open question, and `steam_id` stays non-nullable. | 10-02 |
+| **v1.1 and v1.2 scope** (user) | v1.1's agreed set: reuse a duplicate upload by `demo_sha256`, a reparse path for older `parser_version`s, and more single-level maps. The contested items go to v1.2 because they need real work and credentials: the Steam/Valve fetch, and two-floor maps (Nuke, Vertigo). | 10-02 |
 | **Pull the user's own demos from Valve** (user) | The spec had auto-fetching out of scope through v1. Now: a dedicated Steam bot account (never the main one), found by polling match history or a pasted share link, running in the cloud beside the parser, through network APIs only. The game-memory boundary still holds. **Decided: after v1.** The design is in `plan.md` (`6c9355e`) and nothing is started. | 10-02 |
 | **v1 targets desktop browsers** (user) | The spec's done-when now says "desktop browser", not "phone or laptop" (`d56ca5a`). Touch still works on the scrubber, but it is no longer a gate. | 10-02 |
 | **Solo build** | One milestone sequence M0 to M4, sized for agent-driven work. | 10-02 |
@@ -42,7 +44,7 @@ The *why* behind the shape of the project, newest first within each group. The d
 
 ## Narrative log
 
-**Status: proposal, awaiting the user's decisions** (`../logging.md`, from the `cloud` session). Don't build logging into the parser before it's approved.
+**Status: proposal, with groundwork only approved** (`../logging.md`, from the `cloud` session). On 2026-10-02 the user allowed build step 1 and nothing more: the `parser/eventlog` package (envelope, emitter, no-op, spool, a deterministic finalizer) with tests, and no output file, CLI flag, schema or R2 path. The real build waits for v1.2.
 
 The idea: a structured, tick-stamped, versioned record of everything in the match and everything the parser decided. It's a *product output* stored in R2 next to `match.json`, and not platform logging. It might become a ledger or dataset later.
 
@@ -61,7 +63,7 @@ Notable design choices:
 - Measured: Mirage is 6.8k events in 66 KB gzipped, Nuke 16k in 143 KB.
 - Matchlogic's `notes` become the `note` layer, which is why the idea fits what already exists.
 
-Decisions needed: approve the new output, `log.schema.json`, no `msg` strings, default `--log full`, an optional D1 table, and two small hooks in `events/` and `matchlogic/`.
+Still undecided, so nothing here ships yet: approve the new output, `log.schema.json`, no `msg` strings, default `--log full`, an optional D1 table, and two small hooks in `events/` and `matchlogic/`.
 
 ## Logging audit
 
@@ -70,7 +72,6 @@ Decisions needed: approve the new output, `log.schema.json`, no `msg` strings, d
 ## Still open (from the spec)
 
 - Does the reference parser cover every field in the schema? (Mostly yes, with demoinfocs.)
-- Should a duplicate upload (same demo hash) reuse the existing match?
-- Strip Steam ids from public data, or keep the other 8 players' ids?
+- Should a duplicate upload (same demo hash) reuse the existing match? Proposed for v1.1, not yet in the spec.
 - Is the repo public from day one?
 - Does Cloudflare Queues work on this plan? (Listed on Free, 24 h retention. Confirm in M2.)
