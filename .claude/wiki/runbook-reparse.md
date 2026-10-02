@@ -1,6 +1,6 @@
 # Runbook: reparsing matches
 
-For when a parser build changes and existing matches should be parsed again. **This describes v1.1 as specified (`6d603ba`).** The reparse route (`a37fc0d`), the pointer swap (`074f5b7`), the D1 columns (migration `0003`) and the hourly cron (`9d5ead9`) are committed. **The crons are on in dev only**; prod's turn on after the dev exit checks.
+For when a parser build changes and existing matches should be parsed again. **This describes v1.1 as specified (`6d603ba`).** The reparse route (`a37fc0d`), the pointer swap (`074f5b7`), the D1 columns (migration `0003`) and the hourly cron (`9d5ead9`) are committed. **The crons are on in prod** (`6e305d0`) after the dev exit checks passed: the batch moved every dev match onto the new build unattended, and a failing build left matches `ready` on their old parse.
 
 ## How it is meant to work
 

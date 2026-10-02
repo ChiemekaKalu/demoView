@@ -68,7 +68,7 @@ flowchart TB
 
 ## Background jobs and limits
 
-Committed in `9d5ead9` and later. **The crons are on in dev only** until the dev exit checks pass: a poller watching across an hourly batch, and a deliberately failing build simulated with a dev-only `FAULT` flag (`5994791`). CI refuses to deploy prod with that flag set (`22b3884`). Prod's crons turn on after those checks.
+Committed in `9d5ead9` and later. **The crons are on in prod** as of `6e305d0`, after the dev exit checks passed: the hourly batch moved all three dev matches, one of them from the v1 layout, onto new parses with nothing run by hand, while a poller made 9,228 requests over 75 minutes and saw no 404 and no mismatch between D1, `match.json` and the round files, and a deliberately failing build (the dev-only `FAULT` flag, `5994791`) left the reparsed matches `ready` on their live parse. CI still refuses to deploy prod with that flag set (`22b3884`).
 
 | Job | What it does |
 | --- | ------------ |

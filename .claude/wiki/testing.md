@@ -53,6 +53,10 @@ Mismatches name the field path: `kills[12].weapon: ours ak47, reference m4a1`. O
 
 `tools/align` is a standard-library Go tool that reports the share of alive player frames landing on a non-transparent radar pixel, per demo and per round. It exits 1 below the bar, which is **97.5% per demo**. It runs locally and on dev, not in CI, because the radars are unlicensed private objects. Measured shares and the reasoning are on the [maps](maps.md) page.
 
+## The pro-demo sample
+
+A bulk run over 132 public tournament demos is the only test so far that stresses match logic beyond matchmaking. It found no crashes and fast parses, but segmentation problems on most. See [match-logic](match-logic.md#known-gap-tournament-gotv-demos). A pinned subset is planned for CI, fetched at test time from its public source and never rehosted. The swap-in's default stays on the oracle until this sample passes.
+
 ## Fixtures
 
 Demos are never committed. Local copies go in `parser/testdata/demos/` (gitignored). CI pulls the public ones from the R2 bucket `demoview-fixtures`, which holds those two only.

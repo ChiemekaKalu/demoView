@@ -88,6 +88,23 @@ These make the diff line up. See [schema](schema.md#conventions) for the file-le
 - Names come from the end-of-match message when it lists the player, which is what the game's scoreboard shows.
 - An assister on the victim's own side is dropped from the kill list, as the oracle does.
 
+## Known gap: tournament (GOTV) demos
+
+A bulk run of 132 public pro GOTV demos (builds 9842 to 10847) was run through the parser: no crashes, p95 1.6 s, the largest 61 MB. But match logic is not right on most of them:
+
+| Finding | Count |
+| ------- | ----- |
+| Round segmentation collapses to a single round | 113 |
+| Rejected as "no live rounds" (a 422) | 2 |
+| Teams swapped (mostly the oldest build) | 9 |
+| Minor round-1 and ADR differences | a few |
+
+**Why prod stays correct today:** the consistency guard (see [parser](parser.md#the-server-and-the-consistency-guard)) ships the oracle's `match.json` whenever ours is implausible or disagrees, so the collapsed and swapped cases come out right. The two "no live rounds" demos still fail.
+
+**The hypothesis, unconfirmed:** the round boundary is the first of `round_prestart`, `round_start` and `round_poststart` seen anywhere in the demo, and rounds split only on that kind. If a tournament server fires it once, the live window collapses into one round. A second suspect is a misplaced `begin_new_match`, such as a knife round or a long gap before the first freeze end.
+
+**How it will be worked:** no external demos on the user's machine. The work runs through a research workflow in CI, in "parser" mode, against a pinned set of repro demos plus controls. The plan is to dump the round-boundary events with ticks on the repros, find a general boundary rule or live-window fix with synthetic tests, then handle the team swap, and finally re-run all 132 with the user's own demos as a guard. It paused for the night with no code changed, and match logic still matches the game's counters on the user's own matches.
+
 ## Verified and unverified
 
 **Verified:** overtime swaps. Nothing happens entering overtime, then one swap at each overtime half, and modern demos give them directly through `player_team`. A 29-round overtime match diffs clean against the oracle.

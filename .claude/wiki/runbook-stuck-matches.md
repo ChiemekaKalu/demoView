@@ -1,6 +1,6 @@
 # Runbook: stuck and failed matches
 
-For a match that sits in `queued` or `parsing`, or ends `failed` and shouldn't have. **The sweeper is built (`9d5ead9`), and its cron is on in dev only for now.** `status_changed_at` exists (migration `0003`). Coded errors have landed: the Worker stores a code with every failed match's error (`2f91766`), and the match page explains failed matches and unreadable data formats (`ed662e1`).
+For a match that sits in `queued` or `parsing`, or ends `failed` and shouldn't have. **The sweeper is built (`9d5ead9`), and its cron is on in prod (`6e305d0`).** `status_changed_at` exists (migration `0003`). Coded errors have landed: the Worker stores a code with every failed match's error (`2f91766`), and the match page explains failed matches and unreadable data formats (`ed662e1`).
 
 ## What exists today
 
