@@ -2,6 +2,10 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, late morning: a local off switch
+
+- `ddbb480` adds `tools/local/stop-local.ps1`, which lists and (with `-Force`) stops the local dev servers, including the learning center on port 5180. It is scheduled once for about 11:03 Pacific, so restart the site afterwards if you want it up. Wiki: [infra](infra.md#local-dev).
+
 ## 2026-10-02, midday: entities decode, and the pipeline looks after itself
 
 - **M4 stage 3 is done** (`1abbf6d`, `d455cbf`, `f771df1`): pawn position, view angle and health agree with the oracle on 100% of frames on all 10 demos, every entity packet is consumed exactly, and the largest demo decodes in about 1.5 s. The comparison found an oracle bug, fixed in `df7dced`. Fuzzing field paths and entity updates is in (`1a5a988`), and it found two entity bugs, being fixed. Wiki: [parser](parser.md), [testing](testing.md).

@@ -84,3 +84,4 @@ Secrets and one-time setup live in `.github/README.md`. They're set at the repos
 - `wrangler dev` emulates D1 and Queues locally. Run `npm run build:web` and `npm run migrate:local` first.
 - Presigned URLs always point at real R2. For a local end-to-end run, `wrangler r2 object put ... --local` instead.
 - Parser: `PARSE_SECRET=dev PARSER_STORE_DIR=out/store go run ./cmd/server` gives `POST /parse` on :8080 with a local store.
+- **Local off switch:** `pwsh tools/local/stop-local.ps1` lists the dev servers and helpers the sessions started here (`vite`, `wrangler`, `workerd`, `esbuild`, `astro`, `vitest`, a reparse poller), and `-Force` stops them (`ddbb480`). The wiki's learning center on port 5180 is one of them. Production runs entirely on Cloudflare, so stopping everything locally only affects tooling.
