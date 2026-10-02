@@ -32,9 +32,8 @@
   // parsed by older code. CI sets it at deploy (--var), from the git trees of
   // parser/ and tools/oracle/.
   // PARSER_ROUNDS picks whose round files ship, and PARSER_SHADOW=oracle
-  // compares ours with the oracle's after each parse. Dev runs ours with the
-  // compare; prod stays on the oracle's (the image default) until ours pass.
-  // An empty value is never passed to the container.
+  // compares ours with the oracle's after each parse. Both ship ours; dev also
+  // runs the compare. An empty value is never passed to the container.
   "vars": {
     "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
     "R2_BUCKET": "demoview-dev",
@@ -128,7 +127,7 @@
         "R2_ACCOUNT_ID": "b6393ca49ee619a394bda6c2ea969bfc",
         "R2_BUCKET": "demoview-prod",
         "PARSER_BUILD": "dev",
-        "PARSER_ROUNDS": "oracle",
+        "PARSER_ROUNDS": "parser",
         "PARSER_SHADOW": "",
         // Off until the states carry the bomb timeline (state_version 2).
         "PULSE_ENABLED": "false"
