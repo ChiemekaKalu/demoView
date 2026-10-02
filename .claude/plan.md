@@ -71,9 +71,16 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - Queues and DLQs: `demoview-{env}-parse[-dlq]`.
   - R2 buckets `demoview-{env}` with CORS.
   - Per-bucket R2 S3 tokens, and Worker secrets set.
+- [x] Parser on Cloudflare Containers.
+  - **Stub test:** a 360 s request ran in full through the queue path.
+  - **Worker:** `ParserContainer` binding instead of `PARSER_URL` (9c7175e). Falling back to Cloud Run is a one-liner.
+  - **CI deploy:** reworked for Containers, no GCP (e047eea).
+  - **Dev is live** with a container image built from HEAD 1b2f4bc. The image contract is unchanged: `$PORT` 8080, and `PARSE_SECRET` and `R2_*` come from the container's envVars.
+- [x] The oracle defaults to 64 Hz (9ab7e1f). It writes compact round files, at most 1.5 MB raw (about 100 KB gzipped). Peak memory is 412 MB on Nuke.
 - [ ] The rest of M2:
-  - the parser runtime on Cloudflare Containers: a stub test of a multi-minute request (`terminal`), then the Worker binding, then the deploy.yml rework
   - a GitHub remote, so CI and deploy can run
+  - the prod deploy, once the user OKs it
+  - a first real end-to-end parse on dev: upload, then queue, then container, then the viewer
 
 ## M3 groundwork (pulled forward)
 
