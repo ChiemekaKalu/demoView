@@ -106,3 +106,40 @@ Line envelope:
 4. Approve default `--log full`.
 5. Optional: a D1 `match_events` table (about 10 rows per match) for a durable pipeline timeline, since Workers Logs expire after 7 days.
 6. Allow the two small hooks in `events/` and `matchlogic/`, which other sessions are editing.
+
+## v1.2 record set: proposed, needs the user's OK
+
+The first `log_version` 1 contents. They're sized for the first two readers: Pulse's state_version 2 (the bomb timeline) and the story pane's round lines. Anything else waits for a reader. Players are `idx`; ticks are demo ticks.
+
+**Facts** (`src` names the game event, or `ent:` for entity state):
+
+| type | `d` | from |
+| --- | --- | --- |
+| `player.registered` | idx, steam_id, name | userinfo and end-of-match |
+| `player.team` | player, from, to (`T`, `CT`, `spec`, `none`) | `player_team` |
+| `player.spawn` / `player.disconnect` | player | events |
+| `round.freeze_end` | — | `round_freeze_end` |
+| `combat.hurt` | attacker, victim, weapon, health, damage (health taken, as ADR counts it) | `player_hurt` |
+| `combat.death` | attacker, victim, assister, flash_assist, weapon, headshot | `player_death` |
+| `bomb.plant` | player, site (`A`/`B`, present only when the entity stage ran: `CPlantedC4.m_nBombSite`) | `bomb_planted` |
+| `bomb.defuse_start` | player, kit | `bomb_begindefuse` |
+| `bomb.defuse` / `bomb.explode` | player / — | events |
+| `match.end` | — | `cs_win_panel_match` |
+
+**Derived** (each cites its facts in `basis`, `rule` names the rule and its version):
+
+| type | `d` |
+| --- | --- |
+| `match.live_window` | start_tick, end_tick |
+| `round.begin` | n, start_tick, freeze_end_tick, replayed (a backup restore replayed it) |
+| `round.end` | n, winner, side_a, reason, method (`event`, `bomb`, `elimination`, `timer`, `surrender`, `guess`) |
+| `round.score` | a, b, after round n |
+| `round.bomb` | planter, plant_tick, site, defuses (`[{player, tick, kit}]`), outcome (`defused`/`exploded`/`none`), outcome_tick |
+| `kill.opening` | attacker, victim |
+| `kill.trade` | attacker, victim, avenged (the teammate the victim had killed, within 5 s) |
+| `round.multikill` | player, kills (3 or more) |
+| `round.clutch` | player, against (1vN at the moment they're last alive), won |
+
+**Notes:** each of matchlogic's notes becomes a record with a stable `code` and its fields, not its sentence; for example `{"code":"restart_folded","tick":748,"round":1}`. That keeps decision 3 (no rendered text) and means rewording every `notes.add` call into a code. There are about 30.
+
+**Open, for the user:** the R2 key. The layout above, `parsed/{id}/log/{parser_version}/`, predates the per-parse prefixes (`parsed/{id}/{parse_id}/`, with `manifest.json` last). Putting the log under `parsed/{id}/{parse_id}/log/` would make it reparse and clean up with the rest of the parse, and be listed in that manifest, at the cost of the log's own versioned manifest.
