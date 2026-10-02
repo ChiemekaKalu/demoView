@@ -211,13 +211,21 @@ The sweeps run our `demo parse` and `demo diff` against the oracle, demo by demo
 | main at 22b3884 | 132 | 113 | 5 | — | Run 37003041437 |
 | `parser/pro-rounds` 68a02cf | 132 | 46 | 14 | 21 | Run 37054367353; round files now on |
 | `parser/pro-rounds` 1dd244c | 132 | 46 | 35 | 13 | Run 37056136267 |
-| `parser/pro-rounds` ca49811 | 11 hard cases | 5 of 5 still | halftime and CWorld fixed | 0 | Run 37057084416; the full-132 run with event timelines follows |
+| `parser/pro-rounds` ca49811 | 132 | 59 | 41 | 0 | Run 37057615739; the former CWorld failures now parse into the collapse family |
+| `parser/pro-rounds` 84f7bf8 | 132 | 0 | 100 | 0 | Run 37058533820; `cs_pre_restart` boundaries, and recordings that start mid-freeze |
+| `parser/pro-rounds` 91268ae | 132 | 0 | 105 | 0 | Run 37059410119; **GATE FAIL**, 12 blocking |
+| main 4e2858a | 132 | 0 | 112 | 0 | Run 37061448391; backup restores as replays; GATE FAIL, 5 |
+| `parser/pro-rounds` 37e41c6 | 132 | 0 | 114 | 0 | Run 37062043749; sides from plants and defuses; GATE FAIL, 1 |
+| `parser/pro-rounds` 6782d49 | 132 | 0 | **115** | 0 | Run 37062846092; **GATE PASS**, 0 blocking |
 
-- **Speed and memory stay far inside budget:** at most 7.4 s and 219 MB with round files on.
-- **The remaining collapse family ends round 1 near tick 8,635 as "time expired"** and finds no later round. Parser is working on it from the event timelines.
+- **The gate:** a demo with a reference blocks if its `match.json` differs in round count, boundaries, winner, reason, side, team or kills, or if our parse fails.
+  - **Allowed:** ADR-only differences (11 demos, mostly recordings that start mid-match), known reference-side differences (4 demos: the reference reports weapons as "unknown", or covers rounds the demo lacks), and demos the reference can't read (2, which ours parses).
+  - **Round files never block.**
+- **Speed and memory stay far inside budget:** at most 7.4 s and 236 MB across all sweeps; 115 MB on the passing build.
+- **The event timelines the sweeps saved settled each family.** Examples: `cs_pre_restart` as the only boundary on some tournament builds, recordings that begin in round 1's freeze time, backup restores that replay a round, and deaths logged on a restart's tick.
 
 ## Next
 
-- **The ca49811 full-132 parser sweep,** with event timelines on every demo, then whatever parser sends next.
+- **Parser rounds passed the gate** on 6782d49. Flipping prod to our own round files is now the parser, pipeline and user call.
 - **Model comparison on pro rounds:** done, in [../jev/experiments.md](../jev/experiments.md) E6. Claude is the best-calibrated zero-shot predictor, Jev ranks best and costs about 1/95 as much, and the trained model has the lowest raw Brier.
 - **Interactive page:** a private claude.ai page, Round Odds, shows these results.
