@@ -87,6 +87,15 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 - [x] `web/`: upload, match and replay pages, built against `schema/samples` (fixtures mode: `VITE_FIXTURES=1` or id `sample`). Every spec replay bullet is in. Bundle 45.7 KB raw / 17.7 KB gzip. 50 vitest tests.
 - [x] Mirage radar image at `web/public/radar/de_mirage.png`, from MurkyYT/cs2-map-icons @ ae7ed6a (1024×1024, extracted from the CS2 depot; the repo has no license, so these are Valve assets). Alignment verified by plotting real Mirage positions from the oracle export: trails follow the corridors, and spawns and bombsites match the overview file.
 
+## M4 groundwork (pulled forward)
+
+v1 ships on oracle round files, but entity decoding is the spec's hardest stage, so it starts early. Each piece is a standalone package, verified on the interim demos, and not wired into `parse.Run` until stage 3.
+
+- [ ] **Stage 1, classes and serializers** (`parser/entities`). Class info plus flattened serializers become the field layout per class, with a decoder kind chosen for each field. *In progress.*
+- [ ] **Stage 2, string tables** (`parser/stringtables`). Packet `svc_CreateStringTable` and `svc_UpdateStringTable` messages, checked byte for byte against the `CDemoStringTables` snapshots. `instancebaseline` comes from here. *In progress.*
+- [ ] **Stage 3, entity updates.** Field paths, value decoders, and create/update/delete. The position diff runs against the oracle's round files.
+- [ ] **Stages 4–5, extraction and round files** at 64 Hz, then swap them in for the oracle's.
+
 ## Valve fetch (post-v1; design only)
 
 Research done 2026-10-02. The approach still works for CS2: Leetify, csstats.gg and cs-demo-downloader all use it.
