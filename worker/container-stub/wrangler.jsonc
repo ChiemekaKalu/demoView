@@ -7,7 +7,7 @@
   "name": "demoview-container-stub",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
-  "observability": { "enabled": true },
+  "observability": { "enabled": true, "head_sampling_rate": 1, "logs": { "enabled": true, "invocation_logs": true } },
   "containers": [
     {
       "class_name": "StubContainer",
