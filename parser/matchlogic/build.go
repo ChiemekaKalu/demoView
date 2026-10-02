@@ -35,15 +35,11 @@ type Result struct {
 // round gives an empty Result, with a note.
 func Build(log *Log, opt Options) Result {
 	var n notes
-	w := liveWindow(log, &n)
-	spans := segmentRounds(log, w, &n)
+	t := normalize(log, opt.FirstTick, &n)
+	w, spans := t.live, t.rounds
 	if len(spans) == 0 {
 		n.add("no rounds in the match")
 		return Result{Notes: n}
-	}
-	spans[0].startTick = max(spans[0].startTick, opt.FirstTick)
-	if presumeSpawns(log, spans) {
-		spans[0].startTick = opt.FirstTick // the recording starts inside round 1
 	}
 	swap := halftimes(log, spans, w, &n)
 	s := assignSides(log, spans, swap, &n)

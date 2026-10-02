@@ -49,8 +49,7 @@ func boundaryKind(log *Log, w window) Kind {
 // segmentRounds splits the live window into rounds.
 //
 // Round 1 starts at the restart that begin_new_match triggers, which comes
-// just before it in the log; its start_tick is begin_new_match's, as the
-// match can't start before that. Every later restart inside the window
+// just before it in the log. Every later restart inside the window
 // starts a round. A restart followed by nothing that makes it a round (no
 // freeze end, round_end or surrender before the next one) is folded into the
 // round before it, unless no round follows it: the demo or the match ended
@@ -122,9 +121,6 @@ backward:
 				lead = s
 			}
 		}
-	}
-	if len(spans) > 0 && w.start < len(log.Entries) && log.Entries[w.start].Kind == BeginNewMatch {
-		spans[0].startTick = max(spans[0].startTick, log.Entries[w.start].Tick)
 	}
 	return spans
 }

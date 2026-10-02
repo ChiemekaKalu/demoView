@@ -112,17 +112,16 @@ func inferOutcome(log *Log, sp span, side []Side, roundTicks int32) (o outcome, 
 		spawn(p)
 	}
 	planted := false
-	expiry := int32(-1) // tick the round timer runs out, once freeze time ends
+	expiry := int32(-1) // tick the round timer runs out
+	if sp.freezeEnd >= 0 && roundTicks > 0 {
+		expiry = sp.freezeTick + roundTicks
+	}
 	for i := sp.start; i < sp.end; i++ {
 		e := log.Entries[i]
 		if expiry >= 0 && !planted && e.Tick > expiry {
 			return outcome{expiry, CT, reasonTimeExpired}, true
 		}
 		switch e.Kind {
-		case RoundFreezeEnd:
-			if expiry < 0 && roundTicks > 0 {
-				expiry = e.Tick + roundTicks
-			}
 		case PlayerSpawn:
 			spawn(e.Player)
 		case PlayerDeath, PlayerDisconnect:
