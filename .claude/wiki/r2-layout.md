@@ -1,6 +1,6 @@
 # R2 layout and versioned parses
 
-> **Approved by the user** (recorded in `notes.md`, `4e06e12`), together with its D1 columns. **Nothing here is built yet.** The *current* layout is in the first section and is what runs today.
+> **Approved by the user** (recorded in `notes.md`, `4e06e12`), together with its D1 columns. **The parser side is committed** (`1a02084`). The Worker side (the pointer swap, versioned URLs and cleanup) is not recorded as landed. The *current* layout is in the first section.
 
 ## Today
 
@@ -50,6 +50,15 @@ sequenceDiagram
 | Cleanup | Parses D1 no longer points to are deleted after **7 days**. |
 | v1 files | Files directly under `parsed/{id}/` from before this change are deleted **by exact key**. Cleanup never lists or deletes the whole `parsed/{id}/` prefix, because that is the parent of the new prefixes. |
 
+### The parser's side of the contract (committed)
+
+- `POST /parse` requires a `parse_id`, which the Worker picks for each attempt.
+- Output goes to `parsed/{match_id}/{parse_id}/`: round files first, then `match.json`, then `manifest.json` last as the commit marker.
+- Responses carry `X-Parse-Id`, and `X-Manifest-Sha256` on success.
+- Every error body now has a `code` (from the parser's classifier, or `unauthorized`) next to the message.
+- Log lines gain `parse_id`, `build` and `round_source`.
+- The plan proposes `parsed_by` in the manifest to be the build's git sha (`PARSER_BUILD`).
+
 ### What it fixes
 
 A reparse with fewer rounds leaves no old round file reachable, because the new parse is a separate prefix and the old one is removed on schedule.
@@ -60,6 +69,6 @@ A reparse with fewer rounds leaves no old round file reachable, because the new 
 
 ## Still to do
 
-- Building it, which is M5 work.
+- The Worker's half: the conditional pointer swap, `?v=` URLs and 7-day cleanup by exact key.
 - The spec's own R2 layout section must change to match.
 - The Worker's round and `match.json` routes and the viewer's cache keys have to follow the pointer.

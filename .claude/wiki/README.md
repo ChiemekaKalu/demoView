@@ -77,8 +77,8 @@ flowchart LR
 - **The viewer on a real parse.** It has only been run against the synthetic samples so far.
 - **CI diff on fixtures.** Optional: set the read-only fixtures secrets so that job runs instead of skipping.
 - **Fetching your own demos from Valve.** Decided for v1.2, along with two-floor maps (Nuke, Vertigo). The design is in `plan.md`, and nothing is started.
-- **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The user has approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, paused at 80% of the monthly allowance, on in prod). None of it is built yet.
-- **Narrative log.** Only the groundwork (`parser/eventlog`, with tests, no output) is approved. The rest of `../logging.md` waits for later.
+- **v1.1.** Final in the spec (`6d603ba`): M5 (every single-level map, duplicate reuse, safe reparse, a stuck-match sweeper) and M6 (trust gates and hardening). The user has approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, paused at 80% of the monthly allowance, on in prod). Much of it has started landing: the maps route and the viewer's loader, duplicate-upload reuse, coded errors, the alignment tool (bar 97.5% per demo) and the parser's side of the versioned parse prefix. The reparse route and cron, the pointer swap and the sweeper are not recorded as landed.
+- **Narrative log.** The design is approved in full. The `parser/eventlog` groundwork lands in M4, and the output, schema and story pane are v1.2.
 
 ## The learning center
 

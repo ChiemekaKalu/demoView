@@ -1,6 +1,6 @@
 # Runbook: stuck and failed matches
 
-For a match that sits in `queued` or `parsing`, or ends `failed` and shouldn't have. **The sweeper, coded errors and the `status_changed_at` column are v1.1 (`6d603ba`) and not built yet.** Today the recovery is the queue's own retries and the dead letter queue, described first.
+For a match that sits in `queued` or `parsing`, or ends `failed` and shouldn't have. **The sweeper and the `status_changed_at` column are v1.1 (`6d603ba`) and not recorded as built.** Coded errors have landed: the Worker stores a code with every failed match's error (`2f91766`), and the match page explains failed matches and unreadable data formats (`ed662e1`). Recovery today is the queue's own retries and the dead letter queue, described first.
 
 ## What exists today
 
@@ -40,7 +40,7 @@ The Worker logs one JSON line for every change, every parse attempt, every dead 
 
 - **A sweeper** requeues or fails any match that has been in `queued` or `parsing` for more than **30 minutes since its last status change**, using a new `status_changed_at` column.
 - **It only touches matches that have never been `ready`.** A reparse of a ready match is the [reparse runbook](runbook-reparse.md)'s business.
-- **Coded errors.** D1 `error` keeps the parser's error code, and the match page shows a message for each code instead of raw text.
+- **Coded errors (landed).** D1 keeps the parser's error code beside the text, and the match page shows a message for each code instead of raw text. The parser's own responses carry the code too (`1a02084`).
 - **A fault flag** for testing, dev only, which deploy config refuses in prod. With it on, 20 uploads must each end `ready` or `failed` with a coded error, and none may sit in `queued` or `parsing` for 30 minutes past its last change.
 - **Upload hygiene.** A per-token rate limit, and an R2 lifecycle rule that removes orphaned demos (uploaded but never confirmed).
 

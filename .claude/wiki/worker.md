@@ -9,10 +9,12 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | Route | Does | Notable errors |
 | ----- | ---- | -------------- |
 | `POST /api/matches` | Create a row and return `{id, upload_url, upload_expires_in}` | 401 |
-| `POST /api/matches/:id/uploaded` | Confirm the object, enqueue, return 202 | 409 not uploaded yet or wrong state. 413 over 1 GB (demo deleted, match failed) |
+| `POST /api/matches/:id/uploaded` | Confirm the object, enqueue, return 202. **Duplicate:** the object is hashed as a stream (SHA-256), and if a match that hasn't failed already has the same demo, return `200 { id, status, duplicate: true }` for that match, delete the duplicate object and start no parse (`25c96a6`) | 409 not uploaded yet or wrong state. 413 over 1 GB (demo deleted, match failed) |
 | `GET /api/matches/:id` | Status, scoreboard and round list from D1, `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | The parser's `match.json` from R2, 5 min cache with ETag | 404 until `ready` |
 | `GET /api/matches/:id/rounds/:n` | A round file from R2, immutable for a year | 404 |
+| `GET /api/maps/:name` | `{ name, pos_x, pos_y, scale }`, cached a day (`091b2b5`) | 404 no radar, or a two-floor map |
+| `GET /api/maps/:name/radar.png` | The radar image, cached a day, with an ETag | 404 |
 
 The last two weren't in the original spec. The viewer needs `match.json` for the kill feed, and kills in D1 lack assisters. The summary GET leaves Steam ids out. `match.json` carries them, by the user's decision to keep them.
 

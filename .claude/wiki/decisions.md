@@ -12,7 +12,7 @@ The *why* behind the shape of the project, newest first within each group. The d
 | **Vite + Preact, not React or Next.js** | A viewer that is mostly one canvas. The bundle went from 220 KB to 11 KB at the time of the switch. | spec |
 | **Mirage for v1** | Single level. Nuke and Vertigo need a second radar layer. | spec |
 | **Round files at 64 Hz, every tick** (user) | Both fixture demos record entity updates on every tick, and the viewer targets desktop. Superseded 16 Hz, then a brief 32 Hz. Cost: about 2 MB per long round before compression. | 10-02 |
-| **v1.1 is final in the spec** (`6d603ba`) | M5 "every map and safe reparse": the maps route, duplicate reuse by hash on confirm, a reparse route and an hourly cron keyed on the last attempted build, a versioned parse prefix with a conditional D1 pointer swap, and a stuck-match sweeper. M6 "trusted and hardened": CI diff gates deploys, fuzz targets, byte-identical parses, a `GOMAXPROCS=1` budget check, and the oracle as fallback for entity-stage errors. No `schema_version` change. **The user has since approved the versioned R2 layout and its D1 columns.** See [maps](maps.md), [R2 layout](r2-layout.md) and the two runbooks. | 10-02 |
+| **v1.1 is final in the spec** (`6d603ba`, bar revised in `1d7ce68`) | M5 "every map and safe reparse": the maps route, duplicate reuse by hash on confirm, a reparse route and an hourly cron keyed on the last attempted build, a versioned parse prefix with a conditional D1 pointer swap, and a stuck-match sweeper. M6 "trusted and hardened": CI diff gates deploys, fuzz targets, byte-identical parses, a `GOMAXPROCS=1` budget check, and the oracle as fallback for entity-stage errors. No `schema_version` change. **The user has since approved the versioned R2 layout and its D1 columns.** The alignment bar is 97.5% per demo, not the 99.5% first drafted. See [maps](maps.md), [R2 layout](r2-layout.md) and the two runbooks. | 10-02 |
 | **v1.1 sign-offs** (user) | The versioned R2 layout (`parsed/{id}/{parse_id}/`, `manifest.json` last) and its D1 columns: `live_parse_id`, the last attempted build, `status_changed_at`, `reparse_error` and `reparse_build`. The reparse cron: hourly, 5 matches a batch, pausing at 80% of the monthly container allowance, on in prod. The user's own demos stay local, and only the public fixtures go to R2. Recorded in `notes.md` (`4e06e12`). | 10-02 |
 | **Keep Steam ids in public match data** (user) | The data is semi-anonymous behind unlisted links. `match.json` already serves them, and the summary GET omits them, which is fine. Settles the old open question, and `steam_id` stays non-nullable. | 10-02 |
 | **v1.1 and v1.2 scope** (user) | v1.1's agreed set: reuse a duplicate upload by `demo_sha256`, a reparse path for older `parser_version`s, and more single-level maps. The contested items go to v1.2 because they need real work and credentials: the Steam/Valve fetch, and two-floor maps (Nuke, Vertigo). | 10-02 |
@@ -46,7 +46,9 @@ The *why* behind the shape of the project, newest first within each group. The d
 
 ## Narrative log
 
-**Status: proposal, with groundwork only approved** (`../logging.md`, from the `cloud` session). On 2026-10-02 the user allowed build step 1 and nothing more: the `parser/eventlog` package (envelope, emitter, no-op, spool, a deterministic finalizer) with tests, and no output file, CLI flag, schema or R2 path. The real build waits for v1.2.
+**Status: design approved by the user on 2026-10-02**, all six decisions in `../logging.md` (`196517a`). The `parser/eventlog` groundwork lands in M4. The log output, its schema and the story pane are v1.2, so none of the output exists yet.
+
+What was approved: the log is a new parse output under `parsed/{id}/log/{parser_version}/` with its manifest written last. It has its own `schema/log.schema.json` and `log_version`. It stores fields only, and a narrator function renders the text. The default is `--log full`. Parser hooks in `events/` and `matchlogic/` are allowed, and so is a D1 table for a pipeline timeline.
 
 The idea: a structured, tick-stamped, versioned record of everything in the match and everything the parser decided. It's a *product output* stored in R2 next to `match.json`, and not platform logging. It might become a ledger or dataset later.
 
@@ -65,7 +67,7 @@ Notable design choices:
 - Measured: Mirage is 6.8k events in 66 KB gzipped, Nuke 16k in 143 KB.
 - Matchlogic's `notes` become the `note` layer, which is why the idea fits what already exists.
 
-Still undecided, so nothing here ships yet: approve the new output, `log.schema.json`, no `msg` strings, default `--log full`, an optional D1 table, and two small hooks in `events/` and `matchlogic/`.
+Those were the six decisions asked of the user, and all six were approved.
 
 ## Logging audit
 

@@ -2,6 +2,14 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, small hours: M5 starts landing
+
+- **Maps:** the Worker serves each map's constants and radar (`091b2b5`), and the viewer loads them through the API (`c996015`). The alignment tool is in (`2c3b41d`, `f0c3e2d`), with a bar of **97.5% per demo**, which the spec adopted (`1d7ce68`): Ancient's walls-hugging radar scores about 98%, so the first-drafted 99.5% would have failed aligned demos. Wiki: [maps](maps.md), [testing](testing.md).
+- **Duplicate upload:** confirm hashes the object as a stream, and a match that hasn't failed with the same demo is returned instead of parsed again (`25c96a6`, with an index in migration 0002). The web app opens the existing match (`4498e20`). Wiki: [worker](worker.md).
+- **Coded errors:** the Worker stores a code with every failed match's error (`2f91766`), and the match page explains failures and unreadable data formats (`ed662e1`). Wiki: [stuck-match runbook](runbook-stuck-matches.md).
+- **Parser side of safe swap** (`1a02084`): `POST /parse` takes a `parse_id`, writes under `parsed/{id}/{parse_id}/` with the manifest last, and every response and log line carries ids and codes. Wiki: [R2 layout](r2-layout.md).
+- **Narrative log design approved in full** (`196517a`, `c58fa42`). Output stays v1.2. Wiki: [decisions](decisions.md).
+
 ## 2026-10-02, later at night: v1.1 sign-offs
 
 - The user approved the versioned R2 layout, its D1 columns and the reparse cron (hourly, 5 per batch, 80% cap, on in prod), and confirmed that their own demos stay local (`4e06e12`). The "pending sign-off" banner is gone from [R2 layout](r2-layout.md), and [decisions](decisions.md), the [reparse runbook](runbook-reparse.md) and the [README](README.md) say so. Nothing in v1.1 is built yet.
