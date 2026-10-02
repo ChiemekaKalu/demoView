@@ -1,4 +1,6 @@
-// Package demo reads the CS2 (Source 2) demo container format.
+// Package demo reads the CS2 (Source 2) demo container format: the frame
+// stream (Reader), its snappy-compressed protobuf payloads (Decoder,
+// Frame.Unmarshal) and the messages packed into packets (MessageReader).
 package demo
 
 import (

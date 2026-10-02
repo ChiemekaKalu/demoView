@@ -64,8 +64,8 @@ func (c Command) String() string {
 	return "Command(" + strconv.FormatUint(uint64(c), 10) + ")"
 }
 
-// MaxPayloadSize caps a frame's payload. A larger size is treated as
-// corruption rather than allocated.
+// MaxPayloadSize caps a frame's payload, both as stored and decompressed. A
+// larger size is treated as corruption rather than allocated.
 const MaxPayloadSize = 64 << 20
 
 const (
@@ -79,10 +79,10 @@ var errVarintTooLong = errors.New("varint too long")
 // Frame is one command in the demo stream.
 type Frame struct {
 	Cmd        Command
-	Compressed bool   // Payload is snappy-compressed
+	Compressed bool   // the payload is snappy-compressed in the file
 	Tick       int32  // -1 for signon frames
 	Offset     int64  // byte offset of the frame from the start of the input
-	Payload    []byte // raw payload, valid only until the next call to Next
+	Payload    []byte // valid only until the next call to Next
 }
 
 // Reader streams frames from a demo. It holds at most one frame's payload in
@@ -115,8 +115,9 @@ func (r *Reader) Header() Header { return r.hdr }
 // underlying reader are wrapped as they are. After an error, every later call
 // returns the same error.
 //
-// The returned Payload shares memory with the Reader and is overwritten by
-// the next call to Next. Copy it to keep it.
+// The returned Payload is as stored, so still compressed if Compressed is
+// set; Decoder decompresses it. It shares memory with the Reader and is
+// overwritten by the next call to Next. Copy it to keep it.
 func (r *Reader) Next() (Frame, error) {
 	if r.err != nil {
 		return Frame{}, r.err
