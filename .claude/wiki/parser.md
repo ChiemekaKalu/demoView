@@ -106,6 +106,8 @@ Round segmentation is its own stage now: a `normalize` step turns each demo into
 | Budget at `GOMAXPROCS=1` | Events-only: 0.58 s at 17 MiB. **Our own full path with round files: 3.4 s and 108 MiB**, on the largest demo, well inside 512 MiB and 60 s. The oracle path measures about 270 MiB after its sample compaction (`23e232c`) and runs under a 400 MiB cap (`fe09822`). |
 | Per-map diff coverage | Done (`3c86e04`): one subtest per map and demo, all OK. |
 
+**The narrative log now has output in the parser** (`36a0a69`, `8706d20`, `cc4c6b3`): `demo parse` writes it to `<out>/log/` unless `--log off`. It holds the facts from the recorded events (with bomb sites from the entity stage), then round begin, end, score and bomb-timeline records that cite them, and opening kills, trades, multi-kills and clutches. **The server doesn't ship it yet, and its R2 key is undecided.** See [decisions](decisions.md#narrative-log).
+
 The narrative log's groundwork (`parser/eventlog`, `06ca637`) is done: facts, derived records and notes as NDJSON with a gzip whose mtime is 0, floats and times impossible by construction, golden and run-twice tests, about 0.5 microseconds per record. The rest of that design is v1.2.
 
 ## Entity decoding (M4) and what's left

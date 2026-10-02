@@ -2,6 +2,13 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, after the stopping point: a broken diagram, Pulse in the viewer, the log writes
+
+- **Fix:** one mermaid diagram was broken. The sequence diagram on the big-picture page had a semicolon in a message (`save players, rounds, kills; status ready`), and a semicolon ends a statement, so the whole diagram failed with a syntax error. It is reworded, and the components diagram beside it is tidied. A scan of every diagram in the wiki found no other semicolon, and every page now renders with no mermaid errors. Wiki: [big-picture](big-picture.md).
+- **Match Pulse is drawn in the replay** (`decdbdf`): a stepped win-chance line under the scrubber, kill marks sized by swing, and a mark on the biggest swing. The shelf waits for human ratings. Wiki: [viewer](viewer.md), [pulse](pulse.md).
+- **The narrative log has output in the parser** (`36a0a69`, `8706d20`, `cc4c6b3`): `demo parse` writes facts, round records, the bomb timeline, opening kills, trades, multi-kills and clutches. The server doesn't ship it yet, and its R2 key is undecided. Wiki: [parser](parser.md), [decisions](decisions.md#narrative-log).
+- A tool compares ADR with the game's damage counter round by round (`02dfe09`). Wiki: [match-logic](match-logic.md).
+
 ## 2026-10-02, stopping point: a pickup page
 
 - **New page:** [pickup](pickup.md), a prompt for whoever takes over the wiki and the learning-center site. It covers how both are organised, how current they are, how to restart the site, how to do an upkeep pass, and what to update next. The README's status block was brought current at the same time: the viewer runs on real parses, and v1's only open item is the user's own desktop scrub check.

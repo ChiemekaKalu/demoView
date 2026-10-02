@@ -49,7 +49,7 @@ The *why* behind the shape of the project, newest first within each group. The d
 
 ## Narrative log
 
-**Status: design approved by the user on 2026-10-02**, all six decisions in `../logging.md` (`196517a`). The `parser/eventlog` groundwork lands in M4. The log output, its schema and the story pane are v1.2, so none of the output exists yet.
+**Status: design approved by the user on 2026-10-02**, all six decisions in `../logging.md` (`196517a`). The `parser/eventlog` groundwork landed in M4. The log's output, its schema and the story pane are v1.2. **The parser already writes the log** with `demo parse` (`36a0a69`, `cc4c6b3`), but the server doesn't ship it and its R2 key is undecided, so nothing reaches users yet.
 
 What was approved: the log is a new parse output under `parsed/{id}/log/{parser_version}/` with its manifest written last. It has its own `schema/log.schema.json` and `log_version`. It stores fields only, and a narrator function renders the text. The default is `--log full`. Parser hooks in `events/` and `matchlogic/` are allowed, and so is a D1 table for a pipeline timeline.
 

@@ -118,7 +118,7 @@ Segmentation lives in one `normalize` stage (`matchlogic/timeline.go`, `d4c824e`
 
 ### Follow-up: ADR on pro demos
 
-Of the 11 ADR-only demos, 6 are partial or restored recordings, where the game's damage counter covers damage the demo doesn't show. The other 5 are full recordings with 2 to 11% gaps for 1 to 7 players, with cause unknown. It doesn't block anything, because prod's guard never compared the scoreboard and so already ships our ADR, which equals the game's counter exactly on the user's own matchmaking games.
+Of the 11 ADR-only demos, 6 are partial or restored recordings, where the game's damage counter covers damage the demo doesn't show. The other 5 are full recordings with 2 to 11% gaps for 1 to 7 players, with cause unknown. A tool now compares ADR with the game's damage counter round by round (`02dfe09`), to narrow it down. It doesn't block anything, because prod's guard never compared the scoreboard and so already ships our ADR, which equals the game's counter exactly on the user's own matchmaking games.
 
 **The rule that made this possible:** no external demos on the user's machine. Every sweep ran through a research workflow in CI, and `demo inspect --events` gives each demo's name-free event timeline.
 

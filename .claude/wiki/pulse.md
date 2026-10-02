@@ -1,6 +1,6 @@
 # Match Pulse
 
-A win-probability line under each round's scrubber, with kill marks sized by how much they swung the odds and a shelf of "rounds worth watching". **It is approved for v1.2 and the back end is built behind a flag, on dev only. The viewer side isn't recorded as built.**
+A win-probability line under each round's scrubber, with kill marks sized by how much they swung the odds and a shelf of "rounds worth watching". **It is approved for v1.2. The back end is built behind a flag, on dev only, and the replay already draws the line, the sized kill marks and the biggest-swing mark. The "rounds worth watching" shelf isn't built: it waits for human ratings.**
 
 ## What it is
 
@@ -28,6 +28,10 @@ It runs on **its own queue** after a match is live, so a slow or exhausted model
 ## The file
 
 `pulse.json` is a **new file with its own `pulse_version`** (1), and `match.json` and the round files are untouched, so `schema_version` is unchanged (`9b0251d`). The validator pairs a pulse file with the `match.json` beside it and checks that its rounds exist there, that moment ticks strictly increase inside each round, and that every `swing_tick` is one of the moment ticks. A synthetic pulse file ships with the samples. See [schema](schema.md).
+
+## In the viewer
+
+Under the replay's scrubber (`decdbdf`): a stepped line of the CTs' calibrated win chance, kill marks sized by how far they moved the odds (the before and after are in each mark's title), and a lightning mark on the biggest swing that seeks to it. A fallback file says it was estimated. If a match has no Pulse, the route 404s or the version is unknown, nothing is shown. See [viewer](viewer.md).
 
 ## Routes
 
