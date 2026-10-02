@@ -1,0 +1,15 @@
+# Copy to .dev.vars for `wrangler dev`. Never commit .dev.vars.
+# Deployed environments get these with `wrangler secret put NAME [--env prod]`.
+
+# Shared secret the upload form sends as `Authorization: Bearer <token>`
+UPLOAD_TOKEN=change-me
+
+# Sent to Cloud Run as X-Parse-Secret; the parser service checks it
+PARSE_SECRET=change-me
+
+# R2 S3 API credentials, used to presign demo upload URLs
+R2_ACCESS_KEY_ID=change-me
+R2_SECRET_ACCESS_KEY=change-me
+
+# Optional: point local runs at the parser container instead of Cloud Run
+# PARSER_URL=http://localhost:8080
