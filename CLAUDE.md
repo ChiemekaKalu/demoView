@@ -25,8 +25,10 @@ A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and 
 
 Inside `parser/`:
 - `demo`: frames, decode and packet messages. `bitread`: bitstreams. `pb`: generated Valve protos.
-- `events`: game events. `players`: identity. `match`: output types.
-- `parse`: `parse.Run`, the one parse path shared by the CLI and the server.
+- `events`: game events. `players`: identity. `match`: output types. `matchlogic`: rounds, sides, kills and scoreboard from events.
+- `stringtables`: in-packet string tables. `entities`: serializers, field paths and entity state. `extract`: per-tick player and grenade tracks. `roundfile`: round-file types and writer.
+- `eventlog`: narrative log groundwork (not wired in until v1.2).
+- `parse`: `parse.Parse` (with `Options{Rounds}`) and the events-only `parse.Run`. It's the one parse path shared by the CLI and the server. An entity-stage error (`entities.ErrUnknown`, CLI code `unknown_entity`) only stops round files.
 - `store`: R2 and local-dir object store.
 - `cmd/demo`: the CLI. `cmd/server`: the parse service that runs in the container.
 
