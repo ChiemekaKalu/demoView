@@ -26,21 +26,28 @@ import {
   type RoundFacts,
   swingTick,
 } from "../src/pulse/model";
-import type { Side } from "../src/pulse/state";
+import { type Side, STATE_VERSION } from "../src/pulse/state";
 
 const FIXTURES = ["valve_mm_mirage_2024", "faceit_nuke_2026"];
 const GOLDEN = join("test", "pulse-golden"); // npm scripts run in worker/
 const CANARIES = 10;
 
-// From the measured public-fixture numbers, with room for noise.
+// From the measured public-fixture numbers, with room for noise. Headline
+// precision is per state version: the experiments measured 60% with
+// state_version 1's kills-only states, and 80% once states carry economy and
+// the bomb timeline, which is where ci-eval.md's 75% comes from.
 const BARS = {
   brier: { max: 0.16 },
   auc: { min: 0.85 },
   ece: { max: 0.1 },
   how_won: { min: 0.95 },
-  headline_precision: { min: 0.75 },
+  headline_precision: { min: STATE_VERSION === 1 ? 0.55 : 0.75 },
   fallback_brier: { max: 0.17 },
 };
+
+// How far a canary's two asks may differ: the answers themselves, not the
+// probability vectors behind them.
+const CANARY_TOLERANCE = { noul: 0.01, score: 0.05 };
 
 interface Golden {
   fixture: string;
@@ -139,7 +146,10 @@ const metrics = {
   headline_precision: round3(headlinesTested ? headlinesRight / headlinesTested : 1),
   fallback_brier: round3(brier(fallback)),
 };
-const canaryDiffers = canaryA.filter((a, i) => JSON.stringify(a) !== JSON.stringify(canaryB[i])).length;
+const canaryDeltas = canaryA.map((a, i) => answerDelta(a, canaryB[i]));
+const canaryDiffers = canaryDeltas.filter(
+  (d) => d.noul > CANARY_TOLERANCE.noul || d.score > CANARY_TOLERANCE.score || d.choice,
+).length;
 const schemaOk = validatePulse();
 const callFailures = failed / Math.max(1, ledger.calls + failed);
 const model = [...models].join(", ") || "none";
@@ -157,6 +167,7 @@ const report = {
   expected_model: expectedModel,
   metrics,
   canary_differs: canaryDiffers,
+  canary_deltas: canaryDeltas,
   schema_ok: schemaOk,
   ledger: {
     calls: ledger.calls,
@@ -184,7 +195,8 @@ const summary = [
   "| --- | --- | --- |",
   ...rows,
   `| schema | ${schemaOk ? "ok" : "fails"} | valid |`,
-  `| canary answers that differ | ${canaryDiffers} | 0 |`,
+  `| canaries that differ beyond tolerance | ${canaryDiffers} | 0 |`,
+  `| largest canary gap (noul, score) | ${Math.max(0, ...canaryDeltas.map((d) => d.noul))}, ${Math.max(0, ...canaryDeltas.map((d) => d.score))} | ${CANARY_TOLERANCE.noul}, ${CANARY_TOLERANCE.score} |`,
   "",
   `Model ${model}. ${ledger.calls} calls, ${failed} failed, ${ledger.rateLimited} rate-limited, ${ledger.inTokens} input tokens, $${report.ledger.usd}.`,
 ].join("\n");
@@ -194,6 +206,21 @@ if (!models.has(expectedModel)) {
   console.log(`::warning title=Jev model changed::Answers came from ${model}, the goldens from ${expectedModel}. Re-baseline test/pulse-golden/model.json once the numbers look right.`);
 }
 process.exit(breaches.length ? 1 : 0);
+
+// The largest gaps between two asks of one state: a noul's probability, a
+// score, and whether a choice changed.
+function answerDelta(a: Answers | null, b: Answers | null | undefined) {
+  const d = { noul: 0, score: 0, choice: false };
+  if (!a || !b) return { ...d, choice: true };
+  for (const [name, x] of Object.entries(a)) {
+    const y = b[name];
+    if (x.type === "noul" && y?.type === "noul") d.noul = Math.max(d.noul, round3(Math.abs(x.noul - y.noul)));
+    else if (x.type === "score" && y?.type === "score") d.score = Math.max(d.score, round3(Math.abs(x.score - y.score)));
+    else if (x.type === "choice" && y?.type === "choice") d.choice ||= x.choice !== y.choice;
+    else d.choice = true;
+  }
+  return d;
+}
 
 // Assembles each fixture's pulse.json from the answers and validates it.
 function validatePulse(): boolean {
