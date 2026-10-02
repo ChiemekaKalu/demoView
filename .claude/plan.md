@@ -138,7 +138,9 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
   - Done: `bitread`, `FuzzFrames` (frame loop, decoder, messages) and `FuzzApply` (string tables). 60 s runs crash-free; the 10-minute exit runs are documented in each target's doc comment.
   - *Remaining:* field paths, which come with M4 stage 3.
 - [x] **6.3 Run-twice identity** (parser). Byte-identical `match.json` on all 10 local demos, from separate processes.
-- [ ] **6.4 Budget** (parser). `TestBudget` passes events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB with `GOMAXPROCS=1`. *Re-check once entity decoding is wired in.*
+- [ ] **6.4 Budget** (parser). `TestBudget` passes events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB with `GOMAXPROCS=1`.
+  - *Full path (2026-10-02), largest fixture with GOMAXPROCS=1:* the oracle's 64 Hz export takes 8.4 s and peaks at **640 MiB, over budget**, for 29 round files totalling 24 MiB. The cause is the oracle holding its whole timeline. Reported to pipeline (owner of tools/oracle): write each round as it closes, and set GOMEMLIMIT.
+  - Re-measure our own entity path when M4 swaps in.
 - [ ] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit: a synthetic unknown-field test.
 - [ ] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
 - [ ] **6.7 CI diff gates deploys** (pipeline). Needs the fixtures bucket secrets.
