@@ -43,9 +43,70 @@ jobs:
       # Tests that need demos skip: fixture demos are not in git.
       - run: go test ./...
 
-  # The parser diff test (checkpoint 1.8) goes here: `demo diff` against the
-  # oracle on the fixture demos, pulled from their R2 bucket with
-  # FIXTURES_R2_ACCESS_KEY_ID and FIXTURES_R2_SECRET_ACCESS_KEY.
+  # The diff test (checkpoint 1.8): our parser against the oracle on every
+  # fixture demo in the demoview-fixtures bucket. Without the bucket's
+  # credentials (forks, a new repo) it skips with a notice instead of failing.
+  diff:
+    name: parser diff (fixtures)
+    runs-on: ubuntu-latest
+    env:
+      FIXTURES_R2_ACCESS_KEY_ID: ${{ secrets.FIXTURES_R2_ACCESS_KEY_ID }}
+      FIXTURES_R2_SECRET_ACCESS_KEY: ${{ secrets.FIXTURES_R2_SECRET_ACCESS_KEY }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check for fixture credentials
+        id: creds
+        run: |
+          if [ -n "$FIXTURES_R2_ACCESS_KEY_ID" ] && [ -n "$FIXTURES_R2_SECRET_ACCESS_KEY" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=parser diff skipped::Set FIXTURES_R2_ACCESS_KEY_ID, FIXTURES_R2_SECRET_ACCESS_KEY and CLOUDFLARE_ACCOUNT_ID to run it."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.creds.outputs.ok == 'true'
+      - uses: actions/setup-go@v7
+        if: steps.creds.outputs.ok == 'true'
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: |
+            parser/go.sum
+            tools/oracle/go.sum
+      - name: Download the fixture demos
+        if: steps.creds.outputs.ok == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.FIXTURES_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.FIXTURES_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          aws s3 cp s3://demoview-fixtures/demos/ "$RUNNER_TEMP/demos/" --recursive \
+            --exclude "*" --include "*.dem" \
+            --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+      - name: Build the parser CLI and the oracle
+        if: steps.creds.outputs.ok == 'true'
+        run: |
+          (cd parser && go build -o "$RUNNER_TEMP/demo" ./cmd/demo)
+          (cd tools/oracle && go build -o "$RUNNER_TEMP/oracle" .)
+      - name: Diff each fixture against the oracle
+        if: steps.creds.outputs.ok == 'true'
+        run: |
+          shopt -s nullglob
+          demos=("$RUNNER_TEMP"/demos/*.dem)
+          if [ ${#demos[@]} -eq 0 ]; then
+            echo "::error::no .dem files under s3://demoview-fixtures/demos/"
+            exit 1
+          fi
+          status=0
+          for dem in "${demos[@]}"; do
+            name="$(basename "$dem" .dem)"
+            ref="$RUNNER_TEMP/reference/$name"
+            echo "::group::$name"
+            "$RUNNER_TEMP/oracle" export "$dem" --out "$ref" > /dev/null
+            # Exit 0 on a match, 1 with a report on stdout on a mismatch.
+            "$RUNNER_TEMP/demo" diff "$dem" --against "$ref/match.json" || status=1
+            echo "::endgroup::"
+          done
+          exit "$status"
 
   oracle:
     name: tools/oracle (Go)

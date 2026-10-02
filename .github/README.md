@@ -2,7 +2,7 @@
 
 | Workflow | Runs on | Does |
 | -------- | ------- | ---- |
-| `workflows/ci.yml` | pull requests, pushes to other branches | Go vet and tests (`parser/`, `tools/oracle/`), schema validation, Worker typecheck/lint/tests, web build/lint/tests, and a parser image build without a push. One job each, in parallel. |
+| `workflows/ci.yml` | pull requests, pushes to other branches, and every deploy | Go vet and tests (`parser/`, `tools/oracle/`), the parser diff against the oracle on the fixture demos, schema validation, Worker typecheck/lint/tests, web build/lint/tests, and a parser image build without a push. One job each, in parallel. |
 | `workflows/deploy.yml` | pushes to `main`, or by hand | Runs every `ci.yml` check first and stops if any fails, since commits land on `main` without a pull request. Then builds and pushes the parser image once, deploys dev and, if dev succeeds, prod (via `deploy-env.yml`). |
 | `workflows/deploy-env.yml` | called by `deploy.yml` | For one environment, in order: Cloud Run, the D1 migrations, then the Worker and viewer. |
 
@@ -38,4 +38,12 @@ Cloudflare is already set up (see `worker/README.md`): the D1 databases, buckets
 
 ## The parser diff test
 
-The `demo diff` job (checkpoint 1.8) is not written yet. It will go in `ci.yml` where the comment marks it, and will need `FIXTURES_R2_ACCESS_KEY_ID` and `FIXTURES_R2_SECRET_ACCESS_KEY` to pull the fixture demos.
+The `diff` job in `ci.yml` downloads every `.dem` under `demos/` in the R2 bucket `demoview-fixtures`, exports each with `tools/oracle`, then runs `demo diff <file.dem> --against <export>/match.json`, which exits 1 with a report on any mismatch (the rules are in `parser/diff`). It needs:
+
+| Name | Kind | What |
+| ---- | ---- | ---- |
+| `FIXTURES_R2_ACCESS_KEY_ID` | secret | An R2 token with Object Read on `demoview-fixtures` only |
+| `FIXTURES_R2_SECRET_ACCESS_KEY` | secret | Its secret |
+| `CLOUDFLARE_ACCOUNT_ID` | secret | Already set for deploys; it also names the R2 endpoint |
+
+One-time: create the `demoview-fixtures` bucket and upload the fixture demos to `demos/<name>.dem`. Without these secrets the job skips with a notice, so forks and a new repo stay green.
