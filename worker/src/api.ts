@@ -48,6 +48,7 @@ type Handler = (request: Request, env: Env, params: string[]) => Promise<Respons
 const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
   { method: "POST", pattern: /^\/api\/matches$/, handler: createMatch },
   { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/uploaded$/, handler: confirmUpload },
+  { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/reparse$/, handler: reparseMatch },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)$/, handler: getMatchSummary },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/match\.json$/, handler: getMatchFile },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/rounds\/([^/]+)$/, handler: getRoundFile },
@@ -163,6 +164,35 @@ async function getMatchSummary(_request: Request, env: Env, [id = ""]: string[])
     // The viewer polls this until the parse finishes.
     { "cache-control": "no-store" },
   );
+}
+
+// POST /api/matches/:id/reparse: parses the demo again with the deployed
+// parser. A ready match stays ready on its live parse until the new one
+// replaces it. A failed match goes back in the queue.
+async function reparseMatch(request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
+  if (!(await hasUploadToken(request, env))) return unauthorized();
+  const match = isMatchId(id) ? await getMatch(env.DB, id) : null;
+  if (!match) return error(404, "match not found");
+  if (match.status !== "ready" && match.status !== "failed") {
+    return json({ error: `match is ${match.status}`, status: match.status }, 409);
+  }
+  if (!(await env.BUCKET.head(match.demo_key))) return error(409, "the demo is no longer stored");
+
+  if (match.status === "ready") {
+    await env.PARSE_QUEUE.send({ match_id: id, reparse: true } satisfies ParseJob);
+    console.log(JSON.stringify({ event: "reparse_queued", match_id: id, live_parse_id: match.live_parse_id }));
+    return json({ id, status: match.status }, 202);
+  }
+  if (!(await setStatus(env.DB, id, "queued", { error: null, from: ["failed"], log: { reparse: true } }))) {
+    return error(409, "match was changed concurrently");
+  }
+  try {
+    await env.PARSE_QUEUE.send({ match_id: id } satisfies ParseJob);
+  } catch (err) {
+    await setStatus(env.DB, id, "failed", { error: match.error, from: ["queued"] });
+    throw err;
+  }
+  return json({ id, status: "queued" }, 202);
 }
 
 // GET /api/matches/:id/rounds/:n
