@@ -163,9 +163,6 @@ func diffDemo(path, refPath string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if out.RoundsErr != nil {
-		return out.RoundsErr
-	}
 	var ours bytes.Buffer
 	if err := match.Write(&ours, out.Match); err != nil {
 		return err
@@ -174,7 +171,11 @@ func diffDemo(path, refPath string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if withRounds {
+	switch {
+	case out.RoundsErr != nil:
+		// match.json still compares; the round files are missing.
+		report.Mismatches = append(report.Mismatches, diff.Mismatch{Path: "round_files", Ours: out.RoundsErr.Error(), Ref: "present"})
+	case withRounds:
 		if err := diffRounds(&report, ours.Bytes(), ref, out.Rounds, refRounds); err != nil {
 			return err
 		}
