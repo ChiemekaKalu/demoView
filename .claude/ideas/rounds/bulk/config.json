@@ -1,0 +1,8 @@
+{
+  "mode": "full",
+  "source_run": null,
+  "dataset": "skkwowee/chimera-cs2",
+  "seed": 2026,
+  "per_map": 16,
+  "shards": 12
+}
