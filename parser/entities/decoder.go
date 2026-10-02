@@ -132,45 +132,14 @@ var scalars = map[string]Kind{
 	"WorldGroupId_t":     VarUint32,
 	"ResourceId_t":       VarUint64,
 
-	// Enums.
-	"AnimLoopMode_t":                    VarUint64,
-	"AnimationAlgorithm_t":              VarUint64,
-	"BeamClipStyle_t":                   VarUint64,
-	"BeamType_t":                        VarUint64,
-	"BloodType":                         VarUint64,
-	"CSPlayerBlockingUseAction_t":       VarUint64,
-	"CSPlayerState":                     VarUint64,
-	"CSWeaponMode":                      VarUint64,
-	"CSWeaponState_t":                   VarUint64,
-	"DoorState_t":                       VarUint64,
-	"EKillTypes_t":                      VarUint64,
-	"EntityDisolveType_t":               VarUint64,
-	"EntityPlatformTypes_t":             VarUint64,
-	"FixAngleSet_t":                     VarUint64,
-	"MedalRank_t":                       VarUint64,
-	"MoveCollide_t":                     VarUint64,
-	"MoveType_t":                        VarUint64,
-	"PlayerAnimEvent_t":                 VarUint64,
-	"PlayerConnectedState":              VarUint64,
-	"PointWorldTextJustifyHorizontal_t": VarUint64,
-	"PointWorldTextJustifyVertical_t":   VarUint64,
-	"PointWorldTextReorientMode_t":      VarUint64,
-	"QuestProgress::Reason":             VarUint64,
-	"RenderFx_t":                        VarUint64,
-	"RenderMode_t":                      VarUint64,
-	"ShardSolid_t":                      VarUint64,
-	"ShatterPanelMode":                  VarUint64,
-	"SolidType_t":                       VarUint64,
-	"SurroundingBoundsType_t":           VarUint64,
-	"ValueRemapperHapticsType_t":        VarUint64,
-	"ValueRemapperInputType_t":          VarUint64,
-	"ValueRemapperMomentumType_t":       VarUint64,
-	"ValueRemapperOutputType_t":         VarUint64,
-	"ValueRemapperRatchetType_t":        VarUint64,
-	"WeaponAttackType_t":                VarUint64,
-	"WeaponGameplayAnimState":           VarUint64,
-	"attributeprovidertypes_t":          VarUint64,
-	"loadout_slot_t":                    VarUint64,
+	// Enums that enumName doesn't recognize.
+	"BloodType":               VarUint64,
+	"CSPlayerState":           VarUint64,
+	"CSWeaponMode":            VarUint64,
+	"PlayerConnectedState":    VarUint64,
+	"QuestProgress::Reason":   VarUint64,
+	"ShatterPanelMode":        VarUint64,
+	"WeaponGameplayAnimState": VarUint64,
 }
 
 // templates are the template types read as one plain value.
@@ -309,14 +278,17 @@ func typeDecoder(f *Field, t typeSpec) Decoder {
 	}
 	k, ok := scalars[t.base]
 	if !ok && enumName.MatchString(t.base) {
-		k = VarUint64 // networked enums are varints, and updates add new ones
+		k = VarUint64
 	}
 	return plain(f, k)
 }
 
 // enumName matches the naming of Valve's enum types, such as
-// EGrenadeThrowState or EKillTypes_t.
-var enumName = regexp.MustCompile(`^E[A-Z][A-Za-z0-9]*(_t)?$`)
+// EGrenadeThrowState or RenderMode_t. Networked enums are varints, and game
+// updates add new ones. Valve's other named types ending in _t are integers,
+// which are varints too, so even a wrong guess keeps the stream in step; the
+// one float, GameTime_t, is matched before this.
+var enumName = regexp.MustCompile(`^(E[A-Z][A-Za-z0-9]*|[A-Za-z][A-Za-z0-9_]*_t)$`)
 
 // plain returns k for a field with no encoder.
 func plain(f *Field, k Kind) Decoder {

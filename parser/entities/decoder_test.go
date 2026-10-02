@@ -25,7 +25,11 @@ func TestDecoders(t *testing.T) {
 		{field{typ: "GameTick_t"}, "VarInt32"},
 		{field{typ: "Color", varSer: "color"}, "VarUint32 [color]"},
 		{field{typ: "MoveType_t"}, "VarUint64"},
-		{field{typ: "NewEnum_t"}, "Unknown"},
+		{field{typ: "DecalMode_t"}, "VarUint64"},
+		{field{typ: "loadout_slot_t"}, "VarUint64"},
+		{field{typ: "EGrenadeThrowState"}, "VarUint64"},
+		{field{typ: "NewEnum_t", encoder: "coord"}, "Unknown"},
+		{field{typ: "CNewThing"}, "Unknown"},
 
 		{field{typ: "HSequence"}, "MinusOne"},
 		{field{typ: "HSequence", varSer: "minusone"}, "MinusOne [minusone]"},
