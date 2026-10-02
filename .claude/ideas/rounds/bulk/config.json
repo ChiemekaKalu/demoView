@@ -1,12 +1,12 @@
 {
-  "mode": "full",
+  "mode": "parser",
   "source_run": "37003041437",
-  "parser_ref": null,
-  "parser_sample": "repro",
+  "parser_ref": "68a02cf1957917fd09364479a480bb5c1a989e40",
+  "parser_sample": "full",
   "dataset": "skkwowee/chimera-cs2",
   "seed": 2026,
-  "per_map": 1000,
-  "shards": 40,
+  "per_map": 16,
+  "shards": 12,
   "paths": null,
   "parser_shards": 5,
   "parser_paths": [
