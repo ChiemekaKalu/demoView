@@ -79,11 +79,11 @@ type RoundFile struct {
 
 // Track is one player's columns, one value per frame.
 type Track struct {
-	Idx int   `json:"idx"`
-	X   []int `json:"x"`
-	Y   []int `json:"y"`
-	Yaw []int `json:"yaw"` // integer degrees in [0, 360), 0 = +x, counterclockwise
-	HP  []int `json:"hp"`  // 0 means dead
+	Idx int     `json:"idx"`
+	X   []int32 `json:"x"`
+	Y   []int32 `json:"y"`
+	Yaw []int16 `json:"yaw"` // integer degrees in [0, 360), 0 = +x, counterclockwise
+	HP  []int16 `json:"hp"`  // 0 means dead
 }
 
 // Grenade is one thrown grenade.

@@ -23,16 +23,49 @@ type recording struct {
 	byUID map[int64]*grenadeRec
 }
 
-// snapshot is the state at one tick.
+// snapshot is the state at one tick. A match holds one per frame until its
+// round files are built, so it stays small: slices rather than maps, and
+// player keys shared with the player records.
 type snapshot struct {
-	players map[string]playerSample // by player key
-	nades   map[int64][2]int        // projectile position by unique id
+	players []keyedSample
+	nades   []nadeSample // projectiles in flight
+}
+
+type keyedSample struct {
+	key string
+	playerSample
 }
 
 type playerSample struct {
-	x, y, yaw, hp int
-	side          common.Team
-	alive         bool
+	x, y    int32
+	yaw, hp int16
+	side    common.Team
+	alive   bool
+}
+
+type nadeSample struct {
+	uid int64
+	pos [2]int
+}
+
+// player returns the sample of the player with key, if the snapshot has one.
+func (s *snapshot) player(key string) (playerSample, bool) {
+	for _, p := range s.players {
+		if p.key == key {
+			return p.playerSample, true
+		}
+	}
+	return playerSample{}, false
+}
+
+// nade returns the position of the projectile with uid, if it was sampled.
+func (s *snapshot) nade(uid int64) ([2]int, bool) {
+	for _, n := range s.nades {
+		if n.uid == uid {
+			return n.pos, true
+		}
+	}
+	return [2]int{}, false
 }
 
 type grenadeRec struct {
@@ -94,27 +127,27 @@ func (r *recording) sample(x *exporter, t int) {
 }
 
 func (x *exporter) snapshot(r *recording) *snapshot {
-	s := &snapshot{players: make(map[string]playerSample, 10)}
-	for _, p := range x.gs.Participants().Playing() {
+	playing := x.gs.Participants().Playing()
+	s := &snapshot{players: make([]keyedSample, 0, len(playing))}
+	for _, p := range playing {
 		if p.PlayerPawnEntity() == nil {
 			continue
 		}
 		pos := p.Position()
-		s.players[x.seePlayer(p)] = playerSample{
-			x:     roundInt(pos.X),
-			y:     roundInt(pos.Y),
-			yaw:   yawDegrees(p.ViewDirectionX()),
-			hp:    p.Health(),
+		s.players = append(s.players, keyedSample{x.seePlayer(p), playerSample{
+			x:     int32(roundInt(pos.X)),
+			y:     int32(roundInt(pos.Y)),
+			yaw:   int16(yawDegrees(p.ViewDirectionX())),
+			hp:    int16(p.Health()),
 			side:  p.Team,
 			alive: p.IsAlive(),
-		}
+		}})
 	}
 	if len(r.byUID) > 0 {
-		s.nades = map[int64][2]int{}
 		for _, g := range x.gs.GrenadeProjectiles() {
 			if _, ok := r.byUID[g.UniqueID()]; ok {
 				pos := g.Position()
-				s.nades[g.UniqueID()] = [2]int{roundInt(pos.X), roundInt(pos.Y)}
+				s.nades = append(s.nades, nadeSample{g.UniqueID(), [2]int{roundInt(pos.X), roundInt(pos.Y)}})
 			}
 		}
 	}

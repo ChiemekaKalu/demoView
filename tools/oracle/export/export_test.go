@@ -101,9 +101,9 @@ func TestFixtureDemos(t *testing.T) {
 			events := 0
 			for _, rf := range res.Rounds {
 				for _, tr := range rf.Players {
-					for _, col := range [][]int{tr.X, tr.Y, tr.Yaw, tr.HP} {
-						if len(col) != rf.Frames {
-							t.Fatalf("round %d player %d: column of %d, want %d frames", rf.Round, tr.Idx, len(col), rf.Frames)
+					for _, n := range []int{len(tr.X), len(tr.Y), len(tr.Yaw), len(tr.HP)} {
+						if n != rf.Frames {
+							t.Fatalf("round %d player %d: column of %d, want %d frames", rf.Round, tr.Idx, n, rf.Frames)
 						}
 					}
 				}

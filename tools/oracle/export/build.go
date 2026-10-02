@@ -124,6 +124,10 @@ func (x *exporter) build(sha string, tickRate int) (*Result, error) {
 	res := &Result{Match: m}
 	for _, r := range x.rounds {
 		res.Rounds = append(res.Rounds, x.roundFile(r, idx, killIndex))
+		// Its samples are done with, and they outweigh the round file.
+		if r.rec != nil {
+			r.rec.frames, r.rec.prev = nil, nil
+		}
 	}
 	res.Stats = x.stats
 	return res, nil
@@ -138,9 +142,9 @@ func (x *exporter) teamASides() ([]common.Team, error) {
 		return nil, fmt.Errorf("round 1 has no samples to tell the teams apart")
 	}
 	teamA := map[string]bool{}
-	for k, s := range first.frames[0].players {
+	for _, s := range first.frames[0].players {
 		if s.side == common.TeamCounterTerrorists {
-			teamA[k] = true
+			teamA[s.key] = true
 		}
 	}
 	sides := make([]common.Team, len(x.rounds))
@@ -152,8 +156,8 @@ func (x *exporter) teamASides() ([]common.Team, error) {
 			continue
 		}
 		ct, t := 0, 0
-		for k, s := range rec.frames[0].players {
-			if !teamA[k] {
+		for _, s := range rec.frames[0].players {
+			if !teamA[s.key] {
 				continue
 			}
 			switch s.side {
@@ -194,9 +198,9 @@ func (x *exporter) teamLetters(sides []common.Team) map[string]string {
 			continue
 		}
 		for _, f := range r.rec.frames {
-			for k, s := range f.players {
+			for _, s := range f.players {
 				if s.alive {
-					assign(k, s.side, i)
+					assign(s.key, s.side, i)
 				}
 			}
 		}
@@ -301,7 +305,7 @@ func (x *exporter) roundFile(r *roundRec, idx map[string]int, killIndex map[*kil
 		_, died := deaths[k]
 		alive := false
 		for _, f := range snaps {
-			if p, ok := f.players[k]; ok && p.alive {
+			if p, ok := f.player(k); ok && p.alive {
 				alive = true
 				break
 			}
@@ -368,24 +372,28 @@ func (x *exporter) roundFile(r *roundRec, idx map[string]int, killIndex map[*kil
 // way (a disconnect) holds from there too.
 func track(key string, idx int, snaps []*snapshot, death *killRec, deathFrame int) Track {
 	n := len(snaps)
-	t := Track{Idx: idx, X: make([]int, n), Y: make([]int, n), Yaw: make([]int, n), HP: make([]int, n)}
+	t := Track{Idx: idx, X: make([]int32, n), Y: make([]int32, n), Yaw: make([]int16, n), HP: make([]int16, n)}
+	var dead playerSample // where and how the player died
+	if death != nil {
+		dead = playerSample{x: int32(death.deathX), y: int32(death.deathY), yaw: int16(death.deathYaw)}
+	}
 
 	first := -1
 	for f, s := range snaps {
-		if _, ok := s.players[key]; ok {
+		if _, ok := s.player(key); ok {
 			first = f
 			break
 		}
 	}
 	var cur playerSample
 	if first >= 0 {
-		cur = snaps[first].players[key]
+		cur, _ = snaps[first].player(key)
 	} else if death != nil {
-		cur = playerSample{x: death.deathX, y: death.deathY, yaw: death.deathYaw}
+		cur = dead
 	}
 	for f, s := range snaps {
 		hp := cur.hp
-		if p, ok := s.players[key]; ok {
+		if p, ok := s.player(key); ok {
 			cur, hp = p, p.hp
 		} else if f > first {
 			hp = 0 // gone: left the server
@@ -398,7 +406,7 @@ func track(key string, idx int, snaps []*snapshot, death *killRec, deathFrame in
 
 	if death != nil {
 		for f := deathFrame; f < n; f++ {
-			t.X[f], t.Y[f], t.Yaw[f], t.HP[f] = death.deathX, death.deathY, death.deathYaw, 0
+			t.X[f], t.Y[f], t.Yaw[f], t.HP[f] = dead.x, dead.y, dead.yaw, 0
 		}
 		// Alive until the kill's frame, by definition of that frame.
 		for f := 0; f < deathFrame; f++ {
@@ -423,7 +431,7 @@ func grenadePath(g *grenadeRec, snaps []*snapshot, throwF, detF, start, step int
 	last := g.throwPos
 	for f := throwF; f <= detF; f++ {
 		tick := start + f*step
-		switch pos, ok := snaps[f].nades[g.uid]; {
+		switch pos, ok := snaps[f].nade(g.uid); {
 		case ok:
 			last = pos
 		case g.detTick >= 0 && tick >= g.detTick:

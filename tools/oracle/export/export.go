@@ -271,12 +271,14 @@ func (x *exporter) onFrameDone(events.FrameDone) {
 // seePlayer registers p and returns its key.
 func (x *exporter) seePlayer(p *common.Player) string {
 	key := playerKey(p)
-	if pr := x.players[key]; pr != nil {
-		pr.name = p.Name
-	} else {
-		x.players[key] = &playerRec{key: key, steamID: p.SteamID64, name: p.Name}
+	pr := x.players[key]
+	if pr == nil {
+		pr = &playerRec{key: key, steamID: p.SteamID64}
+		x.players[key] = pr
 	}
-	return key
+	pr.name = p.Name
+	// The record's copy, so every snapshot shares one string per player.
+	return pr.key
 }
 
 // playerKey identifies a player across reconnects: the Steam id, or the
