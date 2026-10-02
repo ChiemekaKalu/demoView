@@ -3,7 +3,7 @@
 | Workflow | Runs on | Does |
 | -------- | ------- | ---- |
 | `workflows/ci.yml` | pull requests, pushes to other branches | Go vet and tests (`parser/`, `tools/oracle/`), schema validation, Worker typecheck/lint/tests, web build/lint/tests, and a parser image build without a push. One job each, in parallel. |
-| `workflows/deploy.yml` | pushes to `main`, or by hand | Builds and pushes the parser image once, then deploys dev and, if dev succeeds, prod (via `deploy-env.yml`). |
+| `workflows/deploy.yml` | pushes to `main`, or by hand | Runs every `ci.yml` check first and stops if any fails, since commits land on `main` without a pull request. Then builds and pushes the parser image once, deploys dev and, if dev succeeds, prod (via `deploy-env.yml`). |
 | `workflows/deploy-env.yml` | called by `deploy.yml` | For one environment, in order: Cloud Run, the D1 migrations, then the Worker and viewer. |
 
 The Worker gets `PARSER_URL` from the Cloud Run service that the same run just deployed (`wrangler deploy --var`), so the placeholder in `worker/wrangler.jsonc` never ships. A deploy from a laptop (`npm run deploy:dev`) still uses the placeholder, so pass `-- --var PARSER_URL:<url>` there too.

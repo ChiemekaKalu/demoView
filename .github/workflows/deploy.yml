@@ -1,7 +1,8 @@
-# Deploys on every push to main: the spec's "Merge to main" row. One parser
-# image is built and pushed, then dev is deployed and, only if that
-# succeeds, prod. See .github/README.md for the secrets, variables and
-# one-time setup this needs.
+# Deploys on every push to main: the spec's "Merge to main" row. Nothing
+# deploys unless every CI check passes first (commits go straight to main,
+# with no pull request). Then one parser image is built and pushed, dev is
+# deployed and, only if that succeeds, prod. See .github/README.md for the
+# secrets, variables and one-time setup this needs.
 name: deploy
 
 on:
@@ -21,8 +22,13 @@ env:
   REGION: us-west1
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
   image:
     name: parser image
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read

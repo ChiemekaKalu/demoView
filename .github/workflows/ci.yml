@@ -1,19 +1,24 @@
 # Checks for every pull request and every push to a branch other than main:
 # the spec's "Pull request" row. Each part of the repo is its own job, so
-# they run in parallel. main is covered by deploy.yml.
+# they run in parallel. Pushes to main run these same checks from
+# deploy.yml (workflow_call), which deploys only if they all pass.
 name: ci
 
 on:
   pull_request:
   push:
     branches-ignore: [main]
+  workflow_call:
 
 permissions:
   contents: read
 
+# A newer push to the same branch cancels older checks. Called from
+# deploy.yml, github.workflow is "deploy": a separate group, never
+# cancelled, so a deploy is never stopped halfway.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.workflow == 'ci' }}
 
 env:
   GO_VERSION: "1.27"
