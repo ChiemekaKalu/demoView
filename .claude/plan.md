@@ -87,6 +87,42 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 - [x] `web/`: upload, match and replay pages, built against `schema/samples` (fixtures mode: `VITE_FIXTURES=1` or id `sample`). Every spec replay bullet is in. Bundle 45.7 KB raw / 17.7 KB gzip. 50 vitest tests.
 - [x] Mirage radar image at `web/public/radar/de_mirage.png`, from MurkyYT/cs2-map-icons @ ae7ed6a (1024×1024, extracted from the CS2 depot; the repo has no license, so these are Valve assets). Alignment verified by plotting real Mirage positions from the oracle export: trails follow the corridors, and spawns and bombsites match the overview file.
 
+## Valve fetch (design, not started)
+
+Research done 2026-10-02. The approach still works for CS2: Leetify, csstats.gg and cs-demo-downloader all use it.
+
+**Flow:**
+1. **Discover.** An hourly Worker cron calls `ICSGOPlayers_730/GetNextMatchSharingCode/v1` in a loop, about one call per 1.5 s, until it gets `n/a`. The share-link box on the upload page also feeds this step. Each share code decodes locally to `matchid`, `outcomeid` and `token`; the code is base-57, with the first character least significant. New matches go to a fetch queue.
+2. **Resolve.** A fetcher container behind a Durable Object starts only when there's work.
+   - It runs Node with DoctorMcKay's `steam-user` and `globaloffensive`, the maintained option for CS2. Go's go-steam forks have no CS2 GC support.
+   - It logs in the bot with its refresh token, plays app 730 and waits for the GC welcome.
+   - Then `requestGame(code)` returns the demo URL, at `roundstatsall[last].map`. Requests go one at a time, with 30 s timeouts.
+   - Afterwards it logs off and persists any renewed refresh token.
+3. **Download.** `http://replayNNN.valve.net/730/…dem.bz2`, one at a time, streamed through bunzip2 into `demos/{match_id}.dem`. The match row is created, and the existing parse queue takes over.
+
+**Checkpoints:**
+- [ ] **V1.** Share-code decoder in `worker/`, tested against known vectors. A `fetch_jobs` D1 table holds code, matchid, status, attempts, url and error. Plus an API route to submit a share link, behind the upload token.
+- [ ] **V2.** Discovery cron with the Web API. It handles 412 (a stale or wrong seed code) by surfacing "needs a fresh share code", and 403 for a revoked auth code.
+- [ ] **V3.** The fetcher container: GC login and code-to-URL resolution. Includes a one-time local bootstrap script that turns the bot's username, password and Steam Guard code into a refresh token. The password is never stored.
+- [ ] **V4.** Download, bunzip2 and R2, then hand off to the parse pipeline. Retries cover "no URL yet" and 404 for up to about 24 h. A 502 or 404 after about 30 days marks the match dead.
+- [ ] **V5.** Viewer: the share-link box on `/` and fetch-job status.
+
+**The user supplies:**
+| Secret | What | Where |
+|---|---|---|
+| `STEAM_WEB_API_KEY` | Steam Web API key | steamcommunity.com/dev/apikey, from the user's main account. A fresh bot account is "limited" and can't get a key. |
+| `STEAM_ID64` | The user's SteamID64 | Their Steam profile |
+| `MATCH_AUTH_CODE` | Match-history authentication code (`XXXX-XXXXX-XXXX`) | help.steampowered.com/en/wizard/HelpWithGameIssue/?appid=730&issueid=128 |
+| `SEED_SHARE_CODE` | A share code under 30 days old | Same wizard page, or in-game Watch → Your Matches |
+| `STEAM_BOT_REFRESH_TOKEN` | The bot's refresh token, about 200 days | The V3 bootstrap script, run once locally. The bot is a new free account with the free CS2 license. |
+
+**Risks:**
+- **Steam Subscriber Agreement §4.C (Automation)** covers headless bots, so use a throwaway bot with nothing of value on it. The Web API part is officially documented.
+- **30-day windows:** both the seed share code and the demos expire.
+- **GC fragility:** `globaloffensive` hard-codes a hello version, and an issue reports empty `matches`.
+- **Refresh-token expiry:** alert before its `exp`.
+- **Throttling:** the replay CDN throttles bursts from data-center IPs, so download one file at a time.
+
 ## Decisions
 
 - **v0 scope (decided 2026-10-02): infer from events.** Newer patches never fire `round_start`, `round_end`, `round_mvp` or `cs_win_panel_round`, though their descriptors remain. Patch 13984 (early 2024) still fires them, so v0 uses them when present and infers when absent. Both reference parsers rebuild them from `CCSGameRulesProxy` entity props. v0 stays events-only:
@@ -107,7 +143,7 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - Matches are found both ways: polling the user's match history (Steam Web API) and pasting a share link on the upload page.
   - It runs in the cloud, next to the parser.
   - It uses network APIs only (Steam Web API, Game Coordinator, Valve's replay servers), so the game-memory boundary still holds.
-  - Design and checkpoints follow once the feasibility research reports. *Timing is pending the user:* `cloud` suggested it come after the v1 done-when. Nothing gets built until the user confirms the order.
+  - *Timing is pending the user:* `cloud` suggested it come after the v1 done-when. Nothing gets built until the user confirms the order. The design is under [Valve fetch](#valve-fetch-design-not-started).
 - **Narrative logging:** the `cloud` session is running a separate design effort for structured, tick-stamped parser events. It will come as a proposal; don't build logging into the parser before then.
 
 ### Oracle conventions (built in `tools/oracle`; 1.7 matches them so the diff lines up)
