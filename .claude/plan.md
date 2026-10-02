@@ -123,7 +123,7 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
 - [ ] **5.4 Duplicate upload** (pipeline). `crypto.DigestStream` on confirm, indexed `demo_sha256`, existing id returned, duplicate object deleted.
 - [ ] **5.5 Reparse route and cron** (pipeline). Keyed on the last attempted build, injected at deploy. Hourly, 5 per batch, paused at 80% of the container allowance. A failed reparse never takes a match off `ready`.
 - [ ] **5.6 Safe swap.**
-  - (parser) Write under a given `parsed/{id}/{parse_id}/` prefix, with `manifest.json` last. It can be built now, but *don't merge until the user approves the versioned layout*.
+  - (parser) Write under a given `parsed/{id}/{parse_id}/` prefix, with `manifest.json` last. *Layout approved by the user (2026-10-02)*, along with the D1 columns and the reparse cron (hourly, 5 per batch, 80% cap, on in prod). It merges once CI passes. Contract proposed to pipeline: the Worker picks `parse_id`; `/parse` takes it as required; rounds, then match.json, then manifest.json last; `parsed_by` = `PARSER_BUILD` (the git sha).
   - (pipeline) Conditional D1 pointer swap, `?v=<parse_id>` URLs, 7-day cleanup by exact key.
 - [ ] **5.7 Self-recovery** (pipeline). A 30-minute stuck-match sweeper on `status_changed_at`, coded errors on the match page, an unknown-`schema_version` message, an upload rate limit, and an orphaned-demo lifecycle rule. The parser side is the error codes in its responses.
 
