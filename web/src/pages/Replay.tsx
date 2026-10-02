@@ -31,7 +31,8 @@ export function Replay({ id, n }: { id: string; n: number }) {
       const summary = await getSummary(id)
       if (summary.status !== 'ready') return { kind: 'not-ready', summary } as const
       if (!summary.rounds.some((r) => r.n === n)) return { kind: 'missing', summary, exists: false } as const
-      // match.json is optional: the API route for it is pending.
+      // match.json is optional: without it the replay shows what the round
+      // file alone can (victims, not attackers or weapons).
       const [round, file] = await Promise.all([getRound(id, n), getMatchFile(id).catch(() => null)])
       if (!round) return { kind: 'missing', summary, exists: true } as const
       if (hasReplay(id, n + 1, summary)) prefetchRound(id, n + 1)
@@ -216,7 +217,13 @@ function ReplayView({ n, summary, round, file }: ViewProps) {
   useEffect(() => {
     const s = new Stage(canvasRef.current!, model.scene, duration, t0)
     stageRef.current = s
+    // The canvas draws every display frame by itself. While playing, the text
+    // around it (clock, scrubber, kill feed) only needs ten updates a second.
+    let shown = { tenth: -1, playing: false }
     s.onUpdate = (t, isPlaying, ended) => {
+      const tenth = Math.floor(t * 10)
+      if (isPlaying && shown.playing && tenth === shown.tenth && !ended) return
+      shown = { tenth, playing: isPlaying }
       setFrame(Math.floor(t * hz + 1e-6))
       setPlaying(isPlaying)
       if (ended) writeT(t)
