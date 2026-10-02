@@ -139,7 +139,9 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
   - *Remaining:* field paths, which come with M4 stage 3.
 - [x] **6.3 Run-twice identity** (parser). Byte-identical `match.json` on all 10 local demos, from separate processes.
 - [ ] **6.4 Budget** (parser). `TestBudget` passes events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB with `GOMAXPROCS=1`.
-  - *Full path (2026-10-02), largest fixture with GOMAXPROCS=1:* the oracle's 64 Hz export takes 8.4 s and peaks at **640 MiB, over budget**, for 29 round files totalling 24 MiB. The cause is the oracle holding its whole timeline. Reported to pipeline (owner of tools/oracle): write each round as it closes, and set GOMEMLIMIT.
+  - *Full path (2026-10-02), largest fixture with GOMAXPROCS=1:* the oracle's 64 Hz export first peaked at 640 MiB, over budget.
+    - pipeline's 23e232c brought it to **8.3 s and 270 MiB**, with byte-identical output, by compacting per-tick samples and freeing each round once built.
+    - The server now runs the oracle with GOMEMLIMIT=400MiB (fe09822). So the full v1 path fits the budget.
   - Re-measure our own entity path when M4 swaps in.
 - [ ] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit: a synthetic unknown-field test.
 - [ ] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
