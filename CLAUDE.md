@@ -7,6 +7,7 @@ A web app where you hand over a CS2 demo (`.dem`) and get back a scoreboard and 
 - `.claude/spec.md` is the full product spec: scope, architecture, schema, API, milestones. If it disagrees with this file, the spec wins; update this file to match. The exception is a deliberate deviation recorded in the notes.
 - `.claude/plan.md` breaks the milestones into checkpoints, tracks their status, and lists spec gaps with proposed defaults. Check items off as they land.
 - `.claude/notes.md` is the running log of decisions, progress and findings. Add a dated entry when a decision is made or something non-obvious is learned.
+- `.claude/wiki/` is a readable tour of how it all fits together, with diagrams. Start at `wiki/README.md`. The notes session keeps it current; if it disagrees with the code, the code wins.
 
 @.claude/spec.md
 @.claude/plan.md
@@ -68,7 +69,7 @@ cd web && npm test         # vitest
 
 ## Ground rules
 
-- **HARD BOUNDARY: never touch the user's game memory. Not for any reason.** No reading, writing, attaching to, injecting into or scanning the memory of CS2 or any other game process. No debuggers, memory readers, overlays, hooks or process handles aimed at a game. The only game input is a `.dem` file the user hands over. If a task seems to need live game access, stop and ask the user.
+- **HARD BOUNDARY: never touch the user's game memory. Not for any reason.** No reading, writing, attaching to, injecting into or scanning the memory of CS2 or any other game process. No debuggers, memory readers, overlays, hooks or process handles aimed at a game. Game input is only ever a `.dem` file, either one the user hands over or one fetched for the user's own matches from Valve's replay servers through network APIs (Steam Web API, Game Coordinator). If a task seems to need live game access, stop and ask the user.
 - **The parser is from scratch.** Reference parsers (demoinfocs-golang, demoparser, etc.) are test oracles only. They may run in `tools/` to export reference output, but `parser/` never imports them or copies from them. Generic building blocks such as a protobuf runtime and snappy are fine.
 - **The schema is the contract.** Don't change schema files on your own; propose the change to the user first. Any breaking change bumps `schema_version`.
 - **The parser streams.** Never load the whole demo into memory. The targets are under 512 MB and under 60 s for a full match on 1 vCPU.
