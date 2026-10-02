@@ -92,6 +92,7 @@ export async function saveParsedMatch(
   id: string,
   file: MatchFile,
   now: number,
+  log: Record<string, unknown> = {},
 ): Promise<void> {
   const scores = new Map(file.scoreboard.map((s) => [s.player, s]));
   const players = file.players.map((p) => ({ ...scores.get(p.idx), ...p }));
@@ -144,7 +145,15 @@ export async function saveParsedMatch(
         id,
       ),
   ]);
-  logStatus(id, "ready");
+  logStatus(id, "ready", {
+    ...log,
+    parser_version: file.parser_version,
+    players: file.players.length,
+    rounds: file.rounds.length,
+    kills: file.kills.length,
+    score_a: scoreA,
+    score_b: scoreB,
+  });
 }
 
 export interface StatusChange {
@@ -152,6 +161,8 @@ export interface StatusChange {
   error?: string | null;
   // Only change the status if it is currently one of these.
   from?: readonly MatchStatus[];
+  // Extra fields for the match_status log line, such as the attempt.
+  log?: Record<string, unknown>;
 }
 
 // Sets a match's status and logs the change. Returns false if no row changed,
@@ -176,13 +187,14 @@ export async function setStatus(
   }
   const result = await db.prepare(sql).bind(...params).run();
   const changed = result.meta.changes > 0;
-  if (changed) logStatus(id, status, change.error);
+  if (changed) logStatus(id, status, { ...change.log, error: change.error });
   return changed;
 }
 
-// One JSON line per status change, per the spec's observability section.
-export function logStatus(matchId: string, status: MatchStatus, error?: string | null): void {
-  console.log(
-    JSON.stringify({ event: "match_status", match_id: matchId, status, ...(error ? { error } : {}) }),
-  );
+// One JSON line per status change, per the spec's observability section. The
+// level follows the outcome, so the Workers Logs level filter finds failures.
+export function logStatus(matchId: string, status: MatchStatus, fields: Record<string, unknown> = {}): void {
+  const { error, ...rest } = fields;
+  const log = status === "failed" ? console.error : error ? console.warn : console.log;
+  log(JSON.stringify({ event: "match_status", match_id: matchId, status, ...rest, ...(error ? { error } : {}) }));
 }

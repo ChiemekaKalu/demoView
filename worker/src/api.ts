@@ -1,5 +1,6 @@
 import { hasUploadToken } from "./auth";
 import { demoKey, isMatchId, matchFileKey, newMatchId, roundKey } from "./keys";
+import { errorStack, errorText } from "./log";
 import { getMatch, getMatchPage, insertMatch, setStatus } from "./matches";
 import { presignUpload, UPLOAD_URL_TTL_SECONDS } from "./presign";
 
@@ -40,7 +41,9 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     try {
       return await route.handler(request, env, m.slice(1));
     } catch (err) {
-      console.error(JSON.stringify({ event: "unhandled_error", path: pathname, error: String(err) }));
+      console.error(
+        JSON.stringify({ event: "unhandled_error", path: pathname, error: errorText(err), stack: errorStack(err) }),
+      );
       return error(500, "internal error");
     }
   }
@@ -64,20 +67,27 @@ async function confirmUpload(request: Request, env: Env, [id = ""]: string[]): P
   const match = isMatchId(id) ? await getMatch(env.DB, id) : null;
   if (!match) return error(404, "match not found");
   if (match.status !== "uploaded") {
+    confirmRejected(id, "wrong_status", { status: match.status });
     return json({ error: `match is already ${match.status}`, status: match.status }, 409);
   }
 
   const object = await env.BUCKET.head(match.demo_key);
-  if (!object) return error(409, "demo has not been uploaded");
+  // The only sign on this side that the browser's PUT to R2 failed.
+  if (!object) {
+    confirmRejected(id, "demo_missing");
+    return error(409, "demo has not been uploaded");
+  }
+  const size = { size_bytes: object.size };
   if (object.size > MAX_DEMO_BYTES) {
     const message = "demo is larger than 1 GB";
     await env.BUCKET.delete(match.demo_key);
-    await setStatus(env.DB, id, "failed", { error: message, from: ["uploaded"] });
+    await setStatus(env.DB, id, "failed", { error: message, from: ["uploaded"], log: size });
     return error(413, message);
   }
 
   // Claim the match before enqueueing, so two confirms can't enqueue twice.
-  if (!(await setStatus(env.DB, id, "queued", { from: ["uploaded"] }))) {
+  if (!(await setStatus(env.DB, id, "queued", { from: ["uploaded"], log: size }))) {
+    confirmRejected(id, "concurrent");
     return error(409, "match was confirmed concurrently");
   }
   try {
@@ -135,10 +145,11 @@ async function getMatchFile(request: Request, env: Env, [id = ""]: string[]): Pr
   if (!match) return error(404, "match not found");
   // Before ready the object is missing, or is a reparse's half-written state.
   if (match.status !== "ready") return error(404, `match is ${match.status}, not ready`);
-  return (
-    (await serveObject(request, env, matchFileKey(id), MATCH_FILE_CACHE_CONTROL)) ??
-    error(404, "match.json not found")
-  );
+  const res = await serveObject(request, env, matchFileKey(id), MATCH_FILE_CACHE_CONTROL);
+  if (res) return res;
+  // A ready match always has one, so this is a bug or a lost object.
+  console.error(JSON.stringify({ event: "object_missing", match_id: id, key: matchFileKey(id) }));
+  return error(404, "match.json not found");
 }
 
 // serveObject streams an R2 object with its ETag, or answers 304 when the
@@ -160,6 +171,10 @@ async function serveObject(
   // R2 returns the object without a body when If-None-Match matched.
   if (!("body" in object)) return new Response(null, { status: 304, headers });
   return new Response(object.body, { headers });
+}
+
+function confirmRejected(id: string, reason: string, fields: Record<string, unknown> = {}): void {
+  console.warn(JSON.stringify({ event: "confirm_rejected", match_id: id, reason, ...fields }));
 }
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {

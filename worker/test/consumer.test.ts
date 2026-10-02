@@ -71,10 +71,13 @@ afterEach(() => {
 describe("parse queue consumer", () => {
   it("writes the parse result to D1 and marks the match ready", async () => {
     await insertMatch(ID, "queued");
-    const parser = stubParser({ kind: "ok", body: FILE });
+    const parser = stubParser({ kind: "ok", status: 200, body: FILE });
 
     expect(await parse(parser)).toEqual({ acked: true, retried: false });
-    expect(parser.parse).toHaveBeenCalledWith({ match_id: ID, demo_key: `demos/${ID}.dem` });
+    expect(parser.parse).toHaveBeenCalledWith(
+      { match_id: ID, demo_key: `demos/${ID}.dem` },
+      { attempt: 1, requestId: "msg-1" },
+    );
 
     expect(await matchRow(ID)).toMatchObject({
       status: "ready",
@@ -110,9 +113,9 @@ describe("parse queue consumer", () => {
 
   it("replaces earlier rows when a match is parsed again", async () => {
     await insertMatch(ID, "queued");
-    await parse(stubParser({ kind: "ok", body: FILE }));
+    await parse(stubParser({ kind: "ok", status: 200, body: FILE }));
     await env.DB.prepare("UPDATE matches SET status = 'queued' WHERE id = ?").bind(ID).run();
-    await parse(stubParser({ kind: "ok", body: FILE }));
+    await parse(stubParser({ kind: "ok", status: 200, body: FILE }));
 
     expect(await rows("SELECT count(*) AS n FROM players")).toEqual([{ n: 2 }]);
     expect(await rows("SELECT count(*) AS n FROM rounds")).toEqual([{ n: 3 }]);
@@ -123,7 +126,7 @@ describe("parse queue consumer", () => {
     await insertMatch(ID, "queued");
     const kills = Array.from({ length: 400 }, (_, i) => ({ ...FILE.kills[0]!, tick: i }));
     const spy = vi.spyOn(env.DB, "batch");
-    await parse(stubParser({ kind: "ok", body: { ...FILE, kills } }));
+    await parse(stubParser({ kind: "ok", status: 200, body: { ...FILE, kills } }));
 
     expect(await rows("SELECT count(*) AS n FROM kills")).toEqual([{ n: 400 }]);
     expect(spy.mock.calls[0]?.[0].length).toBeLessThanOrEqual(10);
@@ -135,7 +138,7 @@ describe("parse queue consumer", () => {
     await parse(
       stubParser(async () => {
         statusDuringParse = (await matchRow(ID))?.status;
-        return { kind: "ok", body: FILE };
+        return { kind: "ok", status: 200, body: FILE };
       }),
     );
     expect(statusDuringParse).toBe("parsing");
@@ -143,14 +146,14 @@ describe("parse queue consumer", () => {
 
   it("fails the match without retrying on 422", async () => {
     await insertMatch(ID, "queued");
-    const result = await parse(stubParser({ kind: "rejected", error: "not a CS2 demo" }));
+    const result = await parse(stubParser({ kind: "rejected", status: 422, error: "not a CS2 demo" }));
     expect(result).toEqual({ acked: true, retried: false });
     expect(await matchRow(ID)).toMatchObject({ status: "failed", error: "not a CS2 demo" });
   });
 
   it("fails the match without retrying when match.json is malformed", async () => {
     await insertMatch(ID, "queued");
-    const result = await parse(stubParser({ kind: "ok", body: { ...FILE, schema_version: 2 } }));
+    const result = await parse(stubParser({ kind: "ok", status: 200, body: { ...FILE, schema_version: 2 } }));
     expect(result).toEqual({ acked: true, retried: false });
     expect(await matchRow(ID)).toMatchObject({
       status: "failed",
@@ -167,7 +170,7 @@ describe("parse queue consumer", () => {
 
   it("clears the previous attempt's error when a retry succeeds", async () => {
     await insertMatch(ID, "queued", { error: "parser returned 503" });
-    await parse(stubParser({ kind: "ok", body: FILE }));
+    await parse(stubParser({ kind: "ok", status: 200, body: FILE }));
     expect(await matchRow(ID)).toMatchObject({ status: "ready", error: null });
   });
 
@@ -183,13 +186,13 @@ describe("parse queue consumer", () => {
 
   it("picks up a match left in parsing by an interrupted attempt", async () => {
     await insertMatch(ID, "parsing");
-    await parse(stubParser({ kind: "ok", body: FILE }));
+    await parse(stubParser({ kind: "ok", status: 200, body: FILE }));
     expect((await matchRow(ID))?.status).toBe("ready");
   });
 
   it.each(["uploaded", "ready", "failed"])("acks and skips a %s match", async (status) => {
     await insertMatch(ID, status);
-    const parser = stubParser({ kind: "ok", body: FILE });
+    const parser = stubParser({ kind: "ok", status: 200, body: FILE });
     expect(await parse(parser)).toEqual({ acked: true, retried: false });
     expect(parser.parse).not.toHaveBeenCalled();
     expect((await matchRow(ID))?.status).toBe(status);
@@ -198,7 +201,7 @@ describe("parse queue consumer", () => {
   it.each([{ match_id: ID }, { match_id: "../x" }, {}, null])(
     "acks a message for a missing or invalid match: %j",
     async (body) => {
-      const parser = stubParser({ kind: "ok", body: FILE });
+      const parser = stubParser({ kind: "ok", status: 200, body: FILE });
       expect(await parse(parser, body)).toEqual({ acked: true, retried: false });
       expect(parser.parse).not.toHaveBeenCalled();
     },

@@ -5,16 +5,24 @@ export interface ParseRequest {
   demo_key: string;
 }
 
+// status is the parser's HTTP status, absent when it could not be reached.
 export type ParseResult =
   // 200: the body is match.json and the round files are already in R2.
-  | { kind: "ok"; body: unknown }
+  | { kind: "ok"; status: number; body: unknown }
   // 422: the demo is bad. Don't retry.
-  | { kind: "rejected"; error: string }
+  | { kind: "rejected"; status: number; error: string }
   // Anything else. Let the queue retry.
-  | { kind: "transient"; error: string };
+  | { kind: "transient"; status?: number; error: string };
+
+// Which delivery of the queue message a parse is for, sent as headers so
+// the parser's log lines can be matched to the Worker's.
+export interface ParseAttempt {
+  attempt: number;
+  requestId: string;
+}
 
 export interface Parser {
-  parse(request: ParseRequest): Promise<ParseResult>;
+  parse(request: ParseRequest, attempt?: ParseAttempt): Promise<ParseResult>;
 }
 
 // Cloud Run gives up after 10 minutes. Stop waiting a little after that, well
@@ -24,12 +32,17 @@ const TIMEOUT_MS = 11 * 60 * 1000;
 // Calls `POST /parse` on the Cloud Run service.
 export function cloudRunParser(baseUrl: string, secret: string, fetcher: typeof fetch = fetch): Parser {
   return {
-    async parse(request) {
+    async parse(request, attempt) {
+      const headers: Record<string, string> = { "content-type": "application/json", "x-parse-secret": secret };
+      if (attempt) {
+        headers["x-attempt"] = String(attempt.attempt);
+        headers["x-request-id"] = attempt.requestId;
+      }
       let res: Response;
       try {
         res = await fetcher(new URL("/parse", baseUrl), {
           method: "POST",
-          headers: { "content-type": "application/json", "x-parse-secret": secret },
+          headers,
           body: JSON.stringify(request),
           signal: AbortSignal.timeout(TIMEOUT_MS),
         });
@@ -39,17 +52,18 @@ export function cloudRunParser(baseUrl: string, secret: string, fetcher: typeof 
 
       if (res.status === 200) {
         try {
-          return { kind: "ok", body: await res.json() };
+          return { kind: "ok", status: 200, body: await res.json() };
         } catch {
-          return { kind: "transient", error: "parser response was not valid JSON" };
+          return { kind: "transient", status: 200, error: "parser response was not valid JSON" };
         }
       }
       const detail = await errorDetail(res);
       if (res.status === 422) {
-        return { kind: "rejected", error: detail ?? "the parser rejected the demo" };
+        return { kind: "rejected", status: 422, error: detail ?? "the parser rejected the demo" };
       }
       return {
         kind: "transient",
+        status: res.status,
         error: `parser returned ${res.status}${detail ? `: ${detail}` : ""}`,
       };
     },
