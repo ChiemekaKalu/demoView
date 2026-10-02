@@ -271,7 +271,7 @@ describe("pulse routes", () => {
     await env.BUCKET.put(`parsed/${ID}/${PARSE}/pulse.json`, '{"pulse_version":1}');
     const res = await get();
     expect(res.status).toBe(200);
-    expect(res.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect(res.headers.get("cache-control")).toBe("public, max-age=300");
   });
 
   it("queue a Pulse for the live parse, behind the token and the switch", async () => {

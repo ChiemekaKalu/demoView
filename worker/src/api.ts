@@ -244,13 +244,14 @@ async function getMatchFile(request: Request, env: Env, [id = ""]: string[]): Pr
 }
 
 // GET /api/matches/:id/pulse.json: the parse's Match Pulse, once its consumer
-// has written it. Until then, or with Pulse off, a 404.
+// has written it. Until then, or with Pulse off, a 404. Only briefly cached
+// even for a named parse, since a new Jev model re-runs Pulse in place.
 async function getPulseFile(request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
   if (!isMatchId(id)) return error(404, "match not found");
   const parse = await parseToServe(request, env, id);
   if (parse instanceof Response) return parse;
   return (
-    (await serveObject(request, env, `${parsedPrefix(id, parse.id)}pulse.json`, parse.cacheControl)) ??
+    (await serveObject(request, env, `${parsedPrefix(id, parse.id)}pulse.json`, LIVE_CACHE_CONTROL)) ??
     error(404, "no pulse for this parse")
   );
 }

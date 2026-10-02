@@ -30,7 +30,7 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, parse_id, players, rounds }`, `no-store` | 404 |
 | `GET /api/matches/:id/events` | `200 { events }`, the match's pipeline history oldest first: `{ seq, ts, kind, msg, attempt, build, parse_id }` rows, where `kind` is `status`, `attempt`, `reparse` or `cleanup`. `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them). With `?v=<parse_id>`, that parse's, immutable for a year; without it, the live parse's, cached 5 minutes. Both with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
-| `GET /api/matches/:id/pulse.json` | `200` the parse's Match Pulse (`schema/pulse.schema.json`), cached as `match.json` is | 404 (Pulse off, or not written yet) |
+| `GET /api/matches/:id/pulse.json` | `200` the parse's Match Pulse (`schema/pulse.schema.json`), cached 5 minutes even with `?v=`, since a new Jev model can re-run it in place | 404 (Pulse off, or not written yet) |
 | `POST /api/matches/:id/pulse` | `202 { id, parse_id }`: queues a Pulse for the live parse | 401, 404, 409 (Pulse off, or no live parse) |
 | `GET /api/matches/:id/rounds/:n` | `200` round file, cached as `match.json` is | 404 |
 | `POST /api/admin/cron/:job` | `200 { job, ran: true }` after running `sweep`, `reparse` or `cleanup` now, as its cron would | 401, 404 (no such job) |
