@@ -8,7 +8,7 @@ Running log of decisions, progress and findings. Newest first. Keep entries shor
   - The proposal is in `.claude/ideas/jev/` (158d192).
   - A new `pulse.json` output with its own schema is approved.
   - aiguy may evaluate on the user's 8 matches, locally only.
-  - The AI Gateway spend limit is the $25 already loaded. The user is happy for it to be used.
+  - The AI Gateway spend cap for experiments is $12.50 of the $25 loaded, confirmed by the user to aiguy directly.
   - A CI eval job is approved, with `CLOUDFLARE_JEV` as its token.
   - v1.1 still comes first.
 - **Narrative log: the user approved all six decisions in `logging.md`.**
