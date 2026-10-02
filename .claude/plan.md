@@ -235,6 +235,15 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
 - The Steam/Valve auto-fetch (design below).
 - Two-floor maps (Nuke and Vertigo): a z or level column, a layer toggle and a `schema_version` bump.
 - The narrative log's output, schema, derived events and story pane, on top of the M4 `parser/eventlog` groundwork.
+  - *Parser side built (2026-10-02; 36a0a69, 8706d20, cc4c6b3), to the proposed record set in `.claude/logging.md`.*
+    - Facts: players, team changes, spawns, freeze ends, hurt, deaths, the bomb with its site from entities, and the match end.
+    - Derived records: the live window, round begin, end and score, the bomb timeline (`round.bomb`, which Pulse's state_version 2 needs), opening kills, trades, multi-kills and clutches.
+    - `demo parse` writes `<out>/log/{facts,derived,notes}.ndjson.gz` unless `--log off`.
+  - *Left:*
+    - coded notes (the notes layer is empty for now);
+    - the server writing it to R2, once the user picks the key;
+    - `schema/log.schema.json`, for the user to approve;
+    - the story pane (pipeline).
 
 ## Valve fetch (v1.2; design only)
 
