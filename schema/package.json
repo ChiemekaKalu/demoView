@@ -2,7 +2,7 @@
   "name": "demoview-schema",
   "version": "1.0.0",
   "private": true,
-  "description": "JSON Schema (schema_version 1) for demoView's match.json and rounds/NN.json, a validator, and synthetic sample data.",
+  "description": "JSON Schema for demoView's match.json and rounds/NN.json (schema_version 1) and pulse.json (pulse_version 1), a validator, and synthetic sample data.",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -10,7 +10,7 @@
   "scripts": {
     "validate": "node validate.mjs",
     "generate": "node samples/generate.mjs",
-    "test": "node validate.mjs --strict samples"
+    "test": "node validate.mjs --strict samples && node --test validate.test.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0"

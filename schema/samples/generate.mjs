@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Generates the synthetic sample data in this folder: match.json and a few
-// rounds/NN.json. Everything is derived from a seeded PRNG, so running it again
-// produces identical files.
+// Generates the synthetic sample data in this folder: match.json, a few
+// rounds/NN.json and pulse.json. Everything is derived from a seeded PRNG, so
+// running it again produces identical files.
 //
 //   node samples/generate.mjs        (or: npm run generate)
 //
@@ -548,7 +548,8 @@ function simulateRound(n, winner, reason, history, startTick) {
   }
 
   const roundMeta = { n, start_tick: startTick, freeze_end_tick: freezeEndTick, end_tick: endTick, winner, reason, side_a: sideA };
-  return { roundMeta, kills, damage, frames, freezeEndTick, tracks, deathFrame, grenades };
+  const plantTick = planted ? freezeEndTick + Math.round(plantS * TICK_RATE) : null;
+  return { roundMeta, kills, damage, frames, freezeEndTick, tracks, deathFrame, grenades, plantTick };
 }
 
 // Walks a plan of { go: node } and { hold: untilSeconds, watch: node } steps.
@@ -725,6 +726,104 @@ function buildRoundFile(sim) {
   };
 }
 
+// ------------------------------------------------------------------ pulse.json
+// Jev stands in as a small logistic model of alive counts and the bomb, so the
+// line moves the way a real one does. Facts follow their schema descriptions.
+
+const TEMPERATURE = 0.54;
+const PARSE_ID = "1m3wyj800synth00"; // the Worker's format: 9 base32 chars of time, then 7 more
+const sigmoid = (z) => 1 / (1 + Math.exp(-z));
+const logit = (p) => Math.log(p / (1 - p));
+const round2 = (v) => Math.round(v * 100) / 100;
+
+function pulseRound(sim) {
+  const { roundMeta: rd, kills, plantTick } = sim;
+  const bias = new Rng(SEED + rd.n * 31337).float(-0.15, 0.15);
+  const sideOfIdx = (idx) => sideOf(PLAYERS[idx].team, rd.side_a);
+  const win = sideOf(rd.winner, rd.side_a);
+  const lose = win === "CT" ? "T" : "CT";
+  const alive = { CT: 5, T: 5 };
+  const moments = [];
+  let clutch = 0;
+  let comeback = false;
+  const read = (tick) => {
+    const planted = plantTick !== null && tick >= plantTick;
+    let raw;
+    if (alive.CT === 0) raw = 0.01;
+    else if (alive.T === 0 && !planted) raw = 0.99;
+    else raw = sigmoid(bias + 0.45 * (alive.CT - alive.T) - (planted ? 0.9 : 0) + (alive.T === 0 ? 1.5 : 0));
+    const p = sigmoid(logit(raw) / TEMPERATURE);
+    moments.push({ tick, p_ct: round2(p), p_raw: round2(raw), tension: round1(3 * (1 - Math.abs(2 * p - 1))) });
+    if (alive[win] === 1) clutch = Math.max(clutch, alive[lose]);
+    if (alive[lose] - alive[win] >= 2) comeback = true;
+  };
+
+  // The round start, then one moment per in-round kill tick.
+  read(rd.freeze_end_tick);
+  const inRound = kills.filter((k) => k.tick > rd.freeze_end_tick && k.tick <= rd.end_tick);
+  inRound.forEach((k, i) => {
+    alive[sideOfIdx(k.victim)]--;
+    if (inRound[i + 1]?.tick !== k.tick) read(k.tick);
+  });
+
+  let swingTick = null;
+  let swing = 0;
+  for (let i = 1; i < moments.length; i++) {
+    const d = Math.abs(moments[i].p_ct - moments[i - 1].p_ct);
+    if (swingTick === null || d > swing) [swingTick, swing] = [moments[i].tick, d];
+  }
+
+  const enemyKills = new Map();
+  for (const k of kills) {
+    if (sideOfIdx(k.attacker) !== sideOfIdx(k.victim)) enemyKills.set(k.attacker, (enemyKills.get(k.attacker) ?? 0) + 1);
+  }
+  const multikill = Math.max(0, ...enemyKills.values());
+  const planted = plantTick !== null && plantTick <= rd.end_tick;
+  const howWon =
+    rd.reason === "time_expired" ? "ct_time"
+    : rd.reason === "surrender" ? "surrender"
+    : win === "T" ? (planted ? "t_post_plant" : "t_before_plant")
+    : planted ? "ct_retake" : "ct_hold";
+  const headline =
+    multikill === 5 ? "ace"
+    : clutch >= 2 ? "clutch_big"
+    : clutch === 1 ? "clutch_1v1"
+    : alive[win] === 5 ? "flawless"
+    : comeback ? "comeback"
+    : howWon === "ct_retake" ? "retake"
+    : howWon === "t_post_plant" ? "post_plant"
+    : rd.end_tick - rd.freeze_end_tick <= 40 * TICK_RATE ? "fast_win"
+    : null;
+  const highlight = round2(
+    Math.min(4, 0.4 + 0.45 * Math.max(0, multikill - 1) + (clutch ? 0.6 + 0.4 * clutch : 0) + (comeback ? 0.5 : 0) + 1.5 * swing),
+  );
+
+  return {
+    n: rd.n,
+    moments,
+    swing_tick: swingTick,
+    highlight,
+    share: round2(sigmoid(1.8 * (highlight - 2.4))),
+    headline,
+    facts: { clutch: clutch ? `1v${clutch}` : null, multikill, comeback, how_won: howWon },
+  };
+}
+
+function buildPulse(sims) {
+  // A round that ends at freeze end has no moments.
+  const rounds = sims.filter((s) => s.roundMeta.end_tick > s.roundMeta.freeze_end_tick).map(pulseRound);
+  const worthWatching = [...rounds].sort((a, b) => b.highlight - a.highlight || a.n - b.n).slice(0, 3).map((r) => r.n);
+  return {
+    pulse_version: 1,
+    model: "jev-0.0.0-synthetic",
+    state_version: 1,
+    parse_id: PARSE_ID,
+    calibration: { temperature: TEMPERATURE },
+    rounds,
+    worth_watching: worthWatching,
+  };
+}
+
 // ------------------------------------------------------------------ self-checks
 
 function check(cond, msg) {
@@ -820,6 +919,8 @@ function main() {
 
   const sizes = [];
   sizes.push(["match.json", writeJson(path.join(OUT_DIR, "match.json"), match, (at) => at.length <= 1)]);
+  const expandPulse = (at) => at.length === 0 || (at[0] === "rounds" && (at.length <= 2 || (at.length === 3 && at[2] === "moments")));
+  sizes.push(["pulse.json", writeJson(path.join(OUT_DIR, "pulse.json"), buildPulse(sims), expandPulse)]);
   const roundsDir = path.join(OUT_DIR, "rounds");
   fs.rmSync(roundsDir, { recursive: true, force: true });
   for (const n of ROUND_FILES) {

@@ -1,12 +1,15 @@
 #!/usr/bin/env node
-// Validates demoView parser output against schema v1.
+// Validates demoView parser output against schema v1, and pulse.json against
+// pulse_version 1.
 //
 //   node validate.mjs [--strict] <file | dir | glob>...
 //
 // The schema is picked by file name: match.json uses match.schema.json, NN.json
-// (digits only) uses round.schema.json. A directory is searched recursively for
-// both. A round file is also checked against its match.json: ../match.json next
-// to it (added to the run automatically), or else the only match.json passed.
+// (digits only) uses round.schema.json and pulse.json uses pulse.schema.json. A
+// directory is searched recursively for all three. Round and pulse files are
+// also checked against their match.json: ../match.json for a round file, the
+// match.json beside a pulse file (added to the run automatically), or else the
+// only match.json passed.
 //
 // Errors break a rule the spec states. Warnings flag a recommended convention
 // the spec doesn't settle yet (see README.md); --strict makes them fatal.
@@ -29,6 +32,7 @@ const ajv = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }
 const schemaValidators = {
   match: ajv.compile(readSchema("match.schema.json")),
   round: ajv.compile(readSchema("round.schema.json")),
+  pulse: ajv.compile(readSchema("pulse.schema.json")),
 };
 
 function readSchema(name) {
@@ -42,7 +46,8 @@ function usage() {
     "usage: node validate.mjs [--strict] <file | dir | glob>...",
     "  match.json  -> match.schema.json",
     "  NN.json     -> round.schema.json (NN = round number)",
-    "  dir         -> every match.json and NN.json under it",
+    "  pulse.json  -> pulse.schema.json",
+    "  dir         -> every match.json, NN.json and pulse.json under it",
     "  --strict    -> warnings fail the run too",
   ].join("\n");
 }
@@ -50,8 +55,14 @@ function usage() {
 function kindOf(file) {
   const base = path.basename(file);
   if (base === "match.json") return "match";
+  if (base === "pulse.json") return "pulse";
   if (/^\d+\.json$/.test(base)) return "round";
   return null;
+}
+
+// Where a file's match.json sits: one level up from rounds/NN.json, beside pulse.json.
+function matchPathFor(file, kind) {
+  return path.resolve(path.dirname(file), kind === "round" ? ".." : ".", "match.json");
 }
 
 function walk(dir, out) {
@@ -95,7 +106,7 @@ function collectFiles(args) {
     } else if (fs.statSync(arg).isDirectory()) {
       const found = [];
       walk(arg, found);
-      if (found.length === 0) problems.push(`no match.json or NN.json files under ${arg}`);
+      if (found.length === 0) problems.push(`no match.json, NN.json or pulse.json files under ${arg}`);
       files.push(...found);
     } else {
       files.push(arg);
@@ -439,6 +450,92 @@ function checkRound(r, matchReport) {
   });
 }
 
+// ---------------------------------------------------------------- pulse.json
+
+function checkPulse(r, matchReport) {
+  const p = r.data;
+
+  // rounds: unique n, moment ticks in order, swing_tick on a moment
+  const seenN = new Set();
+  p.rounds.forEach((rd, i) => {
+    const at = `/rounds/${i}`;
+    if (seenN.has(rd.n)) r.error(`${at}/n: duplicate round n ${rd.n}`);
+    seenN.add(rd.n);
+    if (i > 0 && rd.n < p.rounds[i - 1].n) r.warn(`${at}/n: rounds not sorted by n (${rd.n} after ${p.rounds[i - 1].n})`);
+    rd.moments.forEach((mo, j) => {
+      const prev = rd.moments[j - 1];
+      if (prev && mo.tick <= prev.tick) r.error(`${at}/moments/${j}/tick: ${mo.tick} after ${prev.tick}; moment ticks must strictly increase`);
+    });
+    if (rd.moments.length === 1) {
+      if (rd.swing_tick !== null) r.error(`${at}/swing_tick: must be null for a round with a single moment`);
+    } else if (rd.swing_tick === null) {
+      r.error(`${at}/swing_tick: null, but the round has ${rd.moments.length} moments`);
+    } else if (!rd.moments.some((mo) => mo.tick === rd.swing_tick)) {
+      r.error(`${at}/swing_tick: ${rd.swing_tick} is not one of the round's moment ticks`);
+    }
+  });
+  const rounds = indexBy(p.rounds, "n");
+
+  // worth_watching: rounds in this file, highest highlight first
+  p.worth_watching.forEach((n, i) => {
+    const at = `/worth_watching/${i}`;
+    const rd = rounds.get(n);
+    const prev = rounds.get(p.worth_watching[i - 1]);
+    if (!rd) r.error(`${at}: round ${n} is not in rounds`);
+    else if (prev && rd.highlight > prev.highlight) {
+      r.error(`${at}: round ${n} (highlight ${rd.highlight}) comes after round ${prev.n} (highlight ${prev.highlight}); need highest highlight first`);
+    }
+  });
+
+  // cross-file checks against match.json
+  if (!matchReport) {
+    r.note("no match.json beside it or passed alongside; references into match.json not checked");
+    return;
+  }
+  if (!matchReport.schemaOk) {
+    r.note(`${display(matchReport.file)} is invalid; references into it not checked`);
+    return;
+  }
+  r.note(`checked against ${display(matchReport.file)}`);
+  const m = matchReport.data;
+  const matchRounds = indexBy(m.rounds, "n");
+  p.rounds.forEach((rd, i) => {
+    const at = `/rounds/${i}`;
+    const mr = matchRounds.get(rd.n);
+    if (!mr) {
+      r.error(`${at}/n: round ${rd.n} is not in match.json rounds`);
+      return;
+    }
+    rd.moments.forEach((mo, j) => {
+      if (mo.tick < mr.start_tick || mo.tick > mr.end_tick) {
+        r.error(`${at}/moments/${j}/tick: tick ${mo.tick} is outside round ${rd.n} [${mr.start_tick}, ${mr.end_tick}]`);
+      }
+    });
+    const winSide = mr.winner === "A" ? mr.side_a : mr.side_a === "CT" ? "T" : "CT";
+    const howWon = rd.facts.how_won;
+    const howWonSide = howWon.startsWith("ct_") ? "CT" : howWon.startsWith("t_") ? "T" : winSide;
+    if (howWonSide !== winSide) r.error(`${at}/facts/how_won: ${howWon}, but the ${winSide} side won round ${rd.n} in match.json`);
+
+    // the round start, then one moment per in-round kill tick
+    if (rd.moments[0].tick !== mr.freeze_end_tick) {
+      r.warn(`${at}/moments/0/tick: ${rd.moments[0].tick} != match.json freeze_end_tick ${mr.freeze_end_tick} (recommended: the first moment is the round start)`);
+    }
+    const killTicks = new Set(m.kills.filter((k) => k.round === rd.n && k.tick > mr.freeze_end_tick && k.tick <= mr.end_tick).map((k) => k.tick));
+    rd.moments.forEach((mo, j) => {
+      if (j > 0 && !killTicks.has(mo.tick)) r.warn(`${at}/moments/${j}/tick: no kill in round ${rd.n} at tick ${mo.tick} (recommended: one moment per in-round kill tick)`);
+    });
+    const momentTicks = new Set(rd.moments.map((mo) => mo.tick));
+    for (const tick of killTicks) {
+      if (!momentTicks.has(tick)) r.warn(`${at}/moments: no moment for the kill at tick ${tick} (recommended: one moment per in-round kill tick)`);
+    }
+  });
+  for (const mr of m.rounds) {
+    if (!rounds.has(mr.n) && mr.end_tick > mr.freeze_end_tick) {
+      r.warn(`/rounds: no entry for match.json round ${mr.n} (recommended: one per round that doesn't end at freeze end)`);
+    }
+  }
+}
+
 // ---------------------------------------------------------------- main
 
 function main(argv) {
@@ -462,7 +559,7 @@ function main(argv) {
   const add = (file) => {
     const kind = kindOf(file);
     if (!kind) {
-      console.error(`error: ${display(file)}: can't tell which schema to use; expected match.json or NN.json`);
+      console.error(`error: ${display(file)}: can't tell which schema to use; expected match.json, NN.json or pulse.json`);
       return false;
     }
     if (!reports.has(file)) reports.set(file, new Report(file, kind));
@@ -470,20 +567,19 @@ function main(argv) {
   };
   if (!files.every(add)) return 2;
 
-  // Pull in ../match.json for round files that have one. Loop over a copy,
-  // since this adds to `reports`.
+  // Pull in the match.json of round and pulse files that have one. Loop over a
+  // copy, since this adds to `reports`.
   for (const rep of Array.from(reports.values())) {
-    if (rep.kind !== "round") continue;
-    const sibling = path.resolve(path.dirname(rep.file), "..", "match.json");
+    if (rep.kind === "match") continue;
+    const sibling = matchPathFor(rep.file, rep.kind);
     if (fs.existsSync(sibling) && !reports.has(sibling)) {
       add(sibling);
-      reports.get(sibling).note("added: found next to a round file");
+      reports.get(sibling).note(`added: found next to a ${rep.kind} file`);
     }
   }
 
-  const all = [...reports.values()].sort(
-    (a, b) => (a.kind === b.kind ? a.file.localeCompare(b.file) : a.kind === "match" ? -1 : 1),
-  );
+  const order = { match: 0, pulse: 1, round: 2 };
+  const all = [...reports.values()].sort((a, b) => order[a.kind] - order[b.kind] || a.file.localeCompare(b.file));
   for (const rep of all) load(rep);
 
   const matchReports = all.filter((rep) => rep.kind === "match");
@@ -491,10 +587,11 @@ function main(argv) {
     if (!rep.schemaOk) continue;
     if (rep.kind === "match") {
       checkMatch(rep);
-    } else {
-      const sibling = reports.get(path.resolve(path.dirname(rep.file), "..", "match.json"));
-      checkRound(rep, sibling ?? (matchReports.length === 1 ? matchReports[0] : undefined));
+      continue;
     }
+    const matchReport = reports.get(matchPathFor(rep.file, rep.kind)) ?? (matchReports.length === 1 ? matchReports[0] : undefined);
+    if (rep.kind === "round") checkRound(rep, matchReport);
+    else checkPulse(rep, matchReport);
   }
 
   let failed = 0;

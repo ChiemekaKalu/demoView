@@ -1,0 +1,394 @@
+{
+  "pulse_version": 1,
+  "model": "jev-0.0.0-synthetic",
+  "state_version": 1,
+  "parse_id": "1m3wyj800synth00",
+  "calibration": {"temperature": 0.54},
+  "rounds": [
+    {
+      "n": 1,
+      "moments": [
+        {"tick": 12523, "p_ct": 0.57, "p_raw": 0.54, "tension": 2.6},
+        {"tick": 13602, "p_ct": 0.36, "p_raw": 0.42, "tension": 2.2},
+        {"tick": 13621, "p_ct": 0.2, "p_raw": 0.32, "tension": 1.2},
+        {"tick": 15042, "p_ct": 0.36, "p_raw": 0.42, "tension": 2.2},
+        {"tick": 15527, "p_ct": 0.57, "p_raw": 0.54, "tension": 2.6},
+        {"tick": 15629, "p_ct": 0.36, "p_raw": 0.42, "tension": 2.2},
+        {"tick": 15745, "p_ct": 0.57, "p_raw": 0.54, "tension": 2.6},
+        {"tick": 16002, "p_ct": 0.36, "p_raw": 0.42, "tension": 2.2},
+        {"tick": 16128, "p_ct": 0.2, "p_raw": 0.32, "tension": 1.2},
+        {"tick": 16206, "p_ct": 0.9, "p_raw": 0.77, "tension": 0.6}
+      ],
+      "swing_tick": 16206,
+      "highlight": 3.4,
+      "share": 0.86,
+      "headline": "clutch_1v1",
+      "facts": {"clutch": "1v1", "multikill": 2, "comeback": true, "how_won": "ct_retake"}
+    },
+    {
+      "n": 2,
+      "moments": [
+        {"tick": 18313, "p_ct": 0.54, "p_raw": 0.52, "tension": 2.8},
+        {"tick": 19214, "p_ct": 0.73, "p_raw": 0.63, "tension": 1.6},
+        {"tick": 19420, "p_ct": 0.86, "p_raw": 0.73, "tension": 0.8},
+        {"tick": 21602, "p_ct": 0.93, "p_raw": 0.81, "tension": 0.4},
+        {"tick": 21799, "p_ct": 0.97, "p_raw": 0.87, "tension": 0.2},
+        {"tick": 21883, "p_ct": 1, "p_raw": 0.99, "tension": 0}
+      ],
+      "swing_tick": 19214,
+      "highlight": 2.04,
+      "share": 0.34,
+      "headline": "flawless",
+      "facts": {"clutch": null, "multikill": 4, "comeback": false, "how_won": "ct_hold"}
+    },
+    {
+      "n": 3,
+      "moments": [
+        {"tick": 23291, "p_ct": 0.49, "p_raw": 0.49, "tension": 2.9},
+        {"tick": 23994, "p_ct": 0.29, "p_raw": 0.38, "tension": 1.8},
+        {"tick": 24038, "p_ct": 0.15, "p_raw": 0.28, "tension": 0.9},
+        {"tick": 24261, "p_ct": 0.29, "p_raw": 0.38, "tension": 1.8},
+        {"tick": 24487, "p_ct": 0.15, "p_raw": 0.28, "tension": 0.9},
+        {"tick": 27448, "p_ct": 0.29, "p_raw": 0.38, "tension": 1.8},
+        {"tick": 27657, "p_ct": 0.15, "p_raw": 0.28, "tension": 0.9},
+        {"tick": 27866, "p_ct": 0.07, "p_raw": 0.2, "tension": 0.4},
+        {"tick": 28033, "p_ct": 0.15, "p_raw": 0.28, "tension": 0.9}
+      ],
+      "swing_tick": 23994,
+      "highlight": 2.15,
+      "share": 0.39,
+      "headline": "clutch_1v1",
+      "facts": {"clutch": "1v1", "multikill": 2, "comeback": false, "how_won": "t_post_plant"}
+    },
+    {
+      "n": 4,
+      "moments": [
+        {"tick": 31430, "p_ct": 0.46, "p_raw": 0.48, "tension": 2.8},
+        {"tick": 32254, "p_ct": 0.66, "p_raw": 0.59, "tension": 2},
+        {"tick": 32405, "p_ct": 0.82, "p_raw": 0.69, "tension": 1.1},
+        {"tick": 33956, "p_ct": 0.91, "p_raw": 0.78, "tension": 0.5},
+        {"tick": 34042, "p_ct": 0.96, "p_raw": 0.85, "tension": 0.2},
+        {"tick": 34186, "p_ct": 0.91, "p_raw": 0.78, "tension": 0.5},
+        {"tick": 34331, "p_ct": 1, "p_raw": 0.99, "tension": 0}
+      ],
+      "swing_tick": 32254,
+      "highlight": 1.15,
+      "share": 0.1,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 2, "comeback": false, "how_won": "ct_hold"}
+    },
+    {
+      "n": 5,
+      "moments": [
+        {"tick": 35739, "p_ct": 0.51, "p_raw": 0.51, "tension": 2.9},
+        {"tick": 36876, "p_ct": 0.71, "p_raw": 0.62, "tension": 1.8},
+        {"tick": 36944, "p_ct": 0.51, "p_raw": 0.51, "tension": 2.9},
+        {"tick": 37145, "p_ct": 0.31, "p_raw": 0.4, "tension": 1.9},
+        {"tick": 37205, "p_ct": 0.51, "p_raw": 0.51, "tension": 2.9}
+      ],
+      "swing_tick": 37145,
+      "highlight": 1.15,
+      "share": 0.1,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 2, "comeback": false, "how_won": "ct_time"}
+    },
+    {
+      "n": 6,
+      "moments": [
+        {"tick": 44507, "p_ct": 0.49, "p_raw": 0.5, "tension": 3},
+        {"tick": 45478, "p_ct": 0.3, "p_raw": 0.39, "tension": 1.8},
+        {"tick": 45663, "p_ct": 0.16, "p_raw": 0.29, "tension": 0.9},
+        {"tick": 45734, "p_ct": 0.3, "p_raw": 0.39, "tension": 1.8},
+        {"tick": 45756, "p_ct": 0.16, "p_raw": 0.29, "tension": 0.9},
+        {"tick": 48335, "p_ct": 0.07, "p_raw": 0.2, "tension": 0.4},
+        {"tick": 49236, "p_ct": 0.16, "p_raw": 0.29, "tension": 0.9},
+        {"tick": 49379, "p_ct": 0, "p_raw": 0.01, "tension": 0}
+      ],
+      "swing_tick": 45478,
+      "highlight": 1.59,
+      "share": 0.19,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 3, "comeback": false, "how_won": "t_before_plant"}
+    },
+    {
+      "n": 7,
+      "moments": [
+        {"tick": 50787, "p_ct": 0.47, "p_raw": 0.48, "tension": 2.8},
+        {"tick": 51451, "p_ct": 0.28, "p_raw": 0.37, "tension": 1.7},
+        {"tick": 51475, "p_ct": 0.47, "p_raw": 0.48, "tension": 2.8},
+        {"tick": 51759, "p_ct": 0.67, "p_raw": 0.59, "tension": 2},
+        {"tick": 54279, "p_ct": 0.47, "p_raw": 0.48, "tension": 2.8},
+        {"tick": 54435, "p_ct": 0.67, "p_raw": 0.59, "tension": 2},
+        {"tick": 54652, "p_ct": 0.47, "p_raw": 0.48, "tension": 2.8},
+        {"tick": 55099, "p_ct": 0.07, "p_raw": 0.2, "tension": 0.4}
+      ],
+      "swing_tick": 55099,
+      "highlight": 1.45,
+      "share": 0.15,
+      "headline": "post_plant",
+      "facts": {"clutch": null, "multikill": 2, "comeback": false, "how_won": "t_post_plant"}
+    },
+    {
+      "n": 8,
+      "moments": [
+        {"tick": 58837, "p_ct": 0.54, "p_raw": 0.52, "tension": 2.7},
+        {"tick": 60131, "p_ct": 0.73, "p_raw": 0.63, "tension": 1.6},
+        {"tick": 60197, "p_ct": 0.54, "p_raw": 0.52, "tension": 2.7},
+        {"tick": 60326, "p_ct": 0.73, "p_raw": 0.63, "tension": 1.6},
+        {"tick": 62340, "p_ct": 0.54, "p_raw": 0.52, "tension": 2.7},
+        {"tick": 62460, "p_ct": 0.34, "p_raw": 0.41, "tension": 2},
+        {"tick": 62829, "p_ct": 0.18, "p_raw": 0.31, "tension": 1.1},
+        {"tick": 62968, "p_ct": 0.09, "p_raw": 0.22, "tension": 0.5},
+        {"tick": 63321, "p_ct": 0.18, "p_raw": 0.31, "tension": 1.1}
+      ],
+      "swing_tick": 62460,
+      "highlight": 3.9,
+      "share": 0.94,
+      "headline": "clutch_big",
+      "facts": {"clutch": "1v3", "multikill": 3, "comeback": true, "how_won": "ct_retake"}
+    },
+    {
+      "n": 9,
+      "moments": [
+        {"tick": 65272, "p_ct": 0.46, "p_raw": 0.48, "tension": 2.7},
+        {"tick": 66332, "p_ct": 0.27, "p_raw": 0.37, "tension": 1.6},
+        {"tick": 66551, "p_ct": 0.14, "p_raw": 0.27, "tension": 0.8},
+        {"tick": 66662, "p_ct": 0.27, "p_raw": 0.37, "tension": 1.6},
+        {"tick": 66770, "p_ct": 0.46, "p_raw": 0.48, "tension": 2.7},
+        {"tick": 68656, "p_ct": 0.66, "p_raw": 0.59, "tension": 2.1},
+        {"tick": 68709, "p_ct": 0.82, "p_raw": 0.69, "tension": 1.1},
+        {"tick": 68903, "p_ct": 1, "p_raw": 0.99, "tension": 0}
+      ],
+      "swing_tick": 68656,
+      "highlight": 3,
+      "share": 0.75,
+      "headline": "ace",
+      "facts": {"clutch": null, "multikill": 5, "comeback": true, "how_won": "ct_hold"}
+    },
+    {
+      "n": 10,
+      "moments": [
+        {"tick": 70311, "p_ct": 0.44, "p_raw": 0.47, "tension": 2.6},
+        {"tick": 71493, "p_ct": 0.26, "p_raw": 0.36, "tension": 1.5},
+        {"tick": 71687, "p_ct": 0.13, "p_raw": 0.26, "tension": 0.8},
+        {"tick": 71868, "p_ct": 0.06, "p_raw": 0.19, "tension": 0.4},
+        {"tick": 74378, "p_ct": 0.03, "p_raw": 0.13, "tension": 0.2},
+        {"tick": 74491, "p_ct": 0.06, "p_raw": 0.19, "tension": 0.4},
+        {"tick": 74746, "p_ct": 0.13, "p_raw": 0.26, "tension": 0.8},
+        {"tick": 74912, "p_ct": 0.26, "p_raw": 0.36, "tension": 1.5},
+        {"tick": 74984, "p_ct": 0, "p_raw": 0.01, "tension": 0}
+      ],
+      "swing_tick": 74984,
+      "highlight": 1.69,
+      "share": 0.22,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 3, "comeback": false, "how_won": "t_before_plant"}
+    },
+    {
+      "n": 11,
+      "moments": [
+        {"tick": 76392, "p_ct": 0.54, "p_raw": 0.52, "tension": 2.8},
+        {"tick": 77336, "p_ct": 0.73, "p_raw": 0.63, "tension": 1.6},
+        {"tick": 77566, "p_ct": 0.54, "p_raw": 0.52, "tension": 2.8},
+        {"tick": 77604, "p_ct": 0.73, "p_raw": 0.63, "tension": 1.6},
+        {"tick": 78024, "p_ct": 0.86, "p_raw": 0.73, "tension": 0.8},
+        {"tick": 79375, "p_ct": 0.93, "p_raw": 0.81, "tension": 0.4},
+        {"tick": 79509, "p_ct": 1, "p_raw": 0.99, "tension": 0}
+      ],
+      "swing_tick": 77336,
+      "highlight": 2.04,
+      "share": 0.34,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 4, "comeback": false, "how_won": "ct_hold"}
+    },
+    {
+      "n": 12,
+      "moments": [
+        {"tick": 80917, "p_ct": 0.47, "p_raw": 0.48, "tension": 2.8},
+        {"tick": 81955, "p_ct": 0.67, "p_raw": 0.59, "tension": 2},
+        {"tick": 82164, "p_ct": 0.47, "p_raw": 0.48, "tension": 2.8},
+        {"tick": 82371, "p_ct": 0.67, "p_raw": 0.59, "tension": 2},
+        {"tick": 84226, "p_ct": 0.47, "p_raw": 0.48, "tension": 2.8},
+        {"tick": 84443, "p_ct": 0.28, "p_raw": 0.37, "tension": 1.7}
+      ],
+      "swing_tick": 81955,
+      "highlight": 1.15,
+      "share": 0.1,
+      "headline": "post_plant",
+      "facts": {"clutch": null, "multikill": 2, "comeback": false, "how_won": "t_post_plant"}
+    },
+    {
+      "n": 13,
+      "moments": [
+        {"tick": 89840, "p_ct": 0.45, "p_raw": 0.47, "tension": 2.7},
+        {"tick": 90496, "p_ct": 0.26, "p_raw": 0.36, "tension": 1.6},
+        {"tick": 90568, "p_ct": 0.45, "p_raw": 0.47, "tension": 2.7},
+        {"tick": 90912, "p_ct": 0.26, "p_raw": 0.36, "tension": 1.6},
+        {"tick": 92747, "p_ct": 0.45, "p_raw": 0.47, "tension": 2.7},
+        {"tick": 92840, "p_ct": 0.65, "p_raw": 0.59, "tension": 2.1},
+        {"tick": 92846, "p_ct": 0.81, "p_raw": 0.69, "tension": 1.1},
+        {"tick": 92924, "p_ct": 1, "p_raw": 0.99, "tension": 0}
+      ],
+      "swing_tick": 92840,
+      "highlight": 2.05,
+      "share": 0.35,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 4, "comeback": false, "how_won": "ct_hold"}
+    },
+    {
+      "n": 14,
+      "moments": [
+        {"tick": 94332, "p_ct": 0.47, "p_raw": 0.49, "tension": 2.8},
+        {"tick": 95081, "p_ct": 0.28, "p_raw": 0.38, "tension": 1.7},
+        {"tick": 95213, "p_ct": 0.15, "p_raw": 0.28, "tension": 0.9},
+        {"tick": 95235, "p_ct": 0.28, "p_raw": 0.38, "tension": 1.7},
+        {"tick": 95497, "p_ct": 0.47, "p_raw": 0.49, "tension": 2.8},
+        {"tick": 97499, "p_ct": 0.67, "p_raw": 0.6, "tension": 2},
+        {"tick": 97653, "p_ct": 0.83, "p_raw": 0.7, "tension": 1},
+        {"tick": 97778, "p_ct": 1, "p_raw": 0.99, "tension": 0}
+      ],
+      "swing_tick": 97499,
+      "highlight": 2.55,
+      "share": 0.57,
+      "headline": "comeback",
+      "facts": {"clutch": null, "multikill": 4, "comeback": true, "how_won": "ct_hold"}
+    },
+    {
+      "n": 15,
+      "moments": [
+        {"tick": 99186, "p_ct": 0.43, "p_raw": 0.46, "tension": 2.6},
+        {"tick": 99798, "p_ct": 0.25, "p_raw": 0.35, "tension": 1.5},
+        {"tick": 100259, "p_ct": 0.13, "p_raw": 0.26, "tension": 0.8},
+        {"tick": 100457, "p_ct": 0.06, "p_raw": 0.18, "tension": 0.4},
+        {"tick": 103523, "p_ct": 0.03, "p_raw": 0.12, "tension": 0.2}
+      ],
+      "swing_tick": 99798,
+      "highlight": 1.12,
+      "share": 0.09,
+      "headline": "post_plant",
+      "facts": {"clutch": null, "multikill": 2, "comeback": false, "how_won": "t_post_plant"}
+    },
+    {
+      "n": 16,
+      "moments": [
+        {"tick": 107028, "p_ct": 0.45, "p_raw": 0.47, "tension": 2.7},
+        {"tick": 107705, "p_ct": 0.26, "p_raw": 0.36, "tension": 1.6},
+        {"tick": 107810, "p_ct": 0.13, "p_raw": 0.27, "tension": 0.8},
+        {"tick": 109614, "p_ct": 0.26, "p_raw": 0.36, "tension": 1.6},
+        {"tick": 109749, "p_ct": 0.13, "p_raw": 0.27, "tension": 0.8},
+        {"tick": 110442, "p_ct": 0.06, "p_raw": 0.19, "tension": 0.4},
+        {"tick": 110618, "p_ct": 0.13, "p_raw": 0.27, "tension": 0.8},
+        {"tick": 110703, "p_ct": 0, "p_raw": 0.01, "tension": 0}
+      ],
+      "swing_tick": 107705,
+      "highlight": 1.14,
+      "share": 0.09,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 2, "comeback": false, "how_won": "t_before_plant"}
+    },
+    {
+      "n": 17,
+      "moments": [
+        {"tick": 112111, "p_ct": 0.5, "p_raw": 0.5, "tension": 3},
+        {"tick": 113139, "p_ct": 0.7, "p_raw": 0.61, "tension": 1.8},
+        {"tick": 113737, "p_ct": 0.5, "p_raw": 0.5, "tension": 3},
+        {"tick": 115177, "p_ct": 0.7, "p_raw": 0.61, "tension": 1.8},
+        {"tick": 115390, "p_ct": 0.84, "p_raw": 0.71, "tension": 1},
+        {"tick": 115549, "p_ct": 0.3, "p_raw": 0.39, "tension": 1.8},
+        {"tick": 115563, "p_ct": 0.5, "p_raw": 0.5, "tension": 3},
+        {"tick": 115659, "p_ct": 0.3, "p_raw": 0.39, "tension": 1.8},
+        {"tick": 115747, "p_ct": 0.16, "p_raw": 0.29, "tension": 0.9}
+      ],
+      "swing_tick": 115549,
+      "highlight": 4,
+      "share": 0.95,
+      "headline": "clutch_big",
+      "facts": {"clutch": "1v3", "multikill": 4, "comeback": true, "how_won": "t_post_plant"}
+    },
+    {
+      "n": 18,
+      "moments": [
+        {"tick": 119511, "p_ct": 0.45, "p_raw": 0.48, "tension": 2.7},
+        {"tick": 120094, "p_ct": 0.66, "p_raw": 0.59, "tension": 2.1},
+        {"tick": 120140, "p_ct": 0.81, "p_raw": 0.69, "tension": 1.1},
+        {"tick": 122728, "p_ct": 0.91, "p_raw": 0.78, "tension": 0.5},
+        {"tick": 122862, "p_ct": 0.81, "p_raw": 0.69, "tension": 1.1},
+        {"tick": 123014, "p_ct": 0.66, "p_raw": 0.59, "tension": 2.1},
+        {"tick": 123795, "p_ct": 0.45, "p_raw": 0.48, "tension": 2.7},
+        {"tick": 123882, "p_ct": 0.27, "p_raw": 0.37, "tension": 1.6},
+        {"tick": 123905, "p_ct": 0.93, "p_raw": 0.8, "tension": 0.4}
+      ],
+      "swing_tick": 123905,
+      "highlight": 1.84,
+      "share": 0.27,
+      "headline": "retake",
+      "facts": {"clutch": null, "multikill": 2, "comeback": false, "how_won": "ct_retake"}
+    },
+    {
+      "n": 19,
+      "moments": [
+        {"tick": 125778, "p_ct": 0.56, "p_raw": 0.53, "tension": 2.6},
+        {"tick": 126583, "p_ct": 0.36, "p_raw": 0.42, "tension": 2.1},
+        {"tick": 126650, "p_ct": 0.19, "p_raw": 0.32, "tension": 1.2},
+        {"tick": 126835, "p_ct": 0.1, "p_raw": 0.23, "tension": 0.6},
+        {"tick": 129015, "p_ct": 0.04, "p_raw": 0.16, "tension": 0.3},
+        {"tick": 129690, "p_ct": 0, "p_raw": 0.01, "tension": 0}
+      ],
+      "swing_tick": 126583,
+      "highlight": 1.6,
+      "share": 0.19,
+      "headline": "flawless",
+      "facts": {"clutch": null, "multikill": 3, "comeback": false, "how_won": "t_before_plant"}
+    },
+    {
+      "n": 20,
+      "moments": [
+        {"tick": 131098, "p_ct": 0.5, "p_raw": 0.5, "tension": 3},
+        {"tick": 132290, "p_ct": 0.69, "p_raw": 0.61, "tension": 1.8},
+        {"tick": 132396, "p_ct": 0.5, "p_raw": 0.5, "tension": 3},
+        {"tick": 132429, "p_ct": 0.69, "p_raw": 0.61, "tension": 1.8},
+        {"tick": 132502, "p_ct": 0.84, "p_raw": 0.71, "tension": 1},
+        {"tick": 132531, "p_ct": 0.69, "p_raw": 0.61, "tension": 1.8},
+        {"tick": 132561, "p_ct": 0.5, "p_raw": 0.5, "tension": 3}
+      ],
+      "swing_tick": 132290,
+      "highlight": 1.59,
+      "share": 0.19,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 3, "comeback": false, "how_won": "ct_time"}
+    },
+    {
+      "n": 21,
+      "moments": [
+        {"tick": 139866, "p_ct": 0.45, "p_raw": 0.47, "tension": 2.7},
+        {"tick": 140588, "p_ct": 0.26, "p_raw": 0.36, "tension": 1.6},
+        {"tick": 140633, "p_ct": 0.13, "p_raw": 0.27, "tension": 0.8},
+        {"tick": 140706, "p_ct": 0.26, "p_raw": 0.36, "tension": 1.6},
+        {"tick": 143617, "p_ct": 0.13, "p_raw": 0.27, "tension": 0.8}
+      ],
+      "swing_tick": 140588,
+      "highlight": 0.69,
+      "share": 0.04,
+      "headline": "post_plant",
+      "facts": {"clutch": null, "multikill": 1, "comeback": false, "how_won": "t_post_plant"}
+    },
+    {
+      "n": 22,
+      "moments": [
+        {"tick": 147822, "p_ct": 0.53, "p_raw": 0.52, "tension": 2.8},
+        {"tick": 148923, "p_ct": 0.33, "p_raw": 0.4, "tension": 2},
+        {"tick": 149006, "p_ct": 0.18, "p_raw": 0.3, "tension": 1.1},
+        {"tick": 149260, "p_ct": 0.08, "p_raw": 0.22, "tension": 0.5},
+        {"tick": 151646, "p_ct": 0.18, "p_raw": 0.3, "tension": 1.1},
+        {"tick": 151778, "p_ct": 0.08, "p_raw": 0.22, "tension": 0.5},
+        {"tick": 152501, "p_ct": 0, "p_raw": 0.01, "tension": 0}
+      ],
+      "swing_tick": 148923,
+      "highlight": 1.6,
+      "share": 0.19,
+      "headline": null,
+      "facts": {"clutch": null, "multikill": 3, "comeback": false, "how_won": "t_before_plant"}
+    }
+  ],
+  "worth_watching": [17,8,1]
+}
