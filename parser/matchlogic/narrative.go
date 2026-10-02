@@ -14,30 +14,38 @@ type BombSite struct {
 	Site string
 }
 
+// built is everything Build worked out, for the narrative log.
+type built struct {
+	log   *Log
+	t     timeline
+	outs  []outcome
+	s     sides
+	ro    roster
+	res   Result
+	notes notes
+	opt   Options
+}
+
 // story emits the narrative log (package eventlog) of a built match: a fact
 // for each recorded event the log covers, then the records derived from the
 // timeline and the scoring. Players are written by idx, and a participant
 // match.json doesn't list as null. A record's round is 0 outside live
 // rounds.
 type story struct {
+	built
 	e     eventlog.Emitter
-	log   *Log
-	t     timeline
-	ro    roster
-	sites []BombSite
-	rate  int
 	facts []eventlog.Ref // [entry]: its fact, or the zero Ref
 }
 
-func tell(e eventlog.Emitter, log *Log, t timeline, rounds []match.Round, outs []outcome, ro roster, opt Options) {
-	st := story{e: e, log: log, t: t, ro: ro, sites: opt.BombSites, rate: opt.TickRate, facts: make([]eventlog.Ref, len(log.Entries))}
+func tell(e eventlog.Emitter, b built) {
+	st := story{built: b, e: e, facts: make([]eventlog.Ref, len(b.log.Entries))}
 	if e.Enabled(eventlog.Fact) {
 		st.emitFacts()
 	}
 	if e.Enabled(eventlog.Derived) {
 		st.emitWindow()
-		for r := range rounds {
-			st.emitRound(r, rounds, outs[r])
+		for r := range st.res.Rounds {
+			st.emitRound(r, st.res.Rounds, st.outs[r])
 		}
 	}
 }
@@ -130,8 +138,8 @@ func (st *story) emitFacts() {
 // siteAt returns the site of a bomb planted at tick: the entity stage's
 // planted bomb that appeared within a second of it, or "".
 func (st *story) siteAt(tick int32) string {
-	for _, s := range st.sites {
-		if s.Tick >= tick && s.Tick-tick <= int32(max(st.rate, 1)) {
+	for _, s := range st.opt.BombSites {
+		if s.Tick >= tick && s.Tick-tick <= int32(max(st.opt.TickRate, 1)) {
 			return s.Site
 		}
 	}

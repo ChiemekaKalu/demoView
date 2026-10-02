@@ -53,10 +53,7 @@ func Build(log *Log, opt Options) Result {
 	ro := listPlayers(log, s)
 	rounds := listRounds(spans, outs, s, &n)
 	checkFinish(rounds, readSchedule(log, w.end), &n)
-	if opt.Log != nil {
-		tell(opt.Log, log, t, rounds, outs, ro, opt)
-	}
-	return Result{
+	res := Result{
 		Players:    ro.players,
 		Rounds:     rounds,
 		Kills:      listKills(log, w, spans, s, ro, &n),
@@ -64,6 +61,10 @@ func Build(log *Log, opt Options) Result {
 		Spawned:    spawned(log, spans, ro),
 		Notes:      dedupe(n),
 	}
+	if opt.Log != nil {
+		tell(opt.Log, built{log: log, t: t, outs: outs, s: s, ro: ro, res: res, notes: n, opt: opt})
+	}
+	return res
 }
 
 // checkFinish notes a match that ended in regulation before either team won
