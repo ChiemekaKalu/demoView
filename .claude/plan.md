@@ -121,7 +121,7 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
   - Against the oracle on all 10 demos: players and kill events have zero mismatches. Grenades differ only where the oracle departs from plan.md: fire end (we end at `inferno_expire`, the flame-out; it ends at entity removal, about 13 s later), its `[0,0]` fire last point, and one undetonated decoy.
   - Byte-identical across runs.
   - An entity-stage error stops only that stage: `match.json` stays complete, and the CLI exits 1 with `unknown_entity`.
-- [ ] **Pro-demo robustness (found 2026-10-02 by aiguy's bulk run).** 132 public pro GOTV demos (HF `skkwowee/chimera-cs2` @ 69b9cba, builds 9842–10847).
+- [x] **Pro-demo robustness (found 2026-10-02 by aiguy's bulk run).** 132 public pro GOTV demos (HF `skkwowee/chimera-cs2` @ 69b9cba, builds 9842–10847).
   - **Gate for the prod flip to `PARSER_ROUNDS=parser` (agreed with cloud):** a full-132 sweep where no demo with a reference differs in round count, boundaries, winner, reason, side_a, team or kills. Allowed exceptions:
     - reference-side differences: its `unknown` weapons, and its ADR on partial recordings;
     - the 2 demos the reference can't parse;
@@ -164,8 +164,12 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
     - 6 of the 11 ADR-only demos are partial or restored recordings, where the game's damage counter (the reference's ADR) covers damage the demo doesn't show.
     - The other 5 are full recordings with 2–11% gaps for 1–7 players, cause unknown: spirit-vs-faze-m3-vertigo, the-mongolz-vs-vitality-m2-overpass, faze-vs-mouz-m2-overpass, natus-vincere-vs-vitality-m2-anubis, mouz-vs-natus-vincere-m1-dust2.
     - It doesn't block the flip: prod's guard never compared the scoreboard, so prod already ships our ADR. On the user's 8 matchmaking games our ADR equals the game's counter exactly.
-- [ ] **Swap-in** (1587e55, de2ff27). The code is done and tested: `PARSER_ROUNDS=parser` (opt-in) ships our round files, falling back to the oracle on `entity_error` (6.5, tested) or `implausible_match`. `PARSER_SHADOW=oracle` diffs after a flushed response (6.6); a Mirage smoke run was a full match, 10 rounds and 0 mismatches.
-  - *Remaining:* pipeline sets dev envVars (`PARSER_ROUNDS=parser`, `PARSER_SHADOW=oracle`); dev shadow lines come back clean; the gate sweep passes; then prod flips to `parser`. Never pass an empty `PARSER_ROUNDS` in prod.
+- [x] **Swap-in** (1587e55, de2ff27). `PARSER_ROUNDS=parser` ships our round files, falling back to the oracle on `entity_error` (6.5) or `implausible_match`. `PARSER_SHADOW=oracle` (dev only) diffs after a flushed response and writes `shadow.json` (6.6).
+  - *Done (2026-10-02):*
+    - Dev shadow verdicts were clean: 0 mismatches over 3 matches and 48 round files.
+    - The pro gate passed on 6782d49.
+    - Prod flipped: its match reparsed at 21:07 UTC with `match_source` and `round_source` both `parser` and no fallback, in 7.2 s (12.7 s with the oracle).
+    - **M4's exit check is met.** Never pass an empty `PARSER_ROUNDS` in prod.
 - [x] **Narrative log groundwork** (`parser/eventlog`, build step 1; all six logging.md decisions approved by the user 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with facts, derived and notes as NDJSON plus a gzip with mtime 0. Floats and times are impossible by construction. Golden and run-twice tests. About 0.5 µs per record. Steps 2–6 (hooks, `--log`, outputs, schema, R2, viewer) are v1.2.
 
 ## M5: every map and safe reparse (v1.1)
