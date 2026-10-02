@@ -189,7 +189,10 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
 - [ ] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit: a synthetic unknown-field test.
 - [ ] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
 - [ ] **6.7 CI diff gates deploys** (pipeline). Needs the fixtures bucket secrets.
-- [ ] **6.8 Fault-flag recovery** (pipeline). 20 uploads each end `ready` or `failed` with a coded error, and none sits past 30 minutes. The flag is dev-only.
+- [x] **6.8 Fault-flag recovery** (pipeline). 20 uploads each end `ready` or `failed` with a coded error, and none sits past 30 minutes. The flag is dev-only.
+  - *Passed on dev (2026-10-02)* with `FAULT=fail`, so every attempt failed transiently. All 20 went through 3 attempts and the dead letter queue, and ended `failed` with `parse_failed: failed after 3 attempts: fault injected`.
+  - The longest wait in `queued` or `parsing` was 0.5 minutes.
+  - The flag was then deleted, and the 20 test matches, their demos and their history were removed.
 
 ## v1.2 (decided)
 
