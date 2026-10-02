@@ -297,6 +297,23 @@ func has(log *Log, start, end int, k Kind) bool {
 	return false
 }
 
+// roundOfDeath returns the round (an index into spans) a death at entry i
+// counts in, or -1: the round it falls in, except that a death on the tick a
+// round restarts belongs to the round before. The restart's spawns and a
+// late death in the last round can share a tick, in either order.
+func roundOfDeath(log *Log, spans []span, i int) int {
+	r := roundOf(spans, i)
+	if r > 0 && spans[r].onRestart(log, log.Entries[i]) {
+		return r - 1
+	}
+	return r
+}
+
+// onRestart reports whether e is on the tick the span's round restarts.
+func (sp span) onRestart(log *Log, e Entry) bool {
+	return e.Tick == log.Entries[sp.start].Tick
+}
+
 // roundOf returns the round (an index into spans) that entry i falls in, or
 // -1 if it is outside every round.
 func roundOf(spans []span, i int) int {

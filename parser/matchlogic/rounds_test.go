@@ -348,3 +348,24 @@ func TestLiveWindow(t *testing.T) {
 		})
 	}
 }
+
+// A death on the tick a round restarts, logged after its spawns, belongs to
+// the round before: the kill is round 1's, and round 2 starts with everyone.
+func TestDeathOnRestartTick(t *testing.T) {
+	l, a, b, c, d := twoVsTwo()
+	l.ev(10, BeginNewMatch).spawn(10, a, b, c, d).ev(100, RoundFreezeEnd)
+	l.kill(200, a, c).kill(300, a, d)
+	l.ev(748, RoundOfficiallyEnded).spawn(748, a, b, c, d).kill(748, c, b).ev(1000, RoundFreezeEnd)
+	l.kill(1100, c, a).kill(1200, d, b)
+	l.ev(1300, WinPanelMatch)
+	res := mustBuild(t, l)
+	if got, want := roundsText(res), []string{
+		"1:10-100-300 A CT elimination",
+		"2:748-1000-1200 B CT elimination",
+	}; !slices.Equal(got, want) {
+		t.Errorf("rounds\n got %q\nwant %q", got, want)
+	}
+	if k := res.Kills[2]; k.Tick != 748 || k.Round != 1 {
+		t.Errorf("kill at tick %d in round %d, want 748 in round 1", k.Tick, k.Round)
+	}
+}

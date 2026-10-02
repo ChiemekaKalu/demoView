@@ -56,6 +56,7 @@ func scoreboard(log *Log, w window, spans []span, s sides, ro roster) []match.Sc
 				if !w.contains(i) || e.Player == NoPlayer {
 					continue
 				}
+				side := s.of[roundOfDeath(log, spans, i)]
 				t[e.Player].deaths++
 				if !worldDeath(e) && opponents(side, e.Attacker, e.Player) {
 					t[e.Attacker].kills++

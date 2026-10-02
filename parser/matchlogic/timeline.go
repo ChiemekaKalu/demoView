@@ -17,6 +17,8 @@ package matchlogic
 //     it, with none of its spawns (midRound, presumeSpawns);
 //   - restarts that start no round: one folded into a round, and the ones a
 //     demo ends in (segmentRounds);
+//   - a death on the tick a round restarts, which belongs to the round
+//     before (roundOfDeath);
 //   - backup restores, which kill and respawn everyone at once and replay
 //     the round they happen in: no new round, the replay decides it, and
 //     their announce_phase_end is no halftime (restoreTicks);

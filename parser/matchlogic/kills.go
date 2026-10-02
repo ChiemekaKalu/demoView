@@ -39,7 +39,7 @@ func listKills(log *Log, w window, spans []span, s sides, ro roster, n *notes) [
 		if e.Kind != PlayerDeath {
 			continue
 		}
-		r := roundOf(spans, i)
+		r := roundOfDeath(log, spans, i)
 		victim := listedIdx(ro, e.Player)
 		if r < 0 || victim == nil {
 			n.add("death at tick %d is outside every round or has no listed victim; left out", e.Tick)

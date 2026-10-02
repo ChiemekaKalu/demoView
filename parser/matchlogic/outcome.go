@@ -129,8 +129,8 @@ func inferOutcome(log *Log, sp span, side []Side, roundTicks int32) (o outcome, 
 			spawn(e.Player)
 		case PlayerDeath, PlayerDisconnect:
 			p := e.Player
-			if p == NoPlayer || !alive[p] {
-				continue
+			if p == NoPlayer || !alive[p] || e.Kind == PlayerDeath && sp.onRestart(log, e) {
+				continue // a death on the restart's tick is the last round's
 			}
 			alive[p] = false
 			living[side[p]]--
