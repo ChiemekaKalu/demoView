@@ -64,10 +64,10 @@ export const STEPS: Step[] = [
   },
   {
     title: 'Reference round files and the guard',
-    summary: 'Our match.json ships only when it agrees with the oracle. Our own round files are next.',
+    summary: 'Prod ships our own round files. The oracle is the fallback and the dev shadow compare.',
     active: { nodes: ['parser'], edges: [] },
-    body: 'Our own round files now match the reference parser, the oracle, on every test demo, and on dev the server can ship them, compared against the oracle after each response. Prod still ships the oracle\'s round files until a sweep of tournament demos passes. Our `match.json` is published only when it agrees with the oracle\'s, so the two files always describe the same match.',
-    facts: ['On public tournament demos the guard earned its keep: our round logic collapsed most of them to one round, so the oracle\'s match.json shipped and the results stayed correct.'],
+    body: 'Round files used to come from a reference parser, the oracle. Our own parser now produces them, matched the oracle on every test demo, and passed a gate on 132 public tournament demos, so prod ships ours. The oracle stays in the image as a fallback if entity decoding hits something it cannot read, and on the oracle path our `match.json` is still published only when it agrees with the oracle\'s, so the two files always describe the same match.',
+    facts: ['Before the flip, the guard earned its keep: our round logic collapsed most tournament demos to one round, so the oracle\'s match.json shipped and the results stayed correct.'],
     widget: 'guard',
     read: [['The consistency guard', 'parser#the-server-and-the-consistency-guard'], ['Testing', 'testing']],
   },

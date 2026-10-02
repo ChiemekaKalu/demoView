@@ -59,7 +59,7 @@ export const quizzes: Record<string, Question[]> = {
       why: 'Exit 1 maps to 422 (do not retry). Exit 3, internal, maps to a 5xx.',
     },
     {
-      q: 'When does the server ship the oracle\'s match.json instead of ours?',
+      q: 'On the oracle path, when does the server ship the oracle\'s match.json instead of ours?',
       options: ['When ours disagrees on players, rounds or kills', 'Whenever the oracle finishes first', 'When the demo is over 500 MB', 'On every first parse of a demo'],
       why: 'Round files index into kills, so the match.json and round files must always agree.',
     },
