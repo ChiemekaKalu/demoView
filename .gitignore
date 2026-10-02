@@ -1,0 +1,28 @@
+# Demos are large binaries; never commit them
+*.dem
+*.dem.*
+
+# Go
+/parser/bin/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# IaC state
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+
+# Claude Code personal settings
+.claude/settings.local.json
