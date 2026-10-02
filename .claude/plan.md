@@ -36,6 +36,13 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - *Per-kill resolution and per-round sides are checked in 1.7.*
 - [ ] **1.7 Match logic** (stage 6), and the full `match.json`. Exit: the scoreboard matches the in-game one for a match you played.
 - [ ] **1.8 `demo diff` and CI.** Exit: the diff passes on all 3 fixtures. This meets the v0 done-when and closes M1.
+  - *In progress (`terminal`):* package `parser/diff`, and a CI job that pulls fixture demos from `demoview-fixtures`, exports them with the oracle, then diffs.
+  - Comparison rules:
+    - players match by `steam_id`; rounds by `n`;
+    - kills: tick, attacker, victim, weapon and round all exact;
+    - K/D/A and HS% exact; ADR within ±1%;
+    - positions within 1 unit (M4).
+  - The `demo diff` subcommand waits for 1.7 to land.
 
 ## M2 groundwork (pulled forward)
 
@@ -48,7 +55,11 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 - [x] Wrangler config points at the real Cloudflare account and D1 databases (user-approved), and `0001_init.sql` is applied to remote dev and prod D1.
 - [x] Worker `GET /api/matches/:id/match.json`: streams it from R2, 404 until ready, max-age 300 plus an ETag.
 - [x] The viewer is served from the same Worker. Assets come from `../web/dist` with an SPA fallback, and `/api/*` runs the Worker first, so the API needs no CORS. `npm run deploy:dev` and `deploy:prod` build the web app first.
-- [ ] The rest of M2. Remaining per `worker/README.md`:
+- [x] CI workflows in `.github/`. They haven't run yet, because there's no remote.
+  - **`ci.yml`:** 7 parallel jobs (parser, oracle, schema, worker, web, and a Docker build with no push) on PRs and non-main pushes.
+  - **`deploy.yml`:** on main, pushes the image to Artifact Registry, then deploys dev, then prod. Each deploy runs Cloud Run, then D1 migrations, then the Worker, with `PARSER_URL` filled from the Cloud Run URL. It's being gated on CI, because the user commits straight to main.
+  - **Setup:** the first-run steps and GCP/Cloudflare prerequisites are in `.github/README.md`.
+- [ ] The rest of M2. Remaining per `worker/README.md` and `.github/README.md`:
   - R2 buckets with CORS (PUT from the Worker origin)
   - queues
   - Cloud Run and its `PARSER_URL`

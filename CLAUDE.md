@@ -31,6 +31,11 @@ Inside `parser/`:
 
 Local demos live in `parser/testdata/demos/` and oracle exports in `parser/testdata/reference/`. Both are gitignored.
 
+CI lives in `.github/workflows/`:
+- `ci.yml` runs on PRs and branch pushes.
+- `deploy.yml` runs on `main`: image, then dev, then prod.
+- Required secrets, variables and cloud prerequisites are in `.github/README.md`.
+
 ## Commands
 
 ```sh
