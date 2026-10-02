@@ -22,6 +22,8 @@ import {
   getMatch,
   getMatchPage,
   insertMatch,
+  listGallery,
+  setFeatured,
   setStatus,
 } from "./matches";
 import { presignUpload, UPLOAD_URL_TTL_SECONDS } from "./presign";
@@ -47,12 +49,18 @@ const LIVE_CACHE_CONTROL = "public, max-age=300";
 // to cache them and short enough to pick up a fix.
 const MAP_CACHE_CONTROL = "public, max-age=86400";
 
+// The gallery is public: a minute takes the load off D1, and an unfeature
+// still shows soon.
+const GALLERY_CACHE_CONTROL = "public, max-age=60";
+
 type Handler = (request: Request, env: Env, params: string[]) => Promise<Response>;
 
 const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
   { method: "POST", pattern: /^\/api\/matches$/, handler: createMatch },
   { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/uploaded$/, handler: confirmUpload },
   { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/reparse$/, handler: reparseMatch },
+  { method: "POST", pattern: /^\/api\/matches\/([^/]+)\/feature$/, handler: featureMatch },
+  { method: "GET", pattern: /^\/api\/gallery$/, handler: getGallery },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)$/, handler: getMatchSummary },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/events$/, handler: getMatchEvents },
   { method: "GET", pattern: /^\/api\/matches\/([^/]+)\/match\.json$/, handler: getMatchFile },
@@ -204,6 +212,32 @@ async function reparseMatch(request: Request, env: Env, [id = ""]: string[]): Pr
     throw err;
   }
   return json({ id, status: "queued" }, 202);
+}
+
+// POST /api/matches/:id/feature: lists the match in the home page gallery, or
+// unlists it, with {"featured": boolean}. The gallery only shows ready
+// matches, but anything except a failed match can be featured, so an upload
+// can feature itself before its parse finishes. Featuring again moves the
+// match to the front.
+async function featureMatch(request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
+  if (!(await hasUploadToken(request, env))) return unauthorized();
+  const body: unknown = await request.json().catch(() => null);
+  const featured = body && typeof body === "object" && "featured" in body ? body.featured : undefined;
+  if (typeof featured !== "boolean") return error(400, 'body must be {"featured": boolean}');
+  const match = isMatchId(id) ? await getMatch(env.DB, id) : null;
+  if (!match) return error(404, "match not found");
+  if (featured && match.status === "failed") return json({ error: "match is failed", status: "failed" }, 409);
+
+  await setFeatured(env.DB, id, featured ? Date.now() : null);
+  await addEvent(env.DB, id, { kind: "feature", msg: featured ? "featured in the gallery" : "removed from the gallery" });
+  console.log(JSON.stringify({ event: "match_featured", match_id: id, featured }));
+  return json({ id, featured });
+}
+
+// GET /api/gallery: the featured matches that are ready, most recently
+// featured first. Map, score and date only, never names or Steam ids.
+async function getGallery(_request: Request, env: Env): Promise<Response> {
+  return json(await listGallery(env.DB), 200, { "cache-control": GALLERY_CACHE_CONTROL });
 }
 
 // GET /api/matches/:id/events: the match's pipeline history, oldest first.

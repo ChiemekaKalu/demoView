@@ -1,8 +1,8 @@
 // A match's pipeline history (match_events): status changes, parse attempts,
-// reparse requests, Pulses and cleanups. Workers Logs keep 7 days; this
-// keeps the rest. Rows count from 1 within a match.
+// reparse requests, Pulses, cleanups and gallery changes. Workers Logs keep 7
+// days; this keeps the rest. Rows count from 1 within a match.
 
-export type EventKind = "status" | "attempt" | "reparse" | "pulse" | "cleanup";
+export type EventKind = "status" | "attempt" | "reparse" | "pulse" | "cleanup" | "feature";
 
 export interface MatchEvent {
   kind: EventKind;

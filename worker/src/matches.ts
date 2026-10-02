@@ -23,6 +23,17 @@ export interface MatchRow {
   reparse_error: string | null;
   reparse_build: string | null;
   status_changed_at: number | null;
+  featured_at: number | null;
+}
+
+// One card of the home page gallery. Only these columns, so names and Steam
+// ids can never reach it.
+export interface GalleryMatch {
+  id: string;
+  map: string | null;
+  score_a: number | null;
+  score_b: number | null;
+  parsed_at: number;
 }
 
 export interface PlayerRow {
@@ -134,6 +145,23 @@ export async function getMatchPage(
     players: (players?.results ?? []) as PlayerRow[],
     rounds: (rounds?.results ?? []) as RoundRow[],
   };
+}
+
+// Lists the match in the gallery from `at` (Unix ms), or unlists it with null.
+export async function setFeatured(db: D1Database, id: string, at: number | null): Promise<void> {
+  await db.prepare("UPDATE matches SET featured_at = ? WHERE id = ?").bind(at, id).run();
+}
+
+// Featured matches that are ready, the most recently featured first.
+export async function listGallery(db: D1Database, limit = 24): Promise<GalleryMatch[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT id, map, score_a, score_b, parsed_at FROM matches
+       WHERE featured_at IS NOT NULL AND status = 'ready' ORDER BY featured_at DESC LIMIT ?`,
+    )
+    .bind(limit)
+    .all<GalleryMatch>();
+  return results;
 }
 
 // The parse a job writes, and the live parse it started from.

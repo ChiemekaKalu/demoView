@@ -27,8 +27,10 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `POST /api/matches` | `201 { id, upload_url, upload_expires_in }`. PUT the demo to `upload_url` within `upload_expires_in` seconds. | 401, 429 (over 10 uploads and reparses a minute; `Retry-After: 60`) |
 | `POST /api/matches/:id/uploaded` | `202 { id, status: "queued" }`, or `200 { id, status, duplicate: true }` when a match that hasn't failed already has the same demo (by SHA-256): `id` is that match, and the new upload and its match are deleted | 401, 404, 409 (not uploaded yet, or not in `uploaded` any more: the body has `status`), 413 (over 1 GB; the demo is deleted and the match fails) |
 | `POST /api/matches/:id/reparse` | `202 { id, status }`. A `ready` match gets a reparse job and stays `ready` on its live parse whatever happens; a `failed` one goes back to `queued` | 401, 404, 409 (any other status, or the demo is no longer stored), 429 |
+| `POST /api/matches/:id/feature` | `200 { id, featured }`. The body is `{ "featured": boolean }`: `true` lists the match in the gallery (again: it moves to the front), `false` unlists it | 400 (bad body), 401, 404, 409 (featuring a `failed` match) |
+| `GET /api/gallery` | `200 [{ id, map, score_a, score_b, parsed_at }]`: up to 24 featured `ready` matches, most recently featured first. Cached a minute | |
 | `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, parse_id, players, rounds }`, `no-store` | 404 |
-| `GET /api/matches/:id/events` | `200 { events }`, the match's pipeline history oldest first: `{ seq, ts, kind, msg, attempt, build, parse_id }` rows, where `kind` is `status`, `attempt`, `reparse` or `cleanup`. `no-store` | 404 |
+| `GET /api/matches/:id/events` | `200 { events }`, the match's pipeline history oldest first: `{ seq, ts, kind, msg, attempt, build, parse_id }` rows, where `kind` is `status`, `attempt`, `reparse`, `pulse`, `cleanup` or `feature`. `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them). With `?v=<parse_id>`, that parse's, immutable for a year; without it, the live parse's, cached 5 minutes. Both with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |
 | `GET /api/matches/:id/pulse.json` | `200` the parse's Match Pulse (`schema/pulse.schema.json`), cached 5 minutes even with `?v=`, since a new Jev model can re-run it in place | 404 (Pulse off, or not written yet) |
 | `POST /api/matches/:id/pulse` | `202 { id, parse_id }`: queues a Pulse for the live parse | 401, 404, 409 (Pulse off, or no live parse) |
@@ -38,6 +40,17 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/maps/:name/radar.png` | `200` the radar image, cached a day, with an ETag | 404 |
 
 `players` rows are `{ idx, name, team, kills, deaths, assists, adr, hs_pct }`, ordered by `idx`. Steam ids stay out; `match.json` has them. `rounds` rows are `{ n, winner, reason, side_a }`, ordered by `n`. Timestamps are Unix milliseconds.
+
+### Gallery
+
+Share links are unlisted, so there is no public list of every match. The home page gallery shows only matches the upload-token holder featured, and only once they are `ready`. Rows carry map, score and date, never names or Steam ids, though the match page they link to shows names. Feature a match, or unfeature it with `false`:
+
+```sh
+curl -X POST -H "authorization: Bearer $TOKEN" -H "content-type: application/json" \
+  -d '{"featured":true}' https://demoview-api-dev.chiemeka-kalu.workers.dev/api/matches/<id>/feature
+```
+
+The upload form can also feature a match as it uploads. An unfeature can take up to a minute to leave the cached gallery.
 
 A failed match's `error` starts with a code, `"<code>: <detail>"`: `bad_demo` or `demo_not_found` from the parser, or `too_large`, `bad_output`, `parse_failed` or `stuck` from the Worker. Errors from before codes, and the last error of a pending retry, have none.
 

@@ -7,10 +7,10 @@ export const TOKEN = "test-upload-token";
 export function request(
   method: string,
   path: string,
-  { token, headers = {} }: { token?: string; headers?: Record<string, string> } = {},
+  { token, headers = {}, body }: { token?: string; headers?: Record<string, string>; body?: string } = {},
 ): Request {
   const auth: Record<string, string> = token ? { authorization: `Bearer ${token}` } : {};
-  return new Request(`https://api.test${path}`, { method, headers: { ...auth, ...headers } });
+  return new Request(`https://api.test${path}`, { method, headers: { ...auth, ...headers }, body });
 }
 
 // The test env with the parse queue swapped for a recorder, so nothing is
