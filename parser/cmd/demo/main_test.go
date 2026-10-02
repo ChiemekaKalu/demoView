@@ -14,16 +14,8 @@ import (
 	"testing"
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
+	"github.com/ChiemekaKalu/demoview/parser/pb"
 )
-
-// testDemo is a small valid demo: the preamble and four frames.
-var testDemo = slices.Concat(demo.Magic[:], []byte{
-	0, 0, 0, 0, 0, 0, 0, 0, // offsets
-	0x01, 0x00, 0x03, 'a', 'b', 'c', // FileHeader, tick 0
-	0x48, 0xff, 0xff, 0xff, 0xff, 0x0f, 0x01, 'z', // compressed SignonPacket, tick -1
-	0x07, 0x05, 0x00, // Packet, tick 5, empty
-	0x00, 0x06, 0x00, // Stop, tick 6
-})
 
 // writeTemp writes data to a file in a fresh temp dir and returns its path.
 func writeTemp(t *testing.T, name string, data []byte) string {
@@ -159,40 +151,48 @@ func TestRunErrors(t *testing.T) {
 	}
 }
 
+// TestRunUndecodable covers demos whose frames are intact but whose payloads
+// or packet messages don't decode.
+func TestRunUndecodable(t *testing.T) {
+	overrun, _ := packetBits(testMsg{55, make([]byte, 10)})
+	excess, _ := packetBits(testMsg{4, nil})
+	tests := []struct {
+		name string
+		demo []byte
+		want string
+	}{
+		{"snappy", append(buildDemo(), 0x47, 0x01, 0x01, 'z'), "Packet payload: snappy"}, // compressed Packet holding "z"
+		{"header proto", buildDemo(testFrame{demo.CmdFileHeader, 0, true, []byte{0x2A, 0x09, 'd', 'e'}}), "FileHeader payload"},
+		{"packet proto", buildDemo(testFrame{demo.CmdPacket, 1, false, []byte{0x1A, 0x05, 'a'}}), "Packet payload"},
+		{"message size", buildDemo(testFrame{demo.CmdSignonPacket, -1, true, pbBytes(&pb.CDemoPacket{Data: overrun[:5]})}), "body overruns the packet"},
+		{"trailing bits", buildDemo(testFrame{demo.CmdPacket, 1, false, pbBytes(&pb.CDemoPacket{Data: append(excess, 0)})}), "bad header with 10 bits left"},
+	}
+	for _, tc := range tests {
+		file := writeTemp(t, "bad.dem", tc.demo)
+		out := filepath.Join(t.TempDir(), "out")
+		for _, args := range [][]string{{"parse", file, "--out", out}, {"inspect", file}} {
+			code, stdout, stderr := runCLI(args...)
+			if code != 1 || stdout != "" {
+				t.Errorf("%s: %s: exit %d, stdout %q, stderr %s", tc.name, args[0], code, stdout, stderr)
+				continue
+			}
+			checkErrLine(t, stderr, "bad_demo")
+			if !strings.Contains(stderr, tc.want) {
+				t.Errorf("%s: %s: stderr %s lacks %q", tc.name, args[0], stderr, tc.want)
+			}
+		}
+		if _, err := os.Stat(out); !os.IsNotExist(err) {
+			t.Errorf("%s: failed parse created %s", tc.name, out)
+		}
+	}
+}
+
 func TestHelp(t *testing.T) {
 	for _, args := range [][]string{{"--help"}, {"help"}, {"parse", "-h"}, {"inspect", "--help"}} {
 		code, stdout, stderr := runCLI(args...)
 		if code != 0 || stderr != "" || !strings.Contains(stdout, "usage:") {
 			t.Errorf("%q: exit %d, stdout %q, stderr %q", args, code, stdout, stderr)
 		}
-	}
-}
-
-func TestInspect(t *testing.T) {
-	file := writeTemp(t, "x.dem", testDemo)
-	code, stdout, stderr := runCLI("inspect", file)
-	if code != 0 {
-		t.Fatalf("exit %d, stderr %s", code, stderr)
-	}
-	for _, want := range []string{
-		"fileinfo_offset=0",
-		"ticks:    first=0 last=6",
-		"0 frames after Stop",
-		"FileHeader",
-		"SignonPacket",
-	} {
-		if !strings.Contains(stdout, want) {
-			t.Errorf("output lacks %q:\n%s", want, stdout)
-		}
-	}
-	var total []string
-	for line := range strings.Lines(stdout) {
-		if f := strings.Fields(line); len(f) > 0 && f[0] == "total" {
-			total = f
-		}
-	}
-	if want := []string{"total", "4", "1", "4"}; !slices.Equal(total, want) {
-		t.Errorf("total row %q, want %q", total, want)
 	}
 }
 

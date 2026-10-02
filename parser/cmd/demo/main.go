@@ -5,8 +5,9 @@
 //	demo parse <file.dem> --out <dir> [--events-only]
 //	demo inspect <file.dem>
 //
-// parse writes <dir>/match.json. inspect prints frame statistics; it is a
-// development aid and not part of the CLI contract. Flags may come before or
+// parse writes <dir>/match.json. inspect prints frame, file header and packet
+// message statistics; it is a development aid and not part of the CLI
+// contract. Flags may come before or
 // after the file. On failure demo writes one JSON line,
 // {"error":"...","code":"..."}, to stderr and exits 1 (bad_demo), 2 (usage)
 // or 3 (internal).
@@ -24,6 +25,7 @@ import (
 
 	"github.com/ChiemekaKalu/demoview/parser/demo"
 	"github.com/ChiemekaKalu/demoview/parser/match"
+	"github.com/ChiemekaKalu/demoview/parser/pb"
 )
 
 // parserVersion is recorded in every match.json.
@@ -126,14 +128,8 @@ func parse(path, outDir string, eventsOnly bool) error {
 	if err != nil {
 		return err
 	}
-	for {
-		_, err := r.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
+	if err := walk(demo.NewDecoder(r)); err != nil {
+		return err
 	}
 
 	return match.WriteFile(outDir, match.File{
@@ -141,6 +137,38 @@ func parse(path, outDir string, eventsOnly bool) error {
 		ParserVersion: parserVersion,
 		Match:         match.Info{DemoSHA256: hex.EncodeToString(sum.Sum(nil))},
 	})
+}
+
+// walk decodes every frame from d and every message in its packets, so that
+// a malformed demo fails parse. Later stages hook into its switch.
+func walk(d *demo.Decoder) error {
+	var mr demo.MessageReader
+	for {
+		f, err := d.Next()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		switch f.Cmd {
+		case demo.CmdFileHeader:
+			err = f.Unmarshal(new(pb.CDemoFileHeader))
+		case demo.CmdFileInfo:
+			err = f.Unmarshal(new(pb.CDemoFileInfo))
+		case demo.CmdPacket, demo.CmdSignonPacket, demo.CmdFullPacket:
+			err = mr.Reset(f)
+			for err == nil {
+				_, err = mr.Next()
+			}
+			if err == io.EOF {
+				err = nil
+			}
+		}
+		if err != nil {
+			return err
+		}
+	}
 }
 
 // parseArgs parses args against fs and returns the positional arguments.
