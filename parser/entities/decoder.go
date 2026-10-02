@@ -23,6 +23,7 @@ const (
 	MinusOne  // varint of the value plus one, so -1 is 0
 	Handle    // entity handle, a varint
 	String    // zero-terminated
+	Bytes     // a varint length, then that many bytes
 
 	Float32        // 32-bit IEEE float (bit count 0 or 32)
 	QuantizedFloat // BitCount bits spanning LowValue to HighValue, per EncodeFlags
@@ -56,6 +57,7 @@ var kindNames = [...]string{
 	MinusOne:       "MinusOne",
 	Handle:         "Handle",
 	String:         "String",
+	Bytes:          "Bytes",
 	Float32:        "Float32",
 	QuantizedFloat: "QuantizedFloat",
 	Coord:          "Coord",
@@ -113,6 +115,8 @@ var scalars = map[string]Kind{
 
 	"CUtlString":      String,
 	"CUtlSymbolLarge": String,
+	"CUtlBinaryBlock": Bytes,
+	"CGlobalSymbol":   String,
 
 	"CEntityHandle":        Handle,
 	"CGameSceneNodeHandle": Handle,
@@ -211,10 +215,11 @@ var simTimeSerializers = map[string]bool{
 	"funcRotatingSimulationTimeSerializer": true,
 }
 
-// varSerializerHints are var serializers taken to leave the wire format to
-// the field's type and parameters: their names say what the value means or
-// how the server prepares it, not how it is encoded. The 2024 fixture sends
-// the same fields, typed and parameterized the same, without them.
+// varSerializerHints are var serializers that leave the wire format to the
+// field's type and parameters: their names say what the value means or how
+// the server prepares it, not how it is encoded. The 2024 fixture sends the
+// same fields, typed and parameterized the same, without them, and entity
+// data decodes the same either way.
 var varSerializerHints = map[string]bool{
 	"ClampHealth":              true,
 	"angle_normalize_positive": true,
@@ -255,6 +260,9 @@ func classify(f *Field, elem bool) {
 		}
 	default:
 		f.Decoder = valueDecoder(f, t)
+		if d := f.Decoder; d.Kind == QuantizedFloat || d.Kind == Vector && d.Component == QuantizedFloat {
+			f.quant = newQuantizer(f)
+		}
 	}
 }
 

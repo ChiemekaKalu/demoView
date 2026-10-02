@@ -1,7 +1,6 @@
-// Package entities models a demo's entity classes and the field layout of
-// each: the classes from DEM_ClassInfo and the serializers from
-// DEM_SendTables, with a decoder chosen for every field. It reads no entity
-// data.
+// Package entities decodes a demo's entities: the classes from
+// DEM_ClassInfo, the field layout of each from DEM_SendTables, and the
+// entity state that svc_PacketEntities messages build.
 //
 // A serializer is an ordered list of fields. Structs embedded in a class are
 // flattened into it, so most fields are plain values; Field.SendNode says
@@ -9,6 +8,13 @@
 // nest: an entity field path's first index picks a field of the class's
 // serializer, and each further index steps into Field.Elem or
 // Field.Serializer, as the field's Decoder.Kind says.
+//
+// State holds the entities. To read a field, resolve its name once with
+// Class.Ref, then read it from any entity of that class with Entity.Get.
+// A player pawn's x coordinate, for example, is the WorldCoord of its
+// "CBodyComponent.m_skeletonInstance.m_vecOrigin.m_cellX" and "...m_vecX";
+// its yaw is element 1 of m_angEyeAngles, in degrees counterclockwise from
+// +x; and State.ByHandle of its m_hController is its controller.
 package entities
 
 import (
@@ -44,8 +50,12 @@ type Field struct {
 	// Serializer is the nested serializer of a Pointer or Table, or of an
 	// array of them.
 	Serializer *Serializer
-	// Polymorphic lists the other serializers a polymorphic pointer may hold.
+	// Polymorphic lists the other serializers a polymorphic pointer may
+	// hold. Entity data picks one with a UBitVar after the presence bit: 0
+	// for Serializer, or i for Polymorphic[i-1].
 	Polymorphic []*Serializer
+
+	quant quantizer // for QuantizedFloat and its vectors
 }
 
 // FullName returns the field's name prefixed with its send node, such as

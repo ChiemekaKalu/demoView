@@ -36,6 +36,8 @@ func TestDecoders(t *testing.T) {
 
 		{field{typ: "CUtlString"}, "String"},
 		{field{typ: "CUtlSymbolLarge"}, "String"},
+		{field{typ: "CGlobalSymbol"}, "String"},
+		{field{typ: "CUtlBinaryBlock"}, "Bytes"},
 		{field{typ: "char[64]"}, "String"},
 		{field{typ: "char"}, "Unknown"},
 		{field{typ: "CHandle< CBaseEntity >", varSer: "ehandle"}, "Handle [ehandle]"},
