@@ -84,6 +84,7 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
 // POST /api/matches
 async function createMatch(request: Request, env: Env): Promise<Response> {
   if (!(await hasUploadToken(request, env))) return unauthorized();
+  if (!(await underUploadLimit(env))) return tooMany();
   const id = newMatchId();
   const key = demoKey(id);
   const uploadUrl = await presignUpload(env, key);
@@ -173,6 +174,7 @@ async function getMatchSummary(_request: Request, env: Env, [id = ""]: string[])
 // replaces it. A failed match goes back in the queue.
 async function reparseMatch(request: Request, env: Env, [id = ""]: string[]): Promise<Response> {
   if (!(await hasUploadToken(request, env))) return unauthorized();
+  if (!(await underUploadLimit(env))) return tooMany();
   const match = isMatchId(id) ? await getMatch(env.DB, id) : null;
   if (!match) return error(404, "match not found");
   if (match.status !== "ready" && match.status !== "failed") {
@@ -314,6 +316,16 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 
 function error(status: number, message: string, headers: Record<string, string> = {}): Response {
   return json({ error: message }, status, headers);
+}
+
+// New uploads and reparses share one limit. There is one upload token, so
+// one key.
+async function underUploadLimit(env: Env): Promise<boolean> {
+  return (await env.UPLOAD_LIMIT.limit({ key: "upload-token" })).success;
+}
+
+function tooMany(): Response {
+  return error(429, "too many uploads in the last minute", { "retry-after": "60" });
 }
 
 function unauthorized(): Response {

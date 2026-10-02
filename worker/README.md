@@ -24,9 +24,9 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 
 | Route | Success | Errors |
 | ----- | ------- | ------ |
-| `POST /api/matches` | `201 { id, upload_url, upload_expires_in }`. PUT the demo to `upload_url` within `upload_expires_in` seconds. | 401 |
+| `POST /api/matches` | `201 { id, upload_url, upload_expires_in }`. PUT the demo to `upload_url` within `upload_expires_in` seconds. | 401, 429 (over 10 uploads and reparses a minute; `Retry-After: 60`) |
 | `POST /api/matches/:id/uploaded` | `202 { id, status: "queued" }`, or `200 { id, status, duplicate: true }` when a match that hasn't failed already has the same demo (by SHA-256): `id` is that match, and the new upload and its match are deleted | 401, 404, 409 (not uploaded yet, or not in `uploaded` any more: the body has `status`), 413 (over 1 GB; the demo is deleted and the match fails) |
-| `POST /api/matches/:id/reparse` | `202 { id, status }`. A `ready` match gets a reparse job and stays `ready` on its live parse whatever happens; a `failed` one goes back to `queued` | 401, 404, 409 (any other status, or the demo is no longer stored) |
+| `POST /api/matches/:id/reparse` | `202 { id, status }`. A `ready` match gets a reparse job and stays `ready` on its live parse whatever happens; a `failed` one goes back to `queued` | 401, 404, 409 (any other status, or the demo is no longer stored), 429 |
 | `GET /api/matches/:id` | `200 { id, status, error, map, score_a, score_b, parser_version, schema_version, created_at, parsed_at, parse_id, players, rounds }`, `no-store` | 404 |
 | `GET /api/matches/:id/events` | `200 { events }`, the match's pipeline history oldest first: `{ seq, ts, kind, msg, attempt, build, parse_id }` rows, where `kind` is `status`, `attempt`, `reparse` or `cleanup`. `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | `200` the parser's `match.json` (kills with assisters, in the order round files index them). With `?v=<parse_id>`, that parse's, immutable for a year; without it, the live parse's, cached 5 minutes. Both with an ETag (304 on `If-None-Match`) | 404 (unknown match, not `ready` yet, or no file) |

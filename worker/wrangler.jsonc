@@ -83,6 +83,10 @@
       { "queue": "demoview-dev-parse-dlq" }
     ]
   },
+  // New uploads and reparses: 10 a minute is room for a batch of demos, and
+  // keeps a leaked upload token from filling the bucket or the container's
+  // month. namespace_id is per account, so prod has its own.
+  "ratelimits": [{ "name": "UPLOAD_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }],
   // The stuck-match sweeper, the hourly reparse batch and the daily cleanup
   // (src/cron.ts, whose cron strings must match these).
   "triggers": { "crons": ["*/10 * * * *", "0 * * * *", "30 4 * * *"] },
@@ -141,6 +145,7 @@
           { "queue": "demoview-prod-parse-dlq" }
         ]
       },
+      "ratelimits": [{ "name": "UPLOAD_LIMIT", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }],
       // Off until the reparse exit checks pass on dev.
       "triggers": { "crons": [] }
     }
