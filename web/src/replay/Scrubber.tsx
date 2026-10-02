@@ -11,6 +11,9 @@ export interface Marker {
   t: number
   side: Side
   label: string
+  // How much the kill moved the odds, 0 to 1; a bigger swing draws a bigger
+  // mark. Absent without Match Pulse.
+  weight?: number
 }
 
 interface Props {
@@ -84,7 +87,7 @@ export function Scrubber({ t, duration, markers, endT, onSeek }: Props) {
           <div
             key={i}
             class="scrubber-mark"
-            style={{ left: pct(m.t), background: SIDE_COLOR[m.side] }}
+            style={{ left: pct(m.t), background: SIDE_COLOR[m.side], ...markSize(m.weight) }}
             title={`${formatClock(m.t)} ${m.label}`}
             aria-hidden="true"
           />
@@ -93,4 +96,13 @@ export function Scrubber({ t, duration, markers, endT, onSeek }: Props) {
       <div class="scrubber-thumb" style={{ left: pct(t) }} />
     </div>
   )
+}
+
+// A mark grows from 12 to 26 px tall and 2 to 5 px wide with its swing,
+// centred on the track.
+function markSize(weight: number | undefined) {
+  if (weight === undefined) return {}
+  const h = 12 + 14 * weight
+  const w = 2 + 3 * weight
+  return { height: `${h}px`, top: `${3 - h / 2}px`, width: `${w}px`, marginLeft: `${-w / 2}px` }
 }

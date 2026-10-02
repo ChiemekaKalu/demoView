@@ -6,6 +6,7 @@
 import { deriveSummary, roundFileName } from './lib/fixtures'
 import { schemaProblem } from './lib/errors'
 import { apiMap, MAPS, type MapInfo, type RadarInfo } from './lib/maps'
+import type { PulseFile } from './lib/pulse'
 import type { MatchEvent, MatchFile, MatchSummary, RoundFile } from './lib/types'
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
@@ -122,6 +123,28 @@ export async function getSummary(id: string, opts: { fresh?: boolean; signal?: A
   })
   if (summary.status === 'ready') readySummaries.set(id, summary)
   return summary
+}
+
+const pulses = new Map<string, Promise<PulseFile | null>>()
+
+// The live parse's Match Pulse, or null when there is none: Pulse is off,
+// not written yet, or in a version this viewer doesn't read. Never an error,
+// since the replay is complete without it. Only a found Pulse is kept, so a
+// later visit picks up one written since.
+export function getPulse(id: string): Promise<PulseFile | null> {
+  const parseId = readySummaries.get(id)?.parse_id
+  if (isFixture(id) || !parseId) return Promise.resolve(null)
+  const key = `${id}/${parseId}`
+  let p = pulses.get(key)
+  if (!p) {
+    p = request<PulseFile>(`${API_BASE}/api/matches/${enc(id)}/pulse.json?v=${parseId}`).then(
+      (file) => (file.pulse_version === 1 ? file : null),
+      () => null,
+    )
+    p.then((file) => file ?? pulses.delete(key))
+    pulses.set(key, p)
+  }
+  return p
 }
 
 // The match's pipeline history, oldest first. Fixtures have none.

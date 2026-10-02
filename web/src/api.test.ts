@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, getEvents, getMap, getMatchFile, getRound, getSummary, uploadDemo } from './api'
+import { ApiError, getEvents, getMap, getMatchFile, getPulse, getRound, getSummary, uploadDemo } from './api'
 import { MAPS } from './lib/maps'
 
 // The module caches per match id, so each test uses its own id.
@@ -192,5 +192,39 @@ describe('getEvents', () => {
     expect(await getEvents('aaaaaaaaaaab4')).toEqual([row])
     expect(urls()).toEqual(['/api/matches/aaaaaaaaaaab4/events'])
     expect(await getEvents('sample')).toEqual([])
+  })
+})
+
+describe('getPulse', () => {
+  const ready = (id: string, parseId: string | null) =>
+    fetchMock.mockImplementationOnce(async () => json(summary(id, 'ready', parseId)))
+
+  it("reads the live parse's Pulse", async () => {
+    const id = 'aaaaaaaaaab51'
+    ready(id, PARSE)
+    await getSummary(id)
+    fetchMock.mockResolvedValueOnce(json({ pulse_version: 1, model: 'jev-1', rounds: [], worth_watching: [] }))
+    expect(await getPulse(id)).toMatchObject({ model: 'jev-1' })
+    expect(urls().at(-1)).toBe(`/api/matches/${id}/pulse.json?v=${PARSE}`)
+  })
+
+  it('is null on a 404 or an unknown version, and asks again next time', async () => {
+    const id = 'aaaaaaaaaab52'
+    ready(id, PARSE)
+    await getSummary(id)
+    fetchMock.mockResolvedValueOnce(json({ error: 'no pulse for this parse' }, 404))
+    expect(await getPulse(id)).toBeNull()
+    fetchMock.mockResolvedValueOnce(json({ pulse_version: 2 }))
+    expect(await getPulse(id)).toBeNull()
+    expect(urls().filter((u) => u.includes('pulse.json'))).toHaveLength(2)
+  })
+
+  it('is null without a parse id, without asking', async () => {
+    const id = 'aaaaaaaaaab53'
+    ready(id, null)
+    await getSummary(id)
+    expect(await getPulse(id)).toBeNull()
+    expect(await getPulse('sample')).toBeNull()
+    expect(urls().some((u) => u.includes('pulse.json'))).toBe(false)
   })
 })

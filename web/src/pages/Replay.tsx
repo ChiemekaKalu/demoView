@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
-import { getMap, getMatchFile, getRound, getSummary, hasReplay, isFixture, prefetchRound, SAMPLE_ROUNDS } from '../api'
+import {
+  getMap,
+  getMatchFile,
+  getPulse,
+  getRound,
+  getSummary,
+  hasReplay,
+  isFixture,
+  prefetchRound,
+  SAMPLE_ROUNDS,
+} from '../api'
 import { reasonLabel, SIDE_GLYPH, sideOf } from '../lib/format'
 import { fitMap, mapTitle, type MapInfo } from '../lib/maps'
 import { SPEEDS } from '../lib/clock'
+import { FALLBACK_MODEL, percent, pulseLine, type PulseFile, swingAt } from '../lib/pulse'
 import { formatClock, parseT, roundDuration, roundKills, tickToFrame, urlWithT } from '../lib/timeline'
 import type { MatchFile, MatchSummary, RoundFile, Side } from '../lib/types'
 import { KillFeed } from '../replay/KillFeed'
+import { PulseStrip } from '../replay/PulseStrip'
 import { Scrubber, type Marker } from '../replay/Scrubber'
 import { loadRadar, Stage } from '../replay/stage'
 import type { Scene } from '../replay/draw'
@@ -17,7 +29,14 @@ type Load =
   | { kind: 'error'; message: string }
   | { kind: 'not-ready'; summary: MatchSummary }
   | { kind: 'missing'; summary: MatchSummary; exists: boolean }
-  | { kind: 'ready'; summary: MatchSummary; round: RoundFile; file: MatchFile | null; map: MapInfo | null }
+  | {
+      kind: 'ready'
+      summary: MatchSummary
+      round: RoundFile
+      file: MatchFile | null
+      map: MapInfo | null
+      pulse: PulseFile | null
+    }
 
 export function Replay({ id, n }: { id: string; n: number }) {
   const [load, setLoad] = useState<Load>({ kind: 'loading' })
@@ -33,14 +52,15 @@ export function Replay({ id, n }: { id: string; n: number }) {
       if (!summary.rounds.some((r) => r.n === n)) return { kind: 'missing', summary, exists: false } as const
       // match.json is optional: without it the replay shows what the round
       // file alone can (victims, not attackers or weapons).
-      const [round, file, map] = await Promise.all([
+      const [round, file, map, pulse] = await Promise.all([
         getRound(id, n),
         getMatchFile(id).catch(() => null),
         summary.map ? getMap(summary.map) : null,
+        getPulse(id),
       ])
       if (!round) return { kind: 'missing', summary, exists: true } as const
       if (hasReplay(id, n + 1, summary)) prefetchRound(id, n + 1)
-      return { kind: 'ready', summary, round, file, map } as const
+      return { kind: 'ready', summary, round, file, map, pulse } as const
     })().then(
       (next) => live && setLoad(next),
       (err: unknown) => live && setLoad({ kind: 'error', message: err instanceof Error ? err.message : String(err) }),
@@ -107,6 +127,7 @@ export function Replay({ id, n }: { id: string; n: number }) {
             round={load.round}
             file={load.file}
             map={load.map}
+            pulse={load.pulse}
           />
         </main>
       )
@@ -186,9 +207,11 @@ interface ViewProps {
   file: MatchFile | null
   // Null draws the round on a plain background, framed to fit it.
   map: MapInfo | null
+  // Match Pulse, when the match has one.
+  pulse: PulseFile | null
 }
 
-function ReplayView({ n, summary, round, file, map }: ViewProps) {
+function ReplayView({ n, summary, round, file, map, pulse }: ViewProps) {
   const hz = round.hz
   const duration = roundDuration(round)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -215,16 +238,28 @@ function ReplayView({ n, summary, round, file, map }: ViewProps) {
     const scene: Scene = { round, map: map ?? fitMap(round), names, sides, kills }
     const name = (idx: number | null) => (idx === null ? 'Unknown' : (names.get(idx) ?? `Player ${idx}`))
     const side = (idx: number | null) => (idx === null ? null : (sides.get(idx) ?? null))
-    const markers: Marker[] = kills.map((k) => ({
-      t: k.frame / hz,
-      // The killer's side, or the side opposing the victim.
-      side: (k.attacker !== null ? side(k.attacker) : null) ?? (side(k.victim) === 'CT' ? 'T' : 'CT'),
-      label: k.attacker !== null ? `${name(k.attacker)} killed ${name(k.victim)}` : `${name(k.victim)} died`,
-    }))
+    const pulseRound = pulse?.rounds.find((r) => r.n === n) ?? null
+    const tickRate = file?.match.tick_rate ?? 64
+    const markers: Marker[] = kills.map((k) => {
+      const label = k.attacker !== null ? `${name(k.attacker)} killed ${name(k.victim)}` : `${name(k.victim)} died`
+      const tick = k.kill !== null ? file?.kills[k.kill]?.tick : undefined
+      const swing = pulseRound && tick !== undefined ? swingAt(pulseRound, tick) : null
+      return {
+        t: k.frame / hz,
+        // The killer's side, or the side opposing the victim.
+        side: (k.attacker !== null ? side(k.attacker) : null) ?? (side(k.victim) === 'CT' ? 'T' : 'CT'),
+        label: swing ? `${label} · CT ${percent(swing.before)} → ${percent(swing.after)}` : label,
+        // A swing of 40 points or more draws the biggest mark.
+        weight: swing ? Math.min(1, Math.abs(swing.after - swing.before) / 0.4) : undefined,
+      }
+    })
+    const line = pulseRound ? pulseLine(pulseRound, round.start_tick, tickRate) : []
+    const swingT =
+      pulseRound?.swing_tick != null ? Math.max(0, (pulseRound.swing_tick - round.start_tick) / tickRate) : null
     const info = file?.rounds.find((r) => r.n === n)
     const endT = info && file ? tickToFrame(info.end_tick, round.start_tick, file.match.tick_rate, hz) / hz : null
-    return { scene, kills, name, side, markers, endT }
-  }, [summary, round, file, map, n, hz])
+    return { scene, kills, name, side, markers, endT, line, swingT }
+  }, [summary, round, file, map, pulse, n, hz])
 
   // The stage lives as long as this view.
   useEffect(() => {
@@ -309,6 +344,16 @@ function ReplayView({ n, summary, round, file, map }: ViewProps) {
           />
         </div>
         <Scrubber t={t} duration={duration} markers={model.markers} endT={model.endT} onSeek={seek} />
+        {model.line.length > 0 && (
+          <PulseStrip
+            line={model.line}
+            t={t}
+            duration={duration}
+            swingT={model.swingT}
+            estimated={pulse?.model === FALLBACK_MODEL}
+            onSeek={(v) => seek(v)}
+          />
+        )}
         <div class="controls">
           <button type="button" class="play" onClick={toggle} aria-keyshortcuts="Space">
             {playing ? 'Pause' : 'Play'}
