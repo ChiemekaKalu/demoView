@@ -1,0 +1,294 @@
+{
+ "R01": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 6,
+  "jev_highlight": 2.28,
+  "rubric": 0.5
+ },
+ "R02": {
+  "source": "pro",
+  "demo": "2893e6aeb8be",
+  "round": 12,
+  "kind": "plant",
+  "jev_highlight": 2.26,
+  "rubric": null
+ },
+ "R03": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 4,
+  "jev_highlight": 2.05,
+  "rubric": 0.5
+ },
+ "R04": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 11,
+  "jev_highlight": 1.71,
+  "rubric": 0.0
+ },
+ "R05": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 7,
+  "jev_highlight": 2.64,
+  "rubric": 0.5
+ },
+ "R06": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 2,
+  "jev_highlight": 2.82,
+  "rubric": 1.0
+ },
+ "R07": {
+  "source": "pro",
+  "demo": "dd2c036afba0",
+  "round": 3,
+  "kind": "clutch",
+  "jev_highlight": 3.7,
+  "rubric": null
+ },
+ "R08": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 13,
+  "jev_highlight": 2.44,
+  "rubric": 0.5
+ },
+ "R09": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 9,
+  "jev_highlight": 2.38,
+  "rubric": 0.5
+ },
+ "R10": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 3,
+  "jev_highlight": 1.9,
+  "rubric": 0.0
+ },
+ "R11": {
+  "source": "pro",
+  "demo": "3c4b2591fab1",
+  "round": 9,
+  "kind": "other",
+  "jev_highlight": 1.77,
+  "rubric": null
+ },
+ "R12": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 1,
+  "jev_highlight": 1.87,
+  "rubric": 0.0
+ },
+ "R13": {
+  "source": "pro",
+  "demo": "21fae0ff9678",
+  "round": 16,
+  "kind": "clutch",
+  "jev_highlight": 2.82,
+  "rubric": null
+ },
+ "R14": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 6,
+  "jev_highlight": 2.88,
+  "rubric": 0.5
+ },
+ "R15": {
+  "source": "pro",
+  "demo": "611fccb912c6",
+  "round": 17,
+  "kind": "other",
+  "jev_highlight": 2.21,
+  "rubric": null
+ },
+ "R16": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 10,
+  "jev_highlight": 2.54,
+  "rubric": 1.5
+ },
+ "R17": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 14,
+  "jev_highlight": 2.68,
+  "rubric": 0.5
+ },
+ "R18": {
+  "source": "pro",
+  "demo": "0b41e356e471",
+  "round": 24,
+  "kind": "clutch",
+  "jev_highlight": 3.4,
+  "rubric": null
+ },
+ "R19": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 19,
+  "jev_highlight": 2.15,
+  "rubric": 0.0
+ },
+ "R20": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 16,
+  "jev_highlight": 2.25,
+  "rubric": 1.0
+ },
+ "R21": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 9,
+  "jev_highlight": 3.63,
+  "rubric": 5.5
+ },
+ "R22": {
+  "source": "pro",
+  "demo": "df70d250c723",
+  "round": 1,
+  "kind": "plant",
+  "jev_highlight": 2.28,
+  "rubric": null
+ },
+ "R23": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 8,
+  "jev_highlight": 1.41,
+  "rubric": 0.0
+ },
+ "R24": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 18,
+  "jev_highlight": 3.1,
+  "rubric": 0.5
+ },
+ "R25": {
+  "source": "pro",
+  "demo": "83047ec87a78",
+  "round": 18,
+  "kind": "other",
+  "jev_highlight": 2.61,
+  "rubric": null
+ },
+ "R26": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 5,
+  "jev_highlight": 1.7,
+  "rubric": 0.0
+ },
+ "R27": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 3,
+  "jev_highlight": 1.13,
+  "rubric": 0.0
+ },
+ "R28": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 2,
+  "jev_highlight": 2.77,
+  "rubric": 1.0
+ },
+ "R29": {
+  "source": "pro",
+  "demo": "85f435722dc1",
+  "round": 3,
+  "kind": "plant",
+  "jev_highlight": 1.9,
+  "rubric": null
+ },
+ "R30": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 8,
+  "jev_highlight": 2.52,
+  "rubric": 3
+ },
+ "R31": {
+  "source": "pro",
+  "demo": "7f81b9164211",
+  "round": 13,
+  "kind": "clutch",
+  "jev_highlight": 2.91,
+  "rubric": null
+ },
+ "R32": {
+  "source": "pro",
+  "demo": "aeb86a164d55",
+  "round": 19,
+  "kind": "other",
+  "jev_highlight": 2.23,
+  "rubric": null
+ },
+ "R33": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 15,
+  "jev_highlight": 2.85,
+  "rubric": 0.5
+ },
+ "R34": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 7,
+  "jev_highlight": 2.25,
+  "rubric": 1.0
+ },
+ "R35": {
+  "source": "pro",
+  "demo": "b1bbc28b8a1b",
+  "round": 8,
+  "kind": "plant",
+  "jev_highlight": 2.45,
+  "rubric": null
+ },
+ "R36": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 5,
+  "jev_highlight": 2.88,
+  "rubric": 1.5
+ },
+ "R37": {
+  "source": "public",
+  "demo": "valve_mm_mirage_2024",
+  "round": 4,
+  "jev_highlight": 0.81,
+  "rubric": 0.0
+ },
+ "R38": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 17,
+  "jev_highlight": 1.03,
+  "rubric": 0.0
+ },
+ "R39": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 1,
+  "jev_highlight": 1.43,
+  "rubric": 0.0
+ },
+ "R40": {
+  "source": "public",
+  "demo": "faceit_nuke_2026",
+  "round": 12,
+  "jev_highlight": 2.91,
+  "rubric": 0.5
+ }
+}
