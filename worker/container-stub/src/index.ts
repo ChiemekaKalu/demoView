@@ -1,14 +1,28 @@
-// POST /start?seconds=N (Bearer STUB_TOKEN) queues one job. The consumer
-// asks the container to stream a line every 10 seconds for N seconds and
-// logs each line as it arrives. If the last log line says "done" after
-// N seconds, a parse that long works through the real path:
-// queue consumer -> Durable Object -> container.
+// Can a request to a container run for several minutes? Two ways to ask,
+// both with Bearer STUB_TOKEN and ?seconds=N:
+//
+//   POST /stream  streams the container's response straight back, a line
+//                 every 10 seconds, so a client can watch it arrive.
+//   POST /start   queues one job; the consumer makes the same request (the
+//                 real parse path: queue consumer -> Durable Object ->
+//                 container) and stores the outcome for GET /result.
 import { Container, getContainer } from "@cloudflare/containers";
 
 interface Env {
   STUB_CONTAINER: DurableObjectNamespace<StubContainer>;
   STUB_QUEUE: Queue<{ seconds: number }>;
   STUB_TOKEN: string;
+}
+
+interface StubResult {
+  state: "queued" | "done";
+  seconds: number;
+  ok?: boolean;
+  status?: number;
+  lines?: number;
+  first_line_s?: number;
+  elapsed_s?: number;
+  error?: string;
 }
 
 const SERVER = `
@@ -35,20 +49,39 @@ export class StubContainer extends Container<Env> {
   defaultPort = 8080;
   sleepAfter = "30s";
   entrypoint = ["python", "-u", "-c", SERVER];
+
+  async saveResult(result: StubResult): Promise<void> {
+    await this.ctx.storage.put("result", result);
+  }
+
+  async lastResult(): Promise<StubResult | null> {
+    return (await this.ctx.storage.get<StubResult>("result")) ?? null;
+  }
 }
+
+const container = (env: Env) => getContainer(env.STUB_CONTAINER, "stub");
+const streamUrl = (seconds: number) => `http://container/stream?seconds=${seconds}`;
 
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-    if (request.method !== "POST" || url.pathname !== "/start") {
-      return new Response("not found", { status: 404 });
-    }
     if (!env.STUB_TOKEN || request.headers.get("authorization") !== `Bearer ${env.STUB_TOKEN}`) {
       return new Response("unauthorized", { status: 401 });
     }
+    const url = new URL(request.url);
     const seconds = Number(url.searchParams.get("seconds") ?? 360);
-    await env.STUB_QUEUE.send({ seconds });
-    return new Response(`queued a ${seconds}s request; watch \`wrangler tail\`\n`, { status: 202 });
+    const route = `${request.method} ${url.pathname}`;
+    if (route === "POST /stream") {
+      return container(env).fetch(streamUrl(seconds));
+    }
+    if (route === "POST /start") {
+      await container(env).saveResult({ state: "queued", seconds });
+      await env.STUB_QUEUE.send({ seconds });
+      return new Response(`queued a ${seconds}s request; poll GET /result\n`, { status: 202 });
+    }
+    if (route === "GET /result") {
+      return Response.json(await container(env).lastResult());
+    }
+    return new Response("not found", { status: 404 });
   },
 
   async queue(batch, env) {
@@ -56,22 +89,27 @@ export default {
       const { seconds } = message.body;
       const started = Date.now();
       const elapsed = () => Math.round((Date.now() - started) / 1000);
+      const result: StubResult = { state: "done", seconds, lines: 0 };
       try {
-        const res = await getContainer(env.STUB_CONTAINER, "stub").fetch(
-          `http://container/stream?seconds=${seconds}`,
-        );
+        const res = await container(env).fetch(streamUrl(seconds));
+        result.status = res.status;
         const decoder = new TextDecoder();
         let last = "";
         for await (const chunk of res.body!) {
           for (const line of decoder.decode(chunk, { stream: true }).split("\n").filter(Boolean)) {
+            result.first_line_s ??= elapsed();
+            result.lines! += 1;
             last = line;
-            console.log(JSON.stringify({ event: "stub_progress", container: line, elapsed_s: elapsed() }));
           }
         }
-        console.log(JSON.stringify({ event: "stub_result", ok: last === "done", status: res.status, seconds, elapsed_s: elapsed() }));
+        result.ok = last === "done";
       } catch (err) {
-        console.log(JSON.stringify({ event: "stub_result", ok: false, error: String(err), seconds, elapsed_s: elapsed() }));
+        result.ok = false;
+        result.error = String(err);
       }
+      result.elapsed_s = elapsed();
+      await container(env).saveResult(result);
+      (result.ok ? console.log : console.error)(JSON.stringify({ event: "stub_result", ...result }));
       message.ack();
     }
   },
