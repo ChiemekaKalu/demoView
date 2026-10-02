@@ -87,7 +87,7 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
 - [x] `web/`: upload, match and replay pages, built against `schema/samples` (fixtures mode: `VITE_FIXTURES=1` or id `sample`). Every spec replay bullet is in. Bundle 45.7 KB raw / 17.7 KB gzip. 50 vitest tests.
 - [x] Mirage radar image at `web/public/radar/de_mirage.png`, from MurkyYT/cs2-map-icons @ ae7ed6a (1024×1024, extracted from the CS2 depot; the repo has no license, so these are Valve assets). Alignment verified by plotting real Mirage positions from the oracle export: trails follow the corridors, and spawns and bombsites match the overview file.
 
-## Valve fetch (design, not started)
+## Valve fetch (post-v1; design only)
 
 Research done 2026-10-02. The approach still works for CS2: Leetify, csstats.gg and cs-demo-downloader all use it.
 
@@ -143,7 +143,7 @@ Research done 2026-10-02. The approach still works for CS2: Leetify, csstats.gg 
   - Matches are found both ways: polling the user's match history (Steam Web API) and pasting a share link on the upload page.
   - It runs in the cloud, next to the parser.
   - It uses network APIs only (Steam Web API, Game Coordinator, Valve's replay servers), so the game-memory boundary still holds.
-  - *Timing is pending the user:* `cloud` suggested it come after the v1 done-when. Nothing gets built until the user confirms the order. The design is under [Valve fetch](#valve-fetch-design-not-started).
+  - *Timing (decided by the user 2026-10-02): after v1.* Build nothing for it before then: no infra, no secrets, no containers. The design is under [Valve fetch](#valve-fetch-post-v1-design-only).
 - **Narrative logging:** the `cloud` session is running a separate design effort for structured, tick-stamped parser events. It will come as a proposal; don't build logging into the parser before then.
 
 ### Oracle conventions (built in `tools/oracle`; 1.7 matches them so the diff lines up)
