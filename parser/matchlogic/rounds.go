@@ -53,7 +53,8 @@ func boundaryKind(log *Log, w window) Kind {
 // match can't start before that. Every later restart inside the window
 // starts a round. A restart followed by nothing that makes it a round (no
 // freeze end, round_end or surrender before the next one) is folded into the
-// round before it.
+// round before it, unless no round follows it: the demo or the match ended
+// before it was played, so it and what follows are left out.
 //
 // start_tick is round_start's tick when the demo fires it, and otherwise the
 // restart's; the two are the same tick on every demo seen.
@@ -85,23 +86,33 @@ backward:
 		}
 	}
 
+	end := func(j int) int {
+		if j+1 < len(starts) {
+			return starts[j+1]
+		}
+		return w.end
+	}
+	last := len(starts) - 1 // the last restart that starts a round
+	for last >= 0 && !newSpan(log, starts[last], end(last)).played(log) {
+		last--
+	}
+	if last >= 0 && last < len(starts)-1 {
+		n.add("restart at tick %d has no freeze end or round end, and no round follows it; left out", tickAt(log, starts[last+1]))
+	}
+
 	var spans []span
 	lead := -1 // start of restarts before the first real round
-	for j, s := range starts {
-		end := w.end
-		if j+1 < len(starts) {
-			end = starts[j+1]
-		}
-		sp := newSpan(log, s, end)
+	for j, s := range starts[:last+1] {
+		sp := newSpan(log, s, end(j))
 		switch {
-		case sp.freezeEnd >= 0 || sp.roundEnd >= 0 || has(log, s, end, Surrender):
+		case sp.played(log):
 			if lead >= 0 {
 				sp.start, lead = lead, -1
 			}
 			spans = append(spans, sp)
 		case len(spans) > 0:
 			n.add("restart at tick %d has no freeze end or round end; folded into round %d", sp.startTick, len(spans))
-			spans[len(spans)-1].end = end
+			spans[len(spans)-1].end = end(j)
 			spans[len(spans)-1].endTick = sp.endTick
 		default:
 			if lead < 0 {
@@ -186,6 +197,12 @@ func newSpan(log *Log, start, end int) span {
 		sp.restart = end
 	}
 	return sp
+}
+
+// played reports whether anything makes the span a round: a freeze end, a
+// round_end or a surrender.
+func (sp span) played(log *Log) bool {
+	return sp.freezeEnd >= 0 || sp.roundEnd >= 0 || has(log, sp.start, sp.end, Surrender)
 }
 
 // tickAt returns the tick of entry i, or of the last entry if i is past the

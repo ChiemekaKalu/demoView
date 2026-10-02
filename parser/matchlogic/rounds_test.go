@@ -144,7 +144,31 @@ func TestSegmentRounds(t *testing.T) {
 			notes: []string{
 				"no cs_win_panel_match: the match runs to the end of the demo",
 				"no begin_new_match before a round: the match starts at tick 0",
-				"restart at tick 1648 has no freeze end or round end; folded into round 2",
+				"restart at tick 1648 has no freeze end or round end, and no round follows it; left out",
+			},
+		},
+		{
+			// A recording cut off in freeze time, after a restart: a death
+			// there belongs to no round played, so it is left out.
+			name: "cut off after a restart",
+			build: func() *testLog {
+				l, a, b, c, d := twoVsTwo()
+				l.ev(10, BeginNewMatch).spawn(10, a, b, c, d).ev(100, RoundFreezeEnd)
+				l.kill(200, c, a).kill(300, d, b)
+				l.ev(748, RoundOfficiallyEnded).spawn(748, a, b, c, d).ev(1000, RoundFreezeEnd)
+				l.kill(1100, a, c).kill(1200, a, d)
+				l.ev(1648, RoundOfficiallyEnded).spawn(1648, a, b, c, d).world(1700, b)
+				return l
+			},
+			rounds: []string{
+				"1:10-100-300 B CT elimination",
+				"2:748-1000-1200 A CT elimination",
+			},
+			kills: 4,
+			notes: []string{
+				"no cs_win_panel_match: the match runs to the end of the demo",
+				"restart at tick 1648 has no freeze end or round end, and no round follows it; left out",
+				"death at tick 1700 is outside every round or has no listed victim; left out",
 			},
 		},
 		{
