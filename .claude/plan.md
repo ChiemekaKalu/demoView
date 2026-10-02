@@ -102,6 +102,12 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - Cloud Run pieces already built stay until the Containers design is confirmed: the deploy.yml steps and the `PARSER_URL` call.
   - The image and server (`$PORT`, env config) carry over.
 - **Map data in R2 (decided by the user 2026-10-02):** only what the viewer needs: `maps/radars/*`, `maps/radar_info/*`, `maps/available.json` and `maps/manifest.json`, in both buckets, private. No thumbs or icons.
+- **Pull the user's demos from Valve (scope change, decided by the user 2026-10-02).** The spec had "auto-fetching matches from Steam" out of scope through v1; the user pulled it in.
+  - The login is a dedicated Steam bot account, never the user's main account.
+  - Matches are found both ways: polling the user's match history (Steam Web API) and pasting a share link on the upload page.
+  - It runs in the cloud, next to the parser.
+  - It uses network APIs only (Steam Web API, Game Coordinator, Valve's replay servers), so the game-memory boundary still holds.
+  - Design and checkpoints follow once the feasibility research reports.
 - **Narrative logging:** the `cloud` session is running a separate design effort for structured, tick-stamped parser events. It will come as a proposal; don't build logging into the parser before then.
 
 ### Oracle conventions (built in `tools/oracle`; 1.7 matches them so the diff lines up)
