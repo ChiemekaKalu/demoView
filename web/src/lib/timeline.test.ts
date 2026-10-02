@@ -56,17 +56,11 @@ describe('time and frames', () => {
 
 describe('roundKills', () => {
   it("maps round 1's kill events to match.json kills", () => {
+    const events = round01.events.filter((e) => e.type === 'kill')
     const feed = roundKills(round01, match)
-    expect(feed).toHaveLength(9)
-    expect(feed[0]).toEqual({
-      frame: 269,
-      kill: 0,
-      attacker: 4,
-      victim: 6,
-      assister: 3,
-      weapon: 'usp_silencer',
-      headshot: true,
-    })
+    expect(feed).toHaveLength(events.length)
+    const { attacker, victim, assister, weapon, headshot } = match.kills[events[0].kill!]
+    expect(feed[0]).toEqual({ frame: events[0].frame, kill: events[0].kill, attacker, victim, assister, weapon, headshot })
     for (let i = 1; i < feed.length; i++) expect(feed[i].frame).toBeGreaterThanOrEqual(feed[i - 1].frame)
   })
 

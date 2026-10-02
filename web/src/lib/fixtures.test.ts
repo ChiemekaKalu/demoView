@@ -37,21 +37,16 @@ describe('deriveSummary', () => {
     expect(Object.keys(summary.players[0]).sort()).toEqual(
       ['adr', 'assists', 'deaths', 'hs_pct', 'idx', 'kills', 'name', 'team'].sort(),
     )
-    expect(summary.players[0]).toEqual({
-      idx: 0,
-      name: 'Ashgrove',
-      team: 'A',
-      kills: 17,
-      deaths: 9,
-      assists: 4,
-      adr: 81.9,
-      hs_pct: 70.6,
-    })
+    const p = match.players[0]
+    const row = match.scoreboard.find((r) => r.player === p.idx)!
+    const { kills, deaths, assists, adr, hs_pct } = row
+    expect(summary.players[0]).toEqual({ idx: p.idx, name: p.name, team: p.team, kills, deaths, assists, adr, hs_pct })
   })
 
   it('keeps only n, winner, reason and side_a per round, ordered by n', () => {
     expect(summary.rounds).toHaveLength(22)
-    expect(summary.rounds[0]).toEqual({ n: 1, winner: 'A', reason: 'bomb_defused', side_a: 'CT' })
+    const { n, winner, reason, side_a } = match.rounds[0]
+    expect(summary.rounds[0]).toEqual({ n, winner, reason, side_a })
     expect(summary.rounds.map((r) => r.n)).toEqual(Array.from({ length: 22 }, (_, i) => i + 1))
   })
 
