@@ -11,7 +11,8 @@ Requires Go 1.25+ and Node 22+.
 
 ```sh
 cd parser && go test ./...
-cd parser && go run ./cmd/demoparse path/to/match.dem
+cd parser && go run ./cmd/demo parse path/to/match.dem --out out/
+cd parser && go run ./cmd/demo inspect path/to/match.dem   # dev: frame stats
 
 cd web && npm install && npm run dev
 ```

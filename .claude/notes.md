@@ -4,6 +4,7 @@ Running log of decisions, progress and findings. Newest first. Keep entries shor
 
 ## 2026-10-02
 
+- **Hard boundary, set by the user:** never touch their game memory, for any reason. Recorded in CLAUDE.md ground rules and sent to both peer sessions. Demo files are the only game input.
 - Workspace initialized: `parser/` (Go module) and `web/` (Vite + Preact + TypeScript). Go 1.27 installed. `parser/demo` reads and validates the demo preamble; tests pass.
 - Spec pasted into `.claude/spec.md`, reformatted as Markdown, then updated for a **solo build**:
   - One milestone sequence: M0 schema and fixtures, M1 v0 parser, M2 cloud pipeline on fixture data, M3 viewer, M4 entity decoding.

@@ -4,6 +4,7 @@
 
 # Go
 /parser/bin/
+/parser/out/
 *.exe
 *.test
 *.out

@@ -26,7 +26,8 @@ Not created yet (see the spec's repo layout): `worker/`, `schema/`, `tools/`.
 ```sh
 # parser
 cd parser && go test ./...
-cd parser && go run ./cmd/demoparse path/to/match.dem
+cd parser && go run ./cmd/demo parse path/to/match.dem --out out/
+cd parser && go run ./cmd/demo inspect path/to/match.dem   # dev: frame stats
 
 # web
 cd web && npm run dev      # local dev server
@@ -36,6 +37,7 @@ cd web && npm run lint     # oxlint
 
 ## Ground rules
 
+- **HARD BOUNDARY: never touch the user's game memory. Not for any reason.** No reading, writing, attaching to, injecting into or scanning the memory of CS2 or any other game process. No debuggers, memory readers, overlays, hooks or process handles aimed at a game. The only game input is a `.dem` file the user hands over. If a task seems to need live game access, stop and ask the user.
 - **The parser is from scratch.** Reference parsers (demoinfocs-golang, demoparser, etc.) are test oracles only. They may run in `tools/` to export reference output, but `parser/` never imports them or copies from them. Generic building blocks such as a protobuf runtime and snappy are fine.
 - **The schema is the contract.** Don't change schema files on your own; propose the change to the user first. Any breaking change bumps `schema_version`.
 - **The parser streams.** Never load the whole demo into memory. The targets are under 512 MB and under 60 s for a full match on 1 vCPU.
