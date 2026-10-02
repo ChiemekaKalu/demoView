@@ -123,7 +123,7 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
   - The radars are aligned: the best offset is within 2 px. A 6 px shift drops every demo to 97.46% or below.
   - 99.5% would fail aligned demos. The bar comes from Mirage plus Ancient, so the spec wording needs updating (told cloud).
   - Local and dev only.
-- [ ] **5.3 Per-map diff entries** (parser). `demo diff` coverage for Ancient, Inferno and Overpass. All 10 local demos already pass.
+- [x] **5.3 Per-map diff entries** (parser). `TestReferenceDiff` runs one subtest per map and demo: Mirage 4, Ancient 2, Inferno 2, Overpass 1, Nuke 1. All OK.
 - [ ] **5.4 Duplicate upload** (pipeline). `crypto.DigestStream` on confirm, indexed `demo_sha256`, existing id returned, duplicate object deleted.
 - [ ] **5.5 Reparse route and cron** (pipeline). Keyed on the last attempted build, injected at deploy. Hourly, 5 per batch, paused at 80% of the container allowance. A failed reparse never takes a match off `ready`.
 - [ ] **5.6 Safe swap.**
@@ -133,10 +133,12 @@ The spec's v1.1 section is the source. Owners: **parser** is this session, **pip
 
 ## M6: trusted and hardened (v1.1)
 
-- [ ] **6.1 No Stop, bad demo** (parser). A stream that ends without `DEM_Stop` is `bad_demo` ("truncated: no Stop frame"). Exit: truncating each public fixture at 1,000 offsets always exits 1, with no panic and no OOM.
-- [ ] **6.2 Fuzz targets** (parser). `bitread` (done), the frame loop, field paths and string tables, with corpora generated at test time. Exit: 10 minutes each with no crash.
-- [ ] **6.3 Run-twice identity** (parser). Two parses in separate processes are byte-identical on all local demos.
-- [ ] **6.4 Budget** (parser). With `GOMAXPROCS=1`, the largest fixture parses in under 512 MB and under 60 s.
+- [x] **6.1 No Stop, bad demo** (parser, 27de943). The rule lives in `parse`. All 2,000 truncations of the public fixtures are `ErrBadDemo` with no panic, and all 10 local demos give identical output before and after.
+- [ ] **6.2 Fuzz targets** (parser).
+  - Done: `bitread`, `FuzzFrames` (frame loop, decoder, messages) and `FuzzApply` (string tables). 60 s runs crash-free; the 10-minute exit runs are documented in each target's doc comment.
+  - *Remaining:* field paths, which come with M4 stage 3.
+- [x] **6.3 Run-twice identity** (parser). Byte-identical `match.json` on all 10 local demos, from separate processes.
+- [ ] **6.4 Budget** (parser). `TestBudget` passes events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB with `GOMAXPROCS=1`. *Re-check once entity decoding is wired in.*
 - [ ] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit: a synthetic unknown-field test.
 - [ ] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
 - [ ] **6.7 CI diff gates deploys** (pipeline). Needs the fixtures bucket secrets.
