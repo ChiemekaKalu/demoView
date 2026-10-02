@@ -113,7 +113,38 @@ v1 ships on oracle round files, but entity decoding is the spec's hardest stage,
 - [ ] **Stages 4–5, extraction and round files** at 64 Hz, then swap them in for the oracle's.
 - [ ] **Narrative log groundwork** (`parser/eventlog`, logging.md build step 1 only; user decision 2026-10-02). Envelope, Emitter, Nop, Spool and a deterministic finalizer, with tests. No output file, CLI flag, schema or R2 path until the user decides. Off stage 3's critical path. *In progress.*
 
-## Valve fetch (post-v1; design only)
+## M5: every map and safe reparse (v1.1)
+
+The spec's v1.1 section is the source. Owners: **parser** is this session, **pipeline** is the Worker and viewer session.
+
+- [ ] **5.1 Maps route and loader** (pipeline). `GET /api/maps/:name` serves `maps/radar_info` and radars. A map without a radar shows a plain background and a notice.
+- [ ] **5.2 Radar-alignment check** (parser, `tools/`). The share of alive player frames that land on a non-transparent radar pixel. Measure the Mirage baseline first, then set the bar. Local and dev only, because the radars are unlicensed.
+- [ ] **5.3 Per-map diff entries** (parser). `demo diff` coverage for Ancient, Inferno and Overpass. All 10 local demos already pass.
+- [ ] **5.4 Duplicate upload** (pipeline). `crypto.DigestStream` on confirm, indexed `demo_sha256`, existing id returned, duplicate object deleted.
+- [ ] **5.5 Reparse route and cron** (pipeline). Keyed on the last attempted build, injected at deploy. Hourly, 5 per batch, paused at 80% of the container allowance. A failed reparse never takes a match off `ready`.
+- [ ] **5.6 Safe swap.**
+  - (parser) Write under a given `parsed/{id}/{parse_id}/` prefix, with `manifest.json` last. It can be built now, but *don't merge until the user approves the versioned layout*.
+  - (pipeline) Conditional D1 pointer swap, `?v=<parse_id>` URLs, 7-day cleanup by exact key.
+- [ ] **5.7 Self-recovery** (pipeline). A 30-minute stuck-match sweeper on `status_changed_at`, coded errors on the match page, an unknown-`schema_version` message, an upload rate limit, and an orphaned-demo lifecycle rule. The parser side is the error codes in its responses.
+
+## M6: trusted and hardened (v1.1)
+
+- [ ] **6.1 No Stop, bad demo** (parser). A stream that ends without `DEM_Stop` is `bad_demo` ("truncated: no Stop frame"). Exit: truncating each public fixture at 1,000 offsets always exits 1, with no panic and no OOM.
+- [ ] **6.2 Fuzz targets** (parser). `bitread` (done), the frame loop, field paths and string tables, with corpora generated at test time. Exit: 10 minutes each with no crash.
+- [ ] **6.3 Run-twice identity** (parser). Two parses in separate processes are byte-identical on all local demos.
+- [ ] **6.4 Budget** (parser). With `GOMAXPROCS=1`, the largest fixture parses in under 512 MB and under 60 s.
+- [ ] **6.5 Unknown entity data** (parser, after M4 stage 4). An unknown class, field or decoder is a coded entity-stage error. `match.json` still ships, round files fall back to the oracle, and `round_source=oracle` is logged. Exit: a synthetic unknown-field test.
+- [ ] **6.6 Shadow compare on dev** (parser and pipeline, after the M4 swap-in). Zero round-file mismatches against the oracle.
+- [ ] **6.7 CI diff gates deploys** (pipeline). Needs the fixtures bucket secrets.
+- [ ] **6.8 Fault-flag recovery** (pipeline). 20 uploads each end `ready` or `failed` with a coded error, and none sits past 30 minutes. The flag is dev-only.
+
+## v1.2 (decided)
+
+- The Steam/Valve auto-fetch (design below).
+- Two-floor maps (Nuke and Vertigo): a z or level column, a layer toggle and a `schema_version` bump.
+- The narrative log's output, schema, derived events and story pane, on top of the M4 `parser/eventlog` groundwork.
+
+## Valve fetch (v1.2; design only)
 
 Research done 2026-10-02. The approach still works for CS2: Leetify, csstats.gg and cs-demo-downloader all use it.
 
@@ -169,7 +200,7 @@ Research done 2026-10-02. The approach still works for CS2: Leetify, csstats.gg 
   - Matches are found both ways: polling the user's match history (Steam Web API) and pasting a share link on the upload page.
   - It runs in the cloud, next to the parser.
   - It uses network APIs only (Steam Web API, Game Coordinator, Valve's replay servers), so the game-memory boundary still holds.
-  - *Timing (decided by the user 2026-10-02): after v1.* Build nothing for it before then: no infra, no secrets, no containers. The design is under [Valve fetch](#valve-fetch-post-v1-design-only).
+  - *Timing (decided by the user 2026-10-02): v1.2.* Build nothing for it before then: no infra, no secrets, no containers. The design is under [Valve fetch](#valve-fetch-v12-design-only).
 - **Narrative logging:** the `cloud` session is running a separate design effort for structured, tick-stamped parser events. It will come as a proposal; don't build logging into the parser before then.
 
 ### Oracle conventions (built in `tools/oracle`; 1.7 matches them so the diff lines up)
