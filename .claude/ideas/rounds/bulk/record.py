@@ -50,16 +50,22 @@ def main():
 
 
 def summarize(lines):
-    """Name-free shape of a diff report: rounds found by each side, and how
-    many mismatches of each kind, with player ids and indexes stripped."""
-    out = {"report_lines": len(lines), "kinds": {}}
+    """Name-free shape of a diff report: rounds found by each side, how many
+    mismatches of each kind (player ids and indexes stripped), and the first
+    match.json lines with player keys redacted. A weapon the reference reports
+    as "unknown" gets its own kind, since that difference is the reference's."""
+    out = {"report_lines": len(lines), "kinds": {}, "first_lines": []}
     for line in lines:
         m = re.search(r"rounds\.count: ours (\d+), reference (\d+)", line)
         if m:
             out["rounds"] = [int(m.group(1)), int(m.group(2))]
         if ": ours " in line:
             kind = re.sub(r"\[[^\]]*\]", "[]", line.strip().split(": ours ")[0])
+            if kind == "kills[].weapon" and line.rstrip().endswith('reference "unknown"'):
+                kind = "kills[].weapon:ref-unknown"
             out["kinds"][kind] = out["kinds"].get(kind, 0) + 1
+            if not kind.startswith("round[]") and len(out["first_lines"]) < 6:
+                out["first_lines"].append(re.sub(r"\d{17}", "<id>", re.sub(r"players\[[^\]]*\]", "players[…]", line.strip()))[:160])
     return out
 
 

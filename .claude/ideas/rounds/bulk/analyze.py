@@ -473,7 +473,7 @@ GATE_KINDS = {"rounds.count", "rounds[]", "rounds[].start_tick", "rounds[].freez
 
 
 def blocks(kind):
-    return kind in GATE_KINDS or kind.startswith("kills[]")
+    return kind in GATE_KINDS or (kind.startswith("kills[]") and kind != "kills[].weapon:ref-unknown")
 
 
 def flip_check(recs):
@@ -497,8 +497,11 @@ def flip_check(recs):
             res["reference_side"].append({"path": r["path"], "kinds": match, "why": REFERENCE_SIDE[name]})
         elif not match:
             res["clean"].append(r["path"])
+        elif match == ["kills[].weapon:ref-unknown"]:
+            res["reference_side"].append({"path": r["path"], "kinds": match, "why": "every weapon mismatch is the reference's \"unknown\""})
         elif any(blocks(k) for k in match):
-            res["blocking"].append({"path": r["path"], "kinds": [k for k in match if blocks(k)], "rounds": diff.get("rounds")})
+            res["blocking"].append({"path": r["path"], "kinds": [k for k in match if blocks(k)], "rounds": diff.get("rounds"),
+                                    "first_lines": [l for l in diff.get("first_lines", []) if not l.endswith('reference "unknown"')][:4]})
         elif match == ["scoreboard[].adr"]:
             res["adr_only"].append(r["path"])
         else:
@@ -605,7 +608,9 @@ def markdown(rep):
         if fc:
             L += ["## Flip check (match.json only; round files never block)", "", f"**{fc['gate_line']}**", "",
                   " · ".join(f"{k.replace('_', ' ')}: {v}" for k, v in fc["counts"].items()), ""]
-            L += [f"- BLOCKING `{b['path']}`: {', '.join(b['kinds'])}" + (f" (rounds ours {b['rounds'][0]} vs ref {b['rounds'][1]})" if b.get("rounds") else "") for b in fc["blocking"]]
+            for b in fc["blocking"]:
+                L.append(f"- BLOCKING `{b['path']}`: {', '.join(b['kinds'])}" + (f" (rounds ours {b['rounds'][0]} vs ref {b['rounds'][1]})" if b.get("rounds") else ""))
+                L += [f"    - `{l}`" for l in b.get("first_lines", [])]
             L += [f"- ADR only `{p}`" for p in fc["adr_only"]]
             L += [f"- warning `{w['path']}`: {', '.join(w['kinds'])}" for w in fc["warnings"]]
             L += ["", "Mismatch kinds across demos with a reference (lines are lower bounds: the diff prints at most 40):", "",

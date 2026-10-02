@@ -1,7 +1,7 @@
 {
   "mode": "parser",
   "source_run": "37003041437",
-  "parser_ref": "4e2858ad66c34b77640e6354954a11a6e03b2284",
+  "parser_ref": "37e41c6f30dd5f6b61f446addc57c2641c126306",
   "parser_sample": "full",
   "dataset": "skkwowee/chimera-cs2",
   "seed": 2026,
@@ -47,6 +47,8 @@
   "parser_events": true,
   "reference_side": {
     "spirit-vs-the-mongolz-m3-ancient.dem": "the reference reports kills[].weapon as unknown",
-    "vitality-vs-faze-m3-inferno.dem": "partial recording: the reference's ADR is the game's counter over rounds the demo lacks"
+    "vitality-vs-faze-m3-inferno.dem": "partial recording: the reference's ADR is the game's counter over rounds the demo lacks",
+    "astralis-vs-g2-m2-overpass.dem": "the reference reports kills[].weapon as unknown",
+    "fut-vs-astralis-m1-mirage.dem": "the reference reports kills[].weapon as unknown"
   }
 }
