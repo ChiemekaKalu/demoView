@@ -146,8 +146,7 @@
         ]
       },
       "ratelimits": [{ "name": "UPLOAD_LIMIT", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }],
-      // Off until the reparse exit checks pass on dev.
-      "triggers": { "crons": [] }
+      "triggers": { "crons": ["*/10 * * * *", "0 * * * *", "30 4 * * *"] }
     }
   }
 }

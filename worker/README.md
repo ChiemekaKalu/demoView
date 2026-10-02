@@ -46,7 +46,7 @@ A reparse job (`{ match_id, reparse: true }`) parses a `ready` match again witho
 
 ## Scheduled jobs
 
-Three crons (`triggers` in `wrangler.jsonc`, `src/cron.ts`). Prod's are off until the reparse exit checks pass on dev.
+Three crons (`triggers` in `wrangler.jsonc`, `src/cron.ts`), in both environments.
 
 - **Every 10 minutes, the sweeper.** A match 30 minutes in `queued` since its last status change has lost its queue message, so it is queued again. One 30 minutes in `parsing` has nothing left to finish it, so it fails with `stuck`. Matches in any other status are never touched.
 - **Hourly, the reparse batch.** Up to 5 `ready` matches whose `attempted_build` isn't the deployed `PARSER_BUILD` get reparse jobs, oldest first, so each match is tried once per build. It waits while anything is `queued` or `parsing`, so an upload waits behind at most one batch. It stops for the month once `container_usage` reaches 80% of the 25 instance-hours the plan includes, and does nothing on a deploy without a build id (`dev`).
