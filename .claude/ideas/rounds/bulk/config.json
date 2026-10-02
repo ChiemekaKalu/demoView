@@ -1,7 +1,7 @@
 {
   "mode": "parser",
   "source_run": "37003041437",
-  "parser_ref": "243de41fe387c909ba6c0d2251b582c06280a368",
+  "parser_ref": "4e2858ad66c34b77640e6354954a11a6e03b2284",
   "parser_sample": "full",
   "dataset": "skkwowee/chimera-cs2",
   "seed": 2026,
