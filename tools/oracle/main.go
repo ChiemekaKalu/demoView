@@ -3,7 +3,7 @@
 //
 // Usage:
 //
-//	oracle export <file.dem | -> --out <dir> [--hz 16]
+//	oracle export <file.dem | -> --out <dir> [--hz 64]
 //
 // "-" reads the demo from stdin. It writes <dir>/match.json and
 // <dir>/rounds/NN.json, then prints one JSON summary line on stdout. On
@@ -23,7 +23,7 @@ import (
 	"github.com/ChiemekaKalu/demoview/tools/oracle/export"
 )
 
-const usage = "usage: oracle export <file.dem | -> --out <dir> [--hz 16]"
+const usage = "usage: oracle export <file.dem | -> --out <dir> [--hz 64]"
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout); err != nil {

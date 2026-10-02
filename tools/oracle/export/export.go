@@ -27,8 +27,9 @@ import (
 // produced by demoinfocs v5.2.0.
 const Version = "0.1.0-oracle+demoinfocs.5.2.0"
 
-// DefaultHz is the round file sample rate in v1.
-const DefaultHz = 16
+// DefaultHz is the round file sample rate, 64 Hz: a frame for every tick of
+// a 64-tick demo.
+const DefaultHz = 64
 
 // Result is everything one export produces.
 type Result struct {
