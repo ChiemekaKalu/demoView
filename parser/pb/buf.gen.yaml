@@ -1,0 +1,25 @@
+# Code generation for the vendored Valve protos in ./protos. See README.md.
+#
+# Run from this directory: `go generate` (see gen.go).
+#
+# Valve's protos have no package and no go_package option, so each file is
+# mapped to this Go package with protoc-gen-go M options instead of editing
+# the vendored files. When a file is added to ./protos, add an M line for it.
+#
+# protoc-gen-go runs via `go run` with no version, so it always matches the
+# google.golang.org/protobuf version pinned in parser/go.mod.
+version: v2
+inputs:
+  - directory: protos
+plugins:
+  - local: ["go", "run", "google.golang.org/protobuf/cmd/protoc-gen-go"]
+    out: .
+    opt:
+      - paths=source_relative
+      - Mdemo.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Mgameevents.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Mnetmessages.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Mnetwork_connection.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Mnetworkbasetypes.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Msource2_steam_stats.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
+      - Mvalveextensions.proto=github.com/ChiemekaKalu/demoview/parser/pb;pb
