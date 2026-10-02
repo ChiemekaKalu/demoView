@@ -29,6 +29,7 @@ func TestScheduleSwapAfter(t *testing.T) {
 // swap.
 type halves struct {
 	teamEvents bool     // player_team events, with silent swaps at the half
+	swapEarly  bool     // the swap's player_team events come before round 2 ends
 	phaseEnd   bool     // announce_phase_end at the half
 	cvars      []string // name, value pairs
 }
@@ -44,6 +45,9 @@ func (h halves) build() *testLog {
 	if h.teamEvents {
 		l.team(5, a, NoSide, CT).team(5, b, NoSide, CT).team(5, c, NoSide, T).team(5, d, NoSide, T)
 	}
+	swap := func(tick int32) {
+		l.team(tick, a, CT, T).team(tick, b, CT, T).team(tick, c, T, CT).team(tick, d, T, CT)
+	}
 	tick := int32(10)
 	for r := range 4 {
 		l.ev(tick, RoundPrestart)
@@ -54,13 +58,16 @@ func (h halves) build() *testLog {
 		if r >= 2 {
 			ct1, ct2, t1, t2 = c, d, a, b
 		}
-		if r == 2 && h.teamEvents {
-			l.team(tick, ct1, T, CT).team(tick, ct2, T, CT).team(tick, t1, CT, T).team(tick, t2, CT, T)
+		if r == 2 && h.teamEvents && !h.swapEarly {
+			swap(tick)
 		}
 		l.spawn(tick, a, b, c, d).ev(tick+100, RoundFreezeEnd)
 		l.kill(tick+200, ct1, t1, headshot).kill(tick+300, ct2, t2)
 		if r == 1 && h.phaseEnd {
 			l.ev(tick+350, AnnouncePhaseEnd)
+		}
+		if r == 1 && h.teamEvents && h.swapEarly {
+			swap(tick + 400)
 		}
 		tick += 1000
 		if r < 3 {
@@ -78,6 +85,7 @@ func TestAssignSidesAtHalftime(t *testing.T) {
 		notes []string
 	}{
 		{"player_team events", halves{teamEvents: true, phaseEnd: true, cvars: full}, nil},
+		{"player_team events before the round ends", halves{teamEvents: true, swapEarly: true, phaseEnd: true, cvars: full}, nil},
 		{"player_team events, no cvars", halves{teamEvents: true, phaseEnd: true}, []string{
 			"halftime after round 2 is true by announce_phase_end but false by the cvars (mp_maxrounds 24, mp_overtime_maxrounds 6, mp_halftime true)",
 		}},

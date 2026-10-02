@@ -34,8 +34,9 @@ type sides struct {
 //  1. A participant plays a round if they spawn in it, or kill, die, assist,
 //     hurt or get hurt in it.
 //  2. Their observed side in a round comes from their player_team events,
-//     read at the end of the round. Without events, or if the events end on
-//     a different side than the end-of-match message gives, it is the
+//     read at its freeze end: a halftime swap can come before the event
+//     that ends the round. Without events, or if the events end on a
+//     different side than the end-of-match message gives, it is the
 //     end-of-match side carried back through the halftimes.
 //  3. Team A is whoever was observed on CT in round 1. The side team A
 //     played in a later round is the side most of them were observed on,
@@ -131,13 +132,22 @@ func observe(log *Log, spans []span, in [][]bool, swap []bool, n *notes) [][]Sid
 				continue
 			}
 			if useEvents {
-				obs[r][p] = sideAfter(log, changes[p], spans[r].end)
+				obs[r][p] = sideAfter(log, changes[p], spans[r].sidesAt())
 			} else if side.Playing() {
 				obs[r][p] = side
 			}
 		}
 	}
 	return obs
+}
+
+// sidesAt returns the entry the round's sides are read at: its freeze end,
+// or its end for a round that ended in freeze time.
+func (sp span) sidesAt() int {
+	if sp.freezeEnd >= 0 {
+		return sp.freezeEnd
+	}
+	return sp.end
 }
 
 // sideAfter returns the side a participant is on just before entry i, from
