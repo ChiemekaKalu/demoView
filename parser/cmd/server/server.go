@@ -89,6 +89,11 @@ type parseRequest struct {
 	ParseID string `json:"parse_id"`
 }
 
+// prefix is where the parse's files go: parsed/{match_id}/{parse_id}/.
+func (req parseRequest) prefix() string {
+	return path.Join("parsed", req.MatchID, req.ParseID) + "/"
+}
+
 // idPattern matches the Worker's match and parse ids. Both become part of
 // output keys, so nothing else is accepted.
 var idPattern = regexp.MustCompile(`^[0-9a-z]{1,64}$`)
@@ -306,7 +311,7 @@ func encodeRounds(files []roundfile.File) ([]outFile, error) {
 // write puts the round files and match.json under the parse's prefix, then
 // the manifest listing them, which marks the parse complete.
 func (s *server) write(ctx context.Context, st store.Store, req parseRequest, res *runResult, rounds []outFile) error {
-	out := &output{st: st, prefix: path.Join("parsed", req.MatchID, req.ParseID) + "/"}
+	out := &output{st: st, prefix: req.prefix()}
 	for _, f := range rounds {
 		if err := out.put(ctx, "rounds/"+f.name, f.data); err != nil {
 			return err

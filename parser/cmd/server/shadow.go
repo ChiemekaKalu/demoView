@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -19,9 +20,11 @@ const shadowExamples = 5
 
 // shadowCompare streams the demo into the oracle again, compares the
 // oracle's match.json and round files with the ones that shipped, and logs
-// one "shadow" line. It runs once the response has gone, under its own
-// timeout, and counts as in flight, so a shutdown drain waits for it. It
-// never writes to the store.
+// one "shadow" line. It also writes the verdict to shadow.json beside the
+// parse's files, so it outlasts the logs: after manifest.json and not listed
+// in it, so the manifest still marks the parse complete. It runs once the
+// response has gone, under its own timeout, and counts as in flight, so a
+// shutdown drain waits for it.
 func (s *server) shadowCompare(ctx context.Context, log *slog.Logger, req parseRequest, res runResult) {
 	s.inFlight.Add(1)
 	defer s.inFlight.Add(-1)
@@ -37,33 +40,61 @@ func (s *server) shadowCompare(ctx context.Context, log *slog.Logger, req parseR
 		report, compared, err = shadowDiff(res.matchJSON, res.rounds, ref)
 	}
 
-	result, level := "match", slog.LevelInfo
+	v := shadowVerdict{
+		Result:         "match",
+		RoundSource:    res.roundSource,
+		RoundsCompared: compared,
+		Mismatches:     len(report.Mismatches),
+		ByCategory:     map[string]int{},
+		First:          []string{},
+		OracleMS:       oracleMS,
+	}
+	level := slog.LevelInfo
 	switch {
 	case err != nil:
-		result, level = "error", slog.LevelWarn
+		v.Result, v.Error, level = "error", err.Error(), slog.LevelWarn
 	case !report.OK():
-		result, level = "mismatch", slog.LevelWarn
+		v.Result, level = "mismatch", slog.LevelWarn
 	}
-	byCategory, first := map[string]int{}, []string{}
 	for _, m := range report.Mismatches {
-		byCategory[indexes.ReplaceAllString(m.Path, "")]++
-		if len(first) < shadowExamples {
-			first = append(first, fmt.Sprintf("%s: ours %s, oracle %s", m.Path, m.Ours, m.Ref))
+		v.ByCategory[indexes.ReplaceAllString(m.Path, "")]++
+		if len(v.First) < shadowExamples {
+			v.First = append(v.First, fmt.Sprintf("%s: ours %s, oracle %s", m.Path, m.Ours, m.Ref))
 		}
 	}
 	attrs := []slog.Attr{
 		slog.String("event", "shadow"),
-		slog.String("result", result),
-		slog.Int("rounds_compared", compared),
-		slog.Int("mismatches", len(report.Mismatches)),
-		slog.Any("by_category", byCategory),
-		slog.Any("first", first),
-		slog.Int64("oracle_ms", oracleMS),
+		slog.String("result", v.Result),
+		slog.Int("rounds_compared", v.RoundsCompared),
+		slog.Int("mismatches", v.Mismatches),
+		slog.Any("by_category", v.ByCategory),
+		slog.Any("first", v.First),
+		slog.Int64("oracle_ms", v.OracleMS),
 	}
-	if err != nil {
-		attrs = append(attrs, slog.String("error", err.Error()))
+	if v.Error != "" {
+		attrs = append(attrs, slog.String("error", v.Error))
 	}
 	log.LogAttrs(ctx, level, "shadow", attrs...)
+
+	data, err := json.Marshal(v)
+	if err == nil {
+		err = s.store.Put(ctx, req.prefix()+"shadow.json", data)
+	}
+	if err != nil {
+		log.Warn("shadow write failed", "error", err)
+	}
+}
+
+// shadowVerdict is shadow.json, and what the shadow line logs.
+type shadowVerdict struct {
+	Result         string         `json:"result"` // "match", "mismatch" or "error"
+	RoundSource    string         `json:"round_source"`
+	RoundsCompared int            `json:"rounds_compared"`
+	Mismatches     int            `json:"mismatches"`
+	ByCategory     map[string]int `json:"by_category"` // mismatches by path, indexes removed
+	First          []string       `json:"first"`       // the first few mismatches
+	OracleMS       int64          `json:"oracle_ms"`
+	Error          string         `json:"error,omitempty"`
 }
 
 // indexes matches the indexes in a diff path, such as "[3]" or "[n=2]".

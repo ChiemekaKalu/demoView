@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,8 +26,8 @@ func newShadowHarness(t *testing.T, oracleMode string) *harness {
 	return h
 }
 
-// After a parse ships our round files, the shadow compare runs the oracle
-// and logs that its output matches, and writes nothing.
+// After a parse ships our round files, the shadow compare runs the oracle,
+// logs that its output matches, and writes that verdict after the manifest.
 func TestShadowMatch(t *testing.T) {
 	h := newShadowHarness(t, "rounds")
 	h.putDemo(twoRounds)
@@ -35,9 +36,13 @@ func TestShadowMatch(t *testing.T) {
 	if status, body := h.parse(); status != http.StatusOK {
 		t.Fatalf("status %d, body %s", status, body)
 	}
-	if n := len(puts.keys()); n != 4 {
-		t.Errorf("wrote %q, want only the parse's 4 files", puts.keys())
+	if keys := puts.keys(); len(keys) != 5 || !slices.Equal(keys[3:], []string{"manifest.json", "shadow.json"}) {
+		t.Errorf("wrote %q, want the parse's 4 files, then shadow.json", keys)
 	}
+	if _, names := h.readManifest(); slices.Contains(names, "shadow.json") {
+		t.Errorf("manifest lists shadow.json: %q", names)
+	}
+	checkVerdict(t, h, shadowVerdict{Result: "match", RoundSource: "parser", RoundsCompared: 2, ByCategory: map[string]int{}, First: []string{}})
 	msgs := h.messages()
 	if got := msgs[len(msgs)-2:]; !slices.Equal(got, []string{"parse", "shadow"}) {
 		t.Fatalf("log ends %q, want the summary then the shadow line", got)
@@ -87,6 +92,25 @@ func TestShadowMismatch(t *testing.T) {
 		first[1] != "round_files[02.json]: ours present, oracle absent" {
 		t.Errorf("first = %q", first)
 	}
+	checkVerdict(t, h, shadowVerdict{
+		Result: "mismatch", RoundSource: "parser", RoundsCompared: 1, Mismatches: 2,
+		ByCategory: map[string]int{"round.players.xy": 1, "round_files": 1},
+		First:      []string{fmt.Sprint(first[0]), fmt.Sprint(first[1])},
+	})
+}
+
+// checkVerdict checks the parse's shadow.json against want, whatever its
+// oracle time.
+func checkVerdict(t *testing.T, h *harness, want shadowVerdict) {
+	t.Helper()
+	var got shadowVerdict
+	if err := json.Unmarshal(h.stored(outPrefix+"shadow.json"), &got); err != nil {
+		t.Fatalf("shadow.json: %v", err)
+	}
+	got.OracleMS = 0
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("shadow.json\n got %+v\nwant %+v", got, want)
+	}
 }
 
 // An oracle failure is a shadow error, not a parse error.
@@ -99,9 +123,11 @@ func TestShadowError(t *testing.T) {
 	}
 	entry := h.lastLog()
 	checkLog(t, entry, map[string]any{"message": "shadow", "severity": "WARNING", "result": "error", "rounds_compared": float64(0)})
-	if e := fmt.Sprint(entry["error"]); !strings.Contains(e, "demoinfocs: boom") {
+	e := fmt.Sprint(entry["error"])
+	if !strings.Contains(e, "demoinfocs: boom") {
 		t.Errorf("error = %q, want the oracle's", e)
 	}
+	checkVerdict(t, h, shadowVerdict{Result: "error", RoundSource: "parser", ByCategory: map[string]int{}, First: []string{}, Error: e})
 }
 
 // Only our round files are shadowed: after a fallback the oracle's shipped.
