@@ -30,7 +30,7 @@ Checked against the game's own counters, it matches K, A and damage exactly on b
 
 Gotchas to watch when diffing, found during research:
 - demoparser2 duplicates `round_officially_ended`.
-- demoinfocs's `InfernoExpired` is not the moment the flames go out.
+- demoinfocs's `InfernoExpired` is not the moment the flames go out. The oracle now reads the game's own fire events instead (`5d0c7fe`).
 - demoinfocs v6 changes damage and health semantics, which is why v5.2.0 is pinned.
 
 ## `parser/diff`
@@ -78,6 +78,7 @@ The two public demos were an *interim* choice, and they are still the ones CI ca
 | Budget | `TestBudget` | The largest demo at `GOMAXPROCS=1` stays far under 512 MiB and 60 s on the events-only path. The full path with the oracle measured 270 MiB. |
 | Per-map diff | `TestReferenceDiff` | One subtest per map and demo, five maps, all OK. |
 | Fuzzing | `bitread`, `FuzzFrames`, `FuzzApply`, `FuzzFieldPaths` | Corrupted input is rejected, never a crash. Corpora are generated at test time, so no demo bytes are committed. |
+| Round files | `demo diff` on `rounds/` | Our own round files against the oracle's on all 10 demos: players and kills have zero mismatches, and runs are byte-identical. |
 | Entity state | `parser/entities` tests | Decoded pawn position, view angle and health agree with the oracle on every frame of all 10 demos, and full-packet state equals state built from deltas. |
 | Reparse | Worker tests | A reparse with fewer rounds hides the old extra rounds (`16c8041`). |
 

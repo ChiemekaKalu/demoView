@@ -80,7 +80,7 @@ Details worth knowing:
 
 ## Why two parsers run in the container
 
-v1 ships on round files from the oracle. Entity decoding (positions per tick) is the hardest part of the project and comes last (M4). So the server runs our parser for `match.json`, then pipes the demo through the oracle for round files. See [parser](parser.md#the-server-and-the-consistency-guard).
+v1 ships on round files from the oracle. Entity decoding (positions per tick) is the hardest part of the project and came last (M4). Our own round files now exist and match the oracle's, but the server still runs our parser for `match.json`, then pipes the demo through the oracle for round files, until the swap-in lands. See [parser](parser.md#the-server-and-the-consistency-guard).
 
 ## R2 layout
 

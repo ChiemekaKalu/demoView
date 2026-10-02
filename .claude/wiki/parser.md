@@ -35,7 +35,12 @@ flowchart LR
 | `players` | Slot to identity: userinfo snapshots and the end-of-match list |
 | `matchlogic` | Events to rounds, sides, kills and scoreboard. See [match-logic](match-logic.md) |
 | `match` | Output types for `match.json` |
-| `parse` | `Run`, the shared parse path |
+| `parse` | `Parse` (with `Options{Rounds}`) and the events-only `Run`: the shared parse path. An entity-stage error stops only round files |
+| `stringtables` | In-packet string tables, including instance baselines |
+| `entities` | Serializers, field paths and entity state |
+| `extract` | Per-tick player and grenade tracks from entity state |
+| `roundfile` | Round-file types and the writer |
+| `eventlog` | Narrative-log groundwork, not wired in until v1.2 |
 | `diff` | Compare our output with the oracle's. See [testing](testing.md) |
 | `store` | Object store: R2 over S3, or a local directory |
 | `cmd/demo` | The CLI |
@@ -94,22 +99,24 @@ The server logs one JSON line for every parse and no longer leaks secrets into l
 | Item | State |
 | ---- | ----- |
 | A stream that ends without a Stop frame is `bad_demo` ("truncated: no Stop frame") | Done (`27de943`). All 2,000 truncations of the two public demos are rejected with no panic. |
-| Fuzz targets | Done: `bitread`, `FuzzFrames` (frame loop, decoder, messages), `FuzzApply` (string tables and entities) and `FuzzFieldPaths`, crash-free at 60 s (`1a5a988`). Reading the code turned up two entity bugs, a dynamic-array write past its length and an unbounded baseline cache, which is a memory-exhaustion risk from crafted demos. Both are being fixed in the stage 4 and 5 work. |
+| Fuzz targets | Done: `bitread`, `FuzzFrames` (frame loop, decoder, messages), `FuzzApply` (string tables and entities) and `FuzzFieldPaths`, crash-free at 60 s. Writing them found two real entity bugs, now fixed (`ad573c1`): a dynamic-array write past its length, which let reads return elements past the end, and a baseline cache keyed by a negative or missing index, which a crafted demo could grow without limit. |
 | Two parses in separate processes are byte-identical | Done: `match.json` is identical on all 10 local demos. |
-| Budget at `GOMAXPROCS=1` | Events-only: the largest demo (336 MiB) parses in 0.96 s at 17 MiB. The full path with the oracle was over budget at 640 MiB, because the oracle held its whole timeline. Compacting its samples (`23e232c`) brought it to **8.3 s and about 270 MiB** with byte-identical output, and the server now runs the oracle under a 400 MiB memory limit (`fe09822`). The full v1 path fits the budget. Re-measure when our own entity path swaps in. |
+| Budget at `GOMAXPROCS=1` | Events-only: 0.58 s at 17 MiB. **Our own full path with round files: 3.4 s and 108 MiB**, on the largest demo, well inside 512 MiB and 60 s. The oracle path measures about 270 MiB after its sample compaction (`23e232c`) and runs under a 400 MiB cap (`fe09822`). |
 | Per-map diff coverage | Done (`3c86e04`): one subtest per map and demo, all OK. |
 
 The narrative log's groundwork (`parser/eventlog`, `06ca637`) is done: facts, derived records and notes as NDJSON with a gzip whose mtime is 0, floats and times impossible by construction, golden and run-twice tests, about 0.5 microseconds per record. The rest of that design is v1.2.
 
-## What's not here yet
+## Entity decoding (M4) and what's left
 
-Entity decoding (M4) is the hardest part of the project, and it has started early as standalone packages that are not yet wired into `parse.Run`:
+Our own round files now exist. The work started early as standalone packages and is done through extraction:
 
-- **Stage 1, classes and serializers** (`parser/entities`): done (`bf09f8f`). Field layouts exist for every class on both demos: 211 and 218 classes, about 1.5k distinct fields. A pawn's position is `m_skeletonInstance.m_vecOrigin` (cell plus offset per axis), and the view angle, health and life state are `m_angEyeAngles`, `m_iHealth` and `m_lifeState`. Still unverified until real data is read: the health clamp encoding, `minusone`, sim-time fields by name, pointer presence bits, and how a polymorphic pointer picks its type.
-- **Stage 2, string tables** (`parser/stringtables`): done. In-packet create, update and clear messages match every snapshot byte for byte on both demos (`c9e9bd7`). Open item: Mirage has instance-baseline keys like `43:0` to `43:27` with an unknown suffix, so baselines are looked up by the bare class id.
-- **Stage 3, entity updates** (`1abbf6d`, `d455cbf`): done. Pawn x, y, yaw and hp agree with the oracle on **100% of frames on all 10 demos**. Every `svc_PacketEntities` message is consumed exactly (1.18 million), and one demo's 351 thousand full-packet values equal the state built from deltas. The largest-class demo decodes in about 1.5 s on one CPU at a 31 MB peak. Field paths use a 40-op Huffman table whose tie-break rule was found empirically (6 ops never occur in the 10 demos). The stage 1 unknowns resolved: the health clamp is zigzag, pointer presence is one bit, a polymorphic pointer is a type index, and sim-time fields are varint ticks. One note for stage 4: apply only the *first* full packet's entities, because later ones omit fields.
-- **Stages 4 and 5, extraction and round files** at 64 Hz: next, then swap them in for the oracle's. Comparing against the oracle also exposed an oracle bug, fixed in `df7dced`: a world death before round 1's freeze end, such as a reconnect, held the player dead from frame 0.
+- **Stage 1, classes and serializers** (`bf09f8f`): field layouts for 211 and 218 classes, about 1.5k distinct fields. A pawn's position is `m_skeletonInstance.m_vecOrigin` (cell plus offset per axis), and the view angle, health and life state are `m_angEyeAngles`, `m_iHealth` and `m_lifeState`.
+- **Stage 2, string tables** (`c9e9bd7`): in-packet create, update and clear messages match every snapshot byte for byte on both demos. Baselines are looked up by the bare class id.
+- **Stage 3, entity updates** (`1abbf6d`, `d455cbf`): pawn x, y, yaw and hp agree with the oracle on 100% of frames on all 10 demos, and every `svc_PacketEntities` message (1.18 million) is consumed exactly. Field paths use a 40-op Huffman table whose tie-break rule was found empirically. Only the *first* full packet's entities are applied, because later ones omit fields.
+- **Stages 4 and 5, extraction and round files** (`73bf5f8`, `d7352db`, `0eaa37c`): `extract` records each player's x, y, yaw and hp per tick (about 7 bytes a player) and each grenade's path, with throw, detonate and end moments from the game events. `roundfile` writes them. `demo parse` writes `rounds/NN.json` unless `--events-only`, and `demo diff` compares each round file when the reference has them.
 
-Entity decoding also decides exact round winners and teams, which events can only infer.
+**Against the oracle on all 10 demos:** players and kill events have zero mismatches, and output is byte-identical across runs. Grenades differed only where the oracle departed from the project's conventions: a fire ended at entity removal about 13 s after it burned out, a fire's last path point was `[0,0]`, and one decoy never detonated. The oracle was fixed to match (`5d0c7fe`): fires now end at the game's own fire events and decoys at removal.
 
-Alongside it, `parser/eventlog` (done) is the groundwork for the narrative log. It writes no output yet. See [decisions](decisions.md#narrative-log).
+**An entity-stage error stops only that stage.** `entities.ErrUnknown`, for a field with no decoder or a class id outside the class list, wraps `ErrBadDemo`. `match.json` stays complete, and the CLI exits 1 with code `unknown_entity`. That is how a CS2 update can degrade round files without taking parses down.
+
+**Left:** the swap-in. The server should ship our round files, fall back to the oracle's on an entity-stage error, and log `round_source`, plus the dev-only shadow compare against the oracle. Entity decoding also decides exact round winners and teams, which events can only infer.

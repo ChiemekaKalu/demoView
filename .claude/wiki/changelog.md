@@ -2,6 +2,13 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, afternoon: our own round files exist
+
+- **M4 stages 4 and 5 are done** (`73bf5f8`, `d7352db`, `0eaa37c`, `ad573c1`): `extract` and `roundfile` produce 64 Hz round files from entity state, and the CLI writes and diffs them. Against the oracle on all 10 demos, players and kills have zero mismatches and runs are byte-identical. The full path takes 3.4 s and 108 MiB at one CPU, so the budget holds. Wiki: [parser](parser.md), [testing](testing.md), [big-picture](big-picture.md), [README](README.md).
+- **Unknown entity data is a coded error** that stops only round files: `match.json` stays whole and the CLI exits with `unknown_entity`. Two entity bugs found by fuzzing are fixed (`ad573c1`). Wiki: [parser](parser.md).
+- **The oracle's grenades were corrected** (`5d0c7fe`): fires end at the game's own fire events, not 13 s later at entity removal. Wiki: [testing](testing.md).
+- Left: the swap-in, where the server ships our round files with an oracle fallback, plus the dev shadow compare.
+
 ## 2026-10-02, late morning: a local off switch
 
 - `ddbb480` adds `tools/local/stop-local.ps1`, which lists and (with `-Force`) stops the local dev servers, including the learning center on port 5180. It is scheduled once for about 11:03 Pacific, so restart the site afterwards if you want it up. Wiki: [infra](infra.md#local-dev).
