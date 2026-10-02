@@ -1,0 +1,59 @@
+{
+ "map": "de_mirage",
+ "round": "6",
+ "score_before_round": "CT 2 - T 3",
+ "players": {
+  "CT": [
+   "p0",
+   "p1",
+   "p2",
+   "p3",
+   "p4"
+  ],
+  "T": [
+   "p5",
+   "p6",
+   "p7",
+   "p8",
+   "p9"
+  ]
+ },
+ "economy": {
+  "CT": {
+   "buy": "full buy",
+   "rifles": 5,
+   "awps": 1,
+   "armor": 5,
+   "kits": 2
+  },
+  "T": {
+   "buy": "full buy",
+   "rifles": 4,
+   "awps": 1,
+   "armor": 4
+  }
+ },
+ "timeline": [
+  "0:23 p8 (T) kills p4 (CT) at SnipersNest (HE Grenade). Alive: 4 CT v 5 T.",
+  "0:25 p5 (T) kills p1 (CT) at Underpass (AWP, through smoke). Alive: 3 CT v 5 T.",
+  "0:35 p5 (T) kills p3 (CT) at BombsiteA (AWP, no-scope, through smoke). Alive: 2 CT v 5 T.",
+  "0:51 p7 (T) plants the bomb at bombsite A. The CTs have 40 seconds to defuse.",
+  "0:56 p2 (CT) kills p6 (T) at BombsiteA (M4A1). Alive: 2 CT v 4 T."
+ ],
+ "now": {
+  "time": "bomb planted, about 35 seconds until it explodes",
+  "alive": "2 CT v 4 T",
+  "alive_players": {
+   "CT": [
+    "p0 hurt at PalaceAlley",
+    "p2 full HP at Catwalk"
+   ],
+   "T": [
+    "p5 full HP at BombsiteA",
+    "p7 full HP at BombsiteA",
+    "p8 full HP at Stairs",
+    "p9 full HP at SnipersNest"
+   ]
+  }
+ }
+}

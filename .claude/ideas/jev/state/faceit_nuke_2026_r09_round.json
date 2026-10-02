@@ -1,0 +1,51 @@
+{
+ "map": "de_nuke",
+ "round": "9 of 19",
+ "score_before_round": "CT 5 - T 3",
+ "players": {
+  "CT": [
+   "p1",
+   "p2",
+   "p3",
+   "p4",
+   "p5"
+  ],
+  "T": [
+   "p6",
+   "p7",
+   "p8",
+   "p9",
+   "p10"
+  ]
+ },
+ "economy": {
+  "CT": {
+   "buy": "full buy",
+   "rifles": 5,
+   "awps": 2,
+   "armor": 5,
+   "kits": 3
+  },
+  "T": {
+   "buy": "full buy",
+   "rifles": 5,
+   "awps": 0,
+   "armor": 5
+  }
+ },
+ "timeline": [
+  "L00 0:23 p10 (T) kills p4 (CT) at Outside (AK-47, through smoke). Alive: 4 CT v 5 T.",
+  "L01 0:30 p7 (T) kills p5 (CT) at Outside (AK-47, headshot, through smoke). Alive: 3 CT v 5 T.",
+  "L02 0:44 p2 (CT) kills p8 (T) at Hut (M4A1, headshot). Alive: 3 CT v 4 T.",
+  "L03 0:46 p9 (T) kills p2 (CT) at Hut (AK-47, headshot). Alive: 2 CT v 4 T.",
+  "L04 0:59 p9 (T) plants the bomb at bombsite A. The CTs have 40 seconds to defuse.",
+  "L05 1:00 p3 (CT) kills p7 (T) at Squeaky (AWP). Alive: 2 CT v 3 T.",
+  "L06 1:10 p3 (CT) kills p9 (T) at Hut (Tec-9, headshot). Alive: 2 CT v 2 T.",
+  "L07 1:12 p10 (T) kills p1 (CT) at Heaven (AK-47, headshot). Alive: 1 CT v 2 T.",
+  "L08 1:12 p3 (CT) kills p6 (T) at Hut (AWP, headshot, no-scope). Alive: 1 CT v 1 T.",
+  "L09 1:17 p3 (CT) kills p10 (T) at Heaven (AK-47, headshot). Alive: 1 CT v 0 T.",
+  "L10 1:19 p3 (CT) starts defusing with a kit.",
+  "L11 1:24 p3 (CT) defuses the bomb."
+ ],
+ "result": "CT win by bomb defused"
+}
