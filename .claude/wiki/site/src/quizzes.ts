@@ -20,9 +20,9 @@ export const quizzes: Record<string, Question[]> = {
       why: 'The parser returns match.json and the Worker consumer turns it into D1 rows.',
     },
     {
-      q: 'Why is match.json written last?',
-      options: ['A reader who sees it knows the round files are already in R2', 'It is the largest file and needs the most time', 'R2 only allows one write per second', 'D1 reads it first'],
-      why: 'Writing it last makes it a commit marker for the whole parse.',
+      q: 'Which file does a parse write last, and why?',
+      options: ['manifest.json: its presence means the whole parse is in place', 'match.json, because it is the largest file', 'The first round file, because R2 allows one write per second', 'Nothing. All files are written at once'],
+      why: 'The parser writes round files, then match.json, then the manifest, which acts as the commit marker for the whole parse.',
     },
   ],
   'demo-format': [

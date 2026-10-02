@@ -24,7 +24,7 @@ const DETAILS: Record<string, Detail> = {
   },
   r2: {
     role: 'Object storage for raw demos, parsed files and map data. The browser uploads into it directly through a presigned URL.',
-    lives: ['demos/{id}.dem', 'parsed/{id}/match.json', 'parsed/{id}/rounds/NN.json', 'maps/'],
+    lives: ['demos/{id}.dem', 'parsed/{id}/{parse_id}/manifest.json', 'parsed/{id}/{parse_id}/match.json', 'parsed/{id}/{parse_id}/rounds/NN.json', 'maps/'],
     notes: ['Buckets `demoview-dev` and `demoview-prod`, each with CORS for the browser PUT.', 'Raw demos are retained so a reparse never needs a new upload.', 'Map data is private because the source repository has no licence.'],
     read: [['R2 layout', 'big-picture#r2-layout']],
   },

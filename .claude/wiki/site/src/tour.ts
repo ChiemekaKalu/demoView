@@ -72,10 +72,10 @@ export const STEPS: Step[] = [
   },
   {
     title: 'Persisting results',
-    summary: 'Round files, then match.json, then database rows.',
+    summary: 'A versioned prefix, a manifest, then database rows.',
     active: { nodes: ['parser', 'r2', 'worker', 'd1'], edges: ['w-p', 'p-r2', 'w-d1'] },
-    body: 'The parser writes one file per round to R2, then `match.json` last, so its presence means the rest is in place. It returns `match.json` to the consumer, which saves players, rounds and kills to D1 and marks the match `ready`.',
-    facts: ['The parser never writes to D1. The Worker owns the database.', 'Parsing is idempotent: a retry overwrites the same keys.'],
+    body: 'The parser writes one file per round into its own prefix in R2, then `match.json`, then `manifest.json` last, so a manifest means the rest is in place. It returns `match.json` to the consumer, which saves players, rounds and kills to D1 and marks the match `ready` by moving a pointer to the new prefix in one batch.',
+    facts: ['The parser never writes to D1. The Worker owns the database.', 'Each attempt has its own prefix, so a retry or reparse never overwrites a live parse.'],
     read: [['The schema', 'schema']],
   },
   {
