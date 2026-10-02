@@ -9,20 +9,23 @@ How the spec gets built, checkpoint by checkpoint. The spec says what to build. 
 - [x] **0.3 Reference parser.** `tools/oracle/`: its own module, demoinfocs v5.2.0 pinned. `oracle export <file> --out <dir> [--hz 16]` writes `match.json` plus round files in our schema, with `parser_version` `0.1.0-oracle+demoinfocs.5.2.0`.
   - On both demos, K, A and damage match the game's own counters exactly.
   - Nuke: 3.2 s, 182 MB peak.
-- [ ] **0.4 Fixture demos.** Need one matchmaking or Premier demo you played (with a screenshot of the final scoreboard), one FACEIT or pro demo, and one with overtime.
+- [x] **0.4 Fixture demos.** One matchmaking or Premier demo you played, one FACEIT or pro demo, and one with overtime. All three are now local.
+  - *Played:* the user's 8 MM/Premier demos are local and gitignored. de_ancient (`match730_0038379968…_118`, 13-6 win) is the v0 candidate.
+  - *Overtime:* `match730_003840038222499414100_1174486602_389`, de_inferno, 29 rounds, 13-16.
+  - The `demoview-fixtures` bucket holds only the two approved public demos. Whether the user's demos go to the cloud is the user's call, because they carry other players' data. Don't upload them.
   - *Interim, approved by the user:* `parser/testdata/demos/faceit_nuke_2026.dem` (FACEIT, patch 14165, from demoinfocs' test-demo repo) and `valve_mm_mirage_2024.dem` (Valve MM, patch 13984, bundled with demoparser2). Both are gitignored.
 - [ ] **0.5 Fixture files.** Export all 3 demos with 0.3. Exit (M0): the fixtures validate against the schema.
   - *Both interim demos are exported to `parser/testdata/reference/` (gitignored) and pass `--strict`.*
     - Mirage: 10 rounds, 0 warnings.
     - Nuke: 19 rounds, 2 warnings from kills during freeze time (see Spec gaps).
-  - *The third demo is pending.*
+  - *All 10 local demos diff OK against the oracle,* the overtime match included.
 
 ## M1: v0 parser
 
 Each checkpoint maps to a v0 stage in the spec and ends with a check against real demos.
 
 - [x] **1.1 CLI skeleton.** `demo parse <file> --out <dir> [--events-only]`, plus a dev-only `demo inspect <file>`. Flags may follow the file. On failure: one JSON line on stderr, `{"error": "...", "code": "..."}`, with exit 1 / `bad_demo`, 2 / `usage` or 3 / `internal`. Exit 1 maps to the Cloud Run 422 and exit 3 to a 5xx.
-- [x] **1.2 Frame loop** (stage 1). Both interim demos walk to EOF with no error, and the FileInfo frame sits at the header's offset. *Re-check on the third fixture.*
+- [x] **1.2 Frame loop** (stage 1). Both interim demos walk to EOF with no error, and the FileInfo frame sits at the header's offset. All 10 local demos walk clean.
 - [x] **1.3 Decompress and decode** (stage 2). Snappy (klauspost/compress) plus `parser/pb` (game build 2000922). `inspect` prints the map, server, build and playback ticks, and these match both demos.
 - [x] **1.4 Packet messages** (stage 3). `parser/bitread` plus `demo.MessageReader`. Every packet on both demos is consumed with at most 6 trailing bits. Mirage: 58k packets in 0.37 s. Nuke: 140k packets, 1.75M messages.
 - [x] **1.5 Game events** (stage 4). `parser/events`. `player_death` matches demoparser2 row for row: Nuke 157, Mirage 73.
@@ -39,7 +42,7 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - Against the game's own counters: K/D/A, headshot kills and raw damage are exact for every player, and so is every round's winner, reason and end tick.
   - Kills match the oracle row for row. `demo parse` output passes the strict schema check.
   - A demo with no live rounds is a bad demo (exit 1, HTTP 422).
-  - *Open:* the user's own match plus a scoreboard screenshot. Choices to confirm are under Spec gaps → Match logic.
+  - *Open:* a screenshot of the de_ancient final scoreboard, the user ("father") at 17/12/10 and 105.9 ADR, to confirm the exit check. Choices to confirm are under Spec gaps → Match logic.
 - [ ] **1.8 `demo diff` and CI.** Exit: the diff passes on all 3 fixtures. This meets the v0 done-when and closes M1.
   - *Done:* package `parser/diff`. `Compare` checks match.json:
     - players by `steam_id` (bots by name);
@@ -49,7 +52,7 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - *Done:* `CompareRound` checks round files: x/y within 1 unit, yaw within 1°, hp exact, plus grenades and events.
   - *Done:* the CI `diff` job. It pulls demos from `demoview-fixtures`, exports them with the oracle, then runs `demo diff`. It skips when the fixture secrets are absent. Deploy waits for every CI check.
   - *Done:* `demo diff <file.dem> --against <ref.json>`. It exits 0 when they agree, or 1 with code `mismatch` and the report on stdout. Both interim demos diff OK against the oracle.
-  - *Remaining:* the third fixture demo, and the `demoview-fixtures` bucket plus secrets so the CI job runs.
+  - The exit is met locally: `demo diff` passes on all 10 demos, including played MM, FACEIT and overtime. CI diffs the two public fixtures in `demoview-fixtures` once its secrets are set.
 
 ## M2 groundwork (pulled forward)
 
@@ -77,10 +80,11 @@ Each checkpoint maps to a v0 stage in the spec and ends with a check against rea
   - **CI deploy:** reworked for Containers, no GCP (e047eea).
   - **Dev is live** with a container image built from HEAD 1b2f4bc. The image contract is unchanged: `$PORT` 8080, and `PARSE_SECRET` and `R2_*` come from the container's envVars.
 - [x] The oracle defaults to 64 Hz (9ab7e1f). It writes compact round files, at most 1.5 MB raw (about 100 KB gzipped). Peak memory is 412 MB on Nuke.
+- [x] **First real end-to-end parse on dev (2026-10-02).** The user's de_ancient match (166 MB) went from upload to ready in about 48 s; the parse took 31.6 s on attempt 1. The D1 scoreboard equals local `demo parse`. Round files are served as application/json with brotli: 503 KB becomes 56 KB on the wire at 64 Hz.
+- [x] GitHub remote `ChiemekaKalu/demoView` (private). The first CI run passed all 7 checks, so the Docker build is verified.
 - [ ] The rest of M2:
-  - a GitHub remote, so CI and deploy can run
+  - `CLOUDFLARE_API_TOKEN` for the CI deploy (the user is creating it)
   - the prod deploy, once the user OKs it
-  - a first real end-to-end parse on dev: upload, then queue, then container, then the viewer
 
 ## M3 groundwork (pulled forward)
 
@@ -199,7 +203,7 @@ Things the spec leaves open that the code has to decide. Each one has a proposed
 - An assister on the victim's own side is dropped from the kill list, as the oracle does.
 - Round `start_tick` comes from `round_start` or `round_prestart`. Round 1 is clamped to `begin_new_match`.
 - Round timer: `mp_roundtime_defuse` on de_ maps, otherwise 1.92 min with a note. No fixture has a round that ran out of time.
-- Overtime swaps: none entering overtime, then one at each overtime half. `player_team` gives them directly on modern demos. Unverified until an overtime fixture arrives.
+- Overtime swaps: none entering overtime, then one at each overtime half. `player_team` gives them directly on modern demos. Verified: the overtime demo diffs OK against the oracle.
 - Reason codes 12 (time) and 17/18 (surrender) follow the game's numbering. Only a surrender is covered by a fixture.
 - Match-logic notes, i.e. what it had to guess, are returned by `Build` but not surfaced in the CLI or server yet.
 - Team kills (they don't count and don't subtract) and coaches are untested.
