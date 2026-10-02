@@ -92,6 +92,9 @@ export interface MatchSummary {
   schema_version: number | null
   created_at: number
   parsed_at: number | null
+  // The live parse, which names the URLs of the match's files. Null for a
+  // match parsed before parses had ids.
+  parse_id: string | null
   players: SummaryPlayer[]
   rounds: SummaryRound[]
 }

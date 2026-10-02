@@ -67,12 +67,27 @@ function readable<T extends { schema_version: number }>(file: T): T {
 const matchFiles = new Map<string, Promise<MatchFile | null>>()
 const readySummaries = new Map<string, MatchSummary>()
 
-// A reparse overwrites a match's R2 keys, but round files are served as
-// immutable. Tagging parsed-file URLs with the ready summary's parsed_at gives
-// each parse its own cache entry. The Worker ignores the query.
-function version(id: string): string {
-  const parsedAt = readySummaries.get(id)?.parsed_at
-  return parsedAt ? `?v=${parsedAt}` : ''
+// A file of a ready match, from the parse its summary names (?v=<parse_id>),
+// whose files never change. A 404 there means a reparse replaced that parse
+// and it was cleaned up, so the summary is fetched once more and the file read
+// from the parse it names now. Null when the file isn't there.
+async function getParsed<T extends { schema_version: number }>(
+  id: string,
+  path: string,
+  init?: RequestInit,
+): Promise<T | null> {
+  let parseId = readySummaries.get(id)?.parse_id
+  for (let retried = false; ; retried = true) {
+    const url = `${API_BASE}/api/matches/${enc(id)}/${path}${parseId ? `?v=${parseId}` : ''}`
+    try {
+      return readable(await request<T>(url, init))
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 404)) throw err
+      const latest = retried || !parseId ? null : (await getSummary(id, { fresh: true })).parse_id
+      if (!latest || latest === parseId) return null
+      parseId = latest
+    }
+  }
 }
 
 // The full match.json: kills (with assisters and stable indexes) and names,
@@ -84,10 +99,7 @@ export function getMatchFile(id: string): Promise<MatchFile | null> {
   if (!p) {
     p = isFixture(id)
       ? request<MatchFile>(`${SAMPLES}/match.json`).then(readable)
-      : request<MatchFile>(`${API_BASE}/api/matches/${enc(id)}/match.json${version(id)}`).then(readable, (err: unknown) => {
-          if (err instanceof ApiError && err.status === 404) return null
-          throw err
-        })
+      : getParsed<MatchFile>(id, 'match.json')
     p.catch(() => matchFiles.delete(key))
     matchFiles.set(key, p)
   }
@@ -134,13 +146,10 @@ export function getRound(id: string, n: number, opts: { background?: boolean } =
     return p
   }
   if (fixture && !SAMPLE_ROUNDS.includes(n)) return Promise.resolve(null)
-  const url = fixture
-    ? `${SAMPLES}/rounds/${roundFileName(n)}`
-    : `${API_BASE}/api/matches/${enc(id)}/rounds/${n}${version(id)}`
-  p = request<RoundFile>(url, { priority: opts.background ? 'low' : 'auto' }).then(readable, (err: unknown) => {
-    if (err instanceof ApiError && err.status === 404) return null
-    throw err
-  })
+  const init: RequestInit = { priority: opts.background ? 'low' : 'auto' }
+  p = fixture
+    ? request<RoundFile>(`${SAMPLES}/rounds/${roundFileName(n)}`, init).then(readable)
+    : getParsed<RoundFile>(id, `rounds/${n}`, init)
   p.catch(() => rounds.delete(key))
   rounds.set(key, p)
   while (rounds.size > MAX_ROUNDS) rounds.delete(rounds.keys().next().value!)

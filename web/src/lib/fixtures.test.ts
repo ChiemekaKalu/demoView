@@ -21,6 +21,7 @@ describe('deriveSummary', () => {
         'schema_version',
         'created_at',
         'parsed_at',
+        'parse_id',
         'players',
         'rounds',
       ].sort(),

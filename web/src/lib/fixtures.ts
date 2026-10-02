@@ -18,6 +18,7 @@ export function deriveSummary(file: MatchFile, id: string): MatchSummary {
     schema_version: file.schema_version,
     created_at: 0,
     parsed_at: 0,
+    parse_id: null,
     // Steam ids stay out, as in the Worker's public response.
     players: [...file.players]
       .sort((a, b) => a.idx - b.idx)

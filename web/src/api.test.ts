@@ -17,7 +17,7 @@ afterEach(() => {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
-const summary = (id: string, status: string, parsedAt: number | null = null) => ({
+const summary = (id: string, status: string, parseId: string | null = null) => ({
   id,
   status,
   error: null,
@@ -27,17 +27,20 @@ const summary = (id: string, status: string, parsedAt: number | null = null) => 
   parser_version: '0.1.0',
   schema_version: 1,
   created_at: 1,
-  parsed_at: parsedAt,
+  parsed_at: parseId ? 5 : null,
+  parse_id: parseId,
   players: [],
   rounds: [{ n: 1, winner: 'A', reason: 'elimination', side_a: 'CT' }],
 })
 
 const urls = () => fetchMock.mock.calls.map(([url]) => String(url))
 
+const PARSE = '01k6gq3m1abcdefg'
+
 describe('getSummary', () => {
   it('keeps a ready summary for the session unless asked for a fresh one', async () => {
     const id = 'aaaaaaaaaaaa1'
-    fetchMock.mockImplementation(async () => json(summary(id, 'ready', 5)))
+    fetchMock.mockImplementation(async () => json(summary(id, 'ready', PARSE)))
     await getSummary(id)
     await getSummary(id)
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -60,16 +63,44 @@ describe('getSummary', () => {
 })
 
 describe('parsed-file URLs', () => {
-  it('carry the ready summary\'s parsed_at, so a reparse is never served stale', async () => {
+  it("name the ready summary's parse, so a reparse is never served stale", async () => {
     const id = 'aaaaaaaaaaaa4'
     fetchMock.mockImplementation(async (url: string) =>
-      String(url).endsWith(`/api/matches/${id}`) ? json(summary(id, 'ready', 1790935516715)) : json({}),
+      String(url).endsWith(`/api/matches/${id}`) ? json(summary(id, 'ready', PARSE)) : json({ schema_version: 1 }),
     )
     await getSummary(id)
     await getRound(id, 1)
     await getMatchFile(id)
-    expect(urls()).toContain(`/api/matches/${id}/rounds/1?v=1790935516715`)
-    expect(urls()).toContain(`/api/matches/${id}/match.json?v=1790935516715`)
+    expect(urls()).toContain(`/api/matches/${id}/rounds/1?v=${PARSE}`)
+    expect(urls()).toContain(`/api/matches/${id}/match.json?v=${PARSE}`)
+  })
+
+  it('follow a reparse once its old parse is gone', async () => {
+    const id = 'aaaaaaaaaaab2'
+    const NEWER = '01k6gq3m1newnewn'
+    let live = PARSE
+    fetchMock.mockImplementation(async (url: string) => {
+      if (String(url).endsWith(`/api/matches/${id}`)) return json(summary(id, 'ready', live))
+      return String(url).endsWith(`?v=${NEWER}`) ? json({ schema_version: 1, round: 3 }) : json({}, 404)
+    })
+    await getSummary(id)
+    live = NEWER
+    expect(await getRound(id, 3)).toEqual({ schema_version: 1, round: 3 })
+    expect(urls().slice(1)).toEqual([
+      `/api/matches/${id}/rounds/3?v=${PARSE}`,
+      `/api/matches/${id}`,
+      `/api/matches/${id}/rounds/3?v=${NEWER}`,
+    ])
+  })
+
+  it('read the live parse for a match parsed before parse ids', async () => {
+    const id = 'aaaaaaaaaaab3'
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).endsWith(`/api/matches/${id}`) ? json(summary(id, 'ready')) : json({ schema_version: 1 }),
+    )
+    await getSummary(id)
+    await getRound(id, 1)
+    expect(urls()).toContain(`/api/matches/${id}/rounds/1`)
   })
 })
 
