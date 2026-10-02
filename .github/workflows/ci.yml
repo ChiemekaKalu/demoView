@@ -45,8 +45,9 @@ jobs:
       - run: go test ./...
 
   # The diff test (checkpoint 1.8): our parser against the oracle on every
-  # fixture demo in the demoview-fixtures bucket. Without the bucket's
-  # credentials (forks, a new repo) it skips with a notice instead of failing.
+  # fixture demo in the demoview-fixtures bucket. It gates deploys, so a deploy
+  # without the bucket's credentials fails; a pull request or branch push (a
+  # fork, a new repo) skips with a notice instead.
   diff:
     name: parser diff (fixtures)
     runs-on: ubuntu-24.04
@@ -60,6 +61,9 @@ jobs:
         run: |
           if [ -n "$FIXTURES_R2_ACCESS_KEY_ID" ] && [ -n "$FIXTURES_R2_SECRET_ACCESS_KEY" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_WORKFLOW" = deploy ]; then
+            echo "::error title=parser diff required::A deploy needs FIXTURES_R2_ACCESS_KEY_ID, FIXTURES_R2_SECRET_ACCESS_KEY and CLOUDFLARE_ACCOUNT_ID to run the diff."
+            exit 1
           else
             echo "::notice title=parser diff skipped::Set FIXTURES_R2_ACCESS_KEY_ID, FIXTURES_R2_SECRET_ACCESS_KEY and CLOUDFLARE_ACCOUNT_ID to run it."
             echo "ok=false" >> "$GITHUB_OUTPUT"
