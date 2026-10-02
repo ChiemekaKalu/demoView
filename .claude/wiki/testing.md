@@ -53,6 +53,10 @@ Mismatches name the field path: `kills[12].weapon: ours ak47, reference m4a1`. O
 
 `tools/align` is a standard-library Go tool that reports the share of alive player frames landing on a non-transparent radar pixel, per demo and per round. It exits 1 below the bar, which is **97.5% per demo**. It runs locally and on dev, not in CI, because the radars are unlicensed private objects. Measured shares and the reasoning are on the [maps](maps.md) page.
 
+## The shadow compare
+
+In dev, after each response is flushed, the server reruns the oracle and diffs its `match.json` and round files against what shipped (`PARSER_SHADOW=oracle`, `1587e55`). It logs one `shadow` line with counts by category and never writes to the store. On a full Mirage match it gave 10 rounds and 0 mismatches. It is how our own round files get compared against the reference on every real upload.
+
 ## The pro-demo sample
 
 A bulk run over 132 public tournament demos is the only test so far that stresses match logic beyond matchmaking. It found no crashes and fast parses, but segmentation problems on most. See [match-logic](match-logic.md#tournament-gotv-demos-found-root-cause-fixed-re-run-pending). A pinned subset is planned for CI, fetched at test time from its public source and never rehosted. The swap-in's default stays on the oracle until this sample passes.

@@ -14,6 +14,7 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/matches/:id/match.json` | The parser's `match.json` from R2, 5 min cache with ETag | 404 until `ready` |
 | `GET /api/matches/:id/rounds/:n` | A round file from R2. With `?v=<parse_id>` it is that parse's file, immutable. Without it, the live parse's file (`074f5b7`) | 404 |
 | `GET /api/matches/:id/events` | The match's pipeline history from D1: every status change, parse attempt (build, parse id, outcome, time), reparse request and cleanup (`1df36df`) | 404 |
+| `POST /api/admin/cron/:job` | Run the sweeper, the reparse batch or the cleanup by hand, so checks don't wait for the clock (`b64b6db`) | |
 | `POST /api/matches/:id/reparse` | Queue a reparse. The match stays `ready` on its live parse while it runs (`a37fc0d`) | 401, and 429 past the rate limit |
 | `GET /api/maps/:name` | `{ name, pos_x, pos_y, scale }`, cached a day (`091b2b5`) | 404 no radar, or a two-floor map |
 | `GET /api/maps/:name/radar.png` | The radar image, cached a day, with an ETag | 404 |
@@ -79,6 +80,7 @@ Committed in `9d5ead9` and later. **The crons are on in prod** as of `6e305d0`, 
 - **Build id.** `PARSER_BUILD` is 12 hex characters of a hash of the git trees of `parser/` and `tools/oracle/` (`c7134a1`), not the commit sha, so a web-only merge reparses nothing.
 - **Parse ids.** 9 base32 characters of time plus 7 random, one per attempt.
 - **Rate limit.** Uploads and reparses are limited to 10 a minute (`856d8c5`), and the viewer says so when it happens (`94dba79`).
+- **Container settings per environment** (`e439244`). Dev's container runs with `PARSER_ROUNDS=parser` and `PARSER_SHADOW=oracle`, and sleeps after 2 minutes so the compare after each response can finish. Prod stays on the oracle's round files, set explicitly, and an empty value is never passed on.
 - **Left for `cloud`:** the R2 lifecycle rule for orphaned demos.
 
 ## Data

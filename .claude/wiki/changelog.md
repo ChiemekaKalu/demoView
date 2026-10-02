@@ -2,6 +2,13 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, midday: the swap-in is built and M5 is closed
+
+- **Swap-in built** (`1587e55`, `de2ff27`, `e439244`): `PARSER_ROUNDS=parser` ships our own round files with an oracle fallback on an entity error or an implausible match, and dev runs a shadow compare against the oracle (a full Mirage match: 10 rounds, 0 mismatches). Prod stays on the oracle, set explicitly. Wiki: [parser](parser.md), [worker](worker.md), [testing](testing.md), [decisions](decisions.md).
+- **M5's exit checks are closed** (`f86a4fe`): prod's match was reparsed through the API in 12.2 s and never left `ready`. A route runs the cron jobs by hand (`b64b6db`). Wiki: [reparse runbook](runbook-reparse.md), [worker](worker.md).
+- **More tournament-demo fixes** (`53df3af`, `0108c53`, `1dd244c`): round 1 keeps its early spawns, unknown enum fields decode as varints, a missing projectile class is skipped, and the diff still compares `match.json` when round files fail. The 2 "no live rounds" demos are rejected by the oracle too. A sweep of all 132 is running through CI. Wiki: [match-logic](match-logic.md).
+- `6a0d344`: CI skips the checks on research branches.
+
 ## 2026-10-02, morning: the round-collapse bug is fixed
 
 - **Tournament demos no longer collapse to one round, in the parser's own logic** (`68a02cf`). The cause was not a misplaced knife round: those demos fire no restart event during play, so the boundary fell back to nothing. The boundary is now chosen from the live window itself, using whichever candidate occurs once for every round after the first, and `round_officially_ended` ends the round before it. The 10 local demos still diff clean and the user's matches still match the game's counters. A re-run of all 132 is the next check. Wiki: [match-logic](match-logic.md#tournament-gotv-demos-found-root-cause-fixed-re-run-pending), [README](README.md).
