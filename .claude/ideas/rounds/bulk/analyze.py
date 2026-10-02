@@ -122,11 +122,12 @@ def moments(rows):
     for r in rows:
         y = 1 if r["winner"] == "CT" else 0
         pt = r["plant"]["t"] if r["plant"] else None
-        out.append({"map": r["map"], "demo": r["demo"], "y": y, "ct": 5, "t": 5, "planted": 0, "sec": 0.0,
+        rid = f"{r['demo']}:{r['n']}"
+        out.append({"map": r["map"], "demo": r["demo"], "rid": rid, "y": y, "ct": 5, "t": 5, "planted": 0, "sec": 0.0,
                     "equip_ct": r["equip_ct"], "equip_t": r["equip_t"], "kind": "start"})
         for k in r["kills"]:
             a = k.get("a") or [0, 0]
-            out.append({"map": r["map"], "demo": r["demo"], "y": y, "ct": a[0], "t": a[1],
+            out.append({"map": r["map"], "demo": r["demo"], "rid": rid, "y": y, "ct": a[0], "t": a[1],
                         "planted": int(pt is not None and pt <= k["t"]), "sec": k["t"],
                         "equip_ct": r["equip_ct"], "equip_t": r["equip_t"], "kind": "kill"})
     return out
@@ -267,6 +268,53 @@ def events(rows):
     return out
 
 
+def opening_places(rows):
+    """Where each map's first duel happens (the victim's callout), and how
+    often the side that won it took the round."""
+    res = {}
+    for m in sorted({r["map"] for r in rows}):
+        rs = [r for r in rows if r["map"] == m and r["first"] and r["opener"]]
+        by = defaultdict(list)
+        for r in rs:
+            by[(r["first"].get("vp") or "?", r["opener"])].append(int(r["winner"] == r["opener"]))
+        spots = [{"place": p, "opener": s, "share": round(len(v) / len(rs), 3), **rate(v)}
+                 for (p, s), v in by.items() if len(v) >= 12]
+        res[m] = {"openings": len(rs), "spots": sorted(spots, key=lambda c: -c["n"])[:12]}
+    return res
+
+
+def plant_timing(rows):
+    buckets = (("early (<0:45)", 0, 45), ("mid (0:45–1:15)", 45, 75), ("late (>1:15)", 75, 1e9))
+    res = {}
+    for m in sorted({r["map"] for r in rows}) + ["ALL"]:
+        rs = [r for r in rows if r["plant"] and (m == "ALL" or r["map"] == m)]
+        res[m] = {name: rate([int(r["winner"] == "T") for r in rs if lo <= r["plant"]["t"] < hi]) for name, lo, hi in buckets}
+    return res
+
+
+def clutches(moms):
+    """Each side's first 1vN of a round, counted once, and how often the lone
+    player's side won it."""
+    first = {}
+    for x in moms:
+        if x["kind"] != "kill":
+            continue
+        for side, mine, theirs in (("CT", x["ct"], x["t"]), ("T", x["t"], x["ct"])):
+            key = (x["rid"], side)
+            if mine == 1 and theirs >= 1 and key not in first:
+                won = x["y"] if side == "CT" else 1 - x["y"]
+                first[key] = (x["map"], side, min(theirs, 3), x["planted"], won)
+    res = {}
+    for m in sorted({v[0] for v in first.values()}) + ["ALL"]:
+        cell = {}
+        for n in (1, 2, 3):
+            label = f"1v{n}" + ("+" if n == 3 else "")
+            for side in ("CT", "T"):
+                cell[f"{side} {label}"] = rate([v[4] for v in first.values() if (m == "ALL" or v[0] == m) and v[1] == side and v[2] == n])
+        res[m] = cell
+    return res
+
+
 def traded(r):
     ks = r["kills"]
     if len(ks) < 2:
@@ -400,7 +448,40 @@ def robustness(recs):
     out["over_budget"] = [{"path": r["path"], "s": r["parse"].get("s"), "rss_mb": r["parse"].get("rss_mb")}
                           for r in recs if "parse" in r and (r["parse"].get("rss_mb", 0) > 512 or r["parse"].get("s", 0) > 60)]
     out["builds"] = dict(Counter(str((r.get("facts") or {}).get("build")) for r in recs))
+    cats, by_build, examples, kinds = Counter(), defaultdict(Counter), defaultdict(list), Counter()
+    for r in recs:
+        c = category(r)
+        cats[c] += 1
+        by_build[str((r.get("facts") or {}).get("build"))][c] += 1
+        if len(examples[c]) < 6:
+            examples[c].append(r["path"])
+        kinds.update((r.get("diff") or {}).get("kinds", {}).keys())
+    out["categories"] = dict(cats.most_common())
+    out["categories_by_build"] = {b: dict(v) for b, v in sorted(by_build.items())}
+    out["category_examples"] = dict(examples)
+    out["diff_kinds_demos"] = dict(kinds.most_common(30))
     return out
+
+
+def category(r):
+    parse, diff = r.get("parse") or {}, r.get("diff") or {}
+    if r.get("download") == "failed":
+        return "download failed"
+    if parse.get("rc") == 1:
+        return "bad_demo"
+    if parse.get("rc") not in (0, None):
+        return "parser error"
+    if diff.get("rc") == 0:
+        return "diff OK"
+    if "rounds" in diff:
+        ours, ref = diff["rounds"]
+        return "rounds collapsed" if ours <= 3 and ref >= 10 else "round count differs"
+    kinds = diff.get("kinds", {})
+    if "players[].team" in kinds:
+        return "team assignment differs"
+    if kinds and all(k.startswith("scoreboard") for k in kinds):
+        return "scoreboard only"
+    return "other"
 
 
 # ---------- report ----------
@@ -431,10 +512,27 @@ def markdown(rep):
         for m, c in sorted(pr["per_map"].items(), key=lambda kv: kv[1]["base"]):
             L.append(f"| {m} | {c['moments']} | {c['base']} | {c['map']} | {c['econ']} | {c.get('round_start_brier_econ', '—')} |")
         L.append("")
+    cl = rep.get("clutches", {}).get("ALL")
+    if cl:
+        L += ["## Clutches (each side's first 1vN of a round, all maps)", "", "| Situation | n | Lone side wins |", "| --- | --- | --- |"]
+        L += [f"| {k} | {v['n']} | {pct(v['p'])} |" for k, v in cl.items() if v.get("n")]
+        L.append("")
+    pt = rep.get("plant_timing", {}).get("ALL")
+    if pt:
+        L += ["## Plant timing (T win after the plant, all maps)", ""] + [f"- {k}: {pct(v['p'])} (n={v['n']})" for k, v in pt.items() if v.get("n")] + [""]
+    op = rep.get("opening_places", {})
+    if op:
+        L += ["## Where the first duel happens (top spots per map; win rate for the side that won it)", ""]
+        for m, c in sorted(op.items()):
+            spots = ", ".join(f"{s['place']} by {s['opener']} {pct(s['share'])} of openings, wins {pct(s['p'])}" for s in c["spots"][:4])
+            L.append(f"- **{m}** ({c['openings']}): {spots}")
+        L.append("")
     rb = rep.get("robustness", {})
     if rb:
-        L += ["## Our parser on these demos", "", "```", json.dumps({k: rb[k] for k in ("demos", "download_failed", "parse", "diff", "builds") if k in rb}, indent=1), "```", "",
-              f"Parse failures: {len(rb.get('parse_failures', []))}. Diff mismatches: {len(rb.get('diff_mismatches', []))}. Over budget: {len(rb.get('over_budget', []))}.", ""]
+        L += ["## Our parser on these demos", "", f"Parser ref: {rep.get('parser_ref') or 'branch base'}.", "",
+              "| Outcome | Demos |", "| --- | --- |"] + [f"| {k} | {v} |" for k, v in rb.get("categories", {}).items()] + [""]
+        L += ["```", json.dumps({k: rb[k] for k in ("demos", "download_failed", "parse", "diff", "categories_by_build", "diff_kinds_demos") if k in rb}, indent=1), "```", "",
+              f"Over budget (> 512 MB or > 60 s): {len(rb.get('over_budget', []))}.", ""]
     if rep.get("errors"):
         L += ["## Analysis errors", ""] + [f"- {e}" for e in rep["errors"]]
     return "\n".join(L) + "\n"
@@ -442,16 +540,21 @@ def markdown(rep):
 
 def main():
     src, plan_path, out = sys.argv[1:4]
+    parser_only = "--parser-only" in sys.argv[4:]
     plan = json.load(open(plan_path))
     os.makedirs(out, exist_ok=True)
     demos, recs = load(src, plan)
-    rows = round_rows(demos)
+    rows = [] if parser_only else round_rows(demos)
     moms = moments(rows)
-    rep = {"dataset": plan["dataset"], "revision": plan["revision"], "demos": len(demos), "rounds": len(rows),
-           "moments": len(moms), "errors": []}
-    for name, fn, arg in (("map_balance", map_balance, rows), ("opening", opening, rows), ("man_advantage", man_advantage, moms),
-                          ("post_plant", post_plant, rows), ("economy", economy, rows), ("events", events, rows),
-                          ("predictability", predictability, moms), ("robustness", robustness, recs)):
+    rep = {"dataset": plan["dataset"], "revision": plan["revision"], "parser_ref": plan.get("parser_ref"),
+           "demos": len(demos) if not parser_only else len(recs), "rounds": len(rows), "moments": len(moms), "errors": []}
+    steps = [("robustness", robustness, recs)]
+    if not parser_only:
+        steps = [("map_balance", map_balance, rows), ("opening", opening, rows), ("opening_places", opening_places, rows),
+                 ("man_advantage", man_advantage, moms), ("clutches", clutches, moms), ("post_plant", post_plant, rows),
+                 ("plant_timing", plant_timing, rows), ("economy", economy, rows), ("events", events, rows),
+                 ("predictability", predictability, moms)] + steps
+    for name, fn, arg in steps:
         try:
             rep[name] = fn(arg)
         except Exception:

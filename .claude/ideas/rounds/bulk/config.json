@@ -1,8 +1,24 @@
 {
-  "mode": "full",
-  "source_run": null,
+  "mode": "analyze",
+  "source_run": "37003041437",
   "dataset": "skkwowee/chimera-cs2",
   "seed": 2026,
   "per_map": 16,
-  "shards": 12
+  "shards": 12,
+  "parser_ref": null,
+  "paths": null,
+  "jev": {"enabled": true, "demos": 24, "rps": 4, "workers": 4, "max_input_tokens": 12000000, "minutes": 24, "seed": 2026, "temperature": 0.54},
+  "parser_shards": 5,
+  "parser_paths": [
+    "demos/2375775/vitality-vs-g2-m1-anubis.dem",
+    "demos/2372338/g2-vs-mouz-m2-nuke.dem",
+    "demos/2373288/mouz-vs-natus-vincere-m3-mirage.dem",
+    "demos/2375770/natus-vincere-vs-g2-m1-dust2.dem",
+    "demos/natus-vincere-vs-g2-m3-ancient.dem",
+    "demos/natus-vincere-vs-g2-m5-ancient.dem",
+    "demos/2368041/vitality-vs-faze-m2-nuke.dem",
+    "demos/2367258/g2-vs-ence-m1-ancient.dem",
+    "demos/2377047/g2-vs-spirit-m3-nuke.dem",
+    "demos/the-mongolz-vs-parivision-m1-dust2.dem"
+  ]
 }

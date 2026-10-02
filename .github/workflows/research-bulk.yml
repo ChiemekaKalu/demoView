@@ -1,9 +1,11 @@
 # Round-dynamics study on public pro demos. Lives only on the research/bulk-demos
 # branch, which is never merged, and runs only when that branch is pushed.
-# Each shard streams demos from the Hugging Face dataset one at a time, extracts
-# name-free facts, runs our parser and diffs it against the oracle, and deletes
-# the demo. Results go to demoview-dev under research/bulk/<run id>/ only;
-# demos are never stored anywhere.
+# config.json picks the mode:
+#   full     stream the sample: name-free facts, our parser + oracle diff, analysis
+#   parser   only our parser + oracle diff, with demo built from parser_ref
+#   analyze  re-run the analysis on a stored run (source_run), no downloads
+# Demos are streamed and deleted; results go to demoview-dev under
+# research/bulk/<run id>/ only.
 name: research-bulk
 
 on:
@@ -30,6 +32,8 @@ jobs:
       mode: ${{ steps.plan.outputs.mode }}
       shards: ${{ steps.plan.outputs.shards }}
       source: ${{ steps.plan.outputs.source }}
+      parser_ref: ${{ steps.plan.outputs.parser_ref }}
+      jev: ${{ steps.plan.outputs.jev }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -40,9 +44,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          mode=$(python3 -c 'import json; print(json.load(open("${{ env.BULK }}/config.json"))["mode"])')
+          cfg() { python3 -c "import json,sys; v=json.load(open('$BULK/config.json')).get(sys.argv[1]); print('' if v is None else v)" "$1"; }
+          mode=$(cfg mode)
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
-          if [ "$mode" = full ]; then
+          echo "parser_ref=$(cfg parser_ref)" >> "$GITHUB_OUTPUT"
+          echo "jev=$(python3 -c "import json; print(str(bool((json.load(open('$BULK/config.json')).get('jev') or {}).get('enabled'))).lower())")" >> "$GITHUB_OUTPUT"
+          if [ "$mode" = full ] || [ "$mode" = parser ]; then
             python3 "$BULK/pick.py" "$BULK/config.json" > plan.json
             python3 -c 'import json; p=json.load(open("plan.json")); print(len(p["items"]), "demos;", {m: sum(1 for i in p["items"] if i["map"] == m) for m in sorted({i["map"] for i in p["items"]})})'
             echo "shards=$(python3 -c 'import json; print(json.dumps(list(range(json.load(open("plan.json"))["shards"]))))')" >> "$GITHUB_OUTPUT"
@@ -50,9 +57,9 @@ jobs:
             bash "$BULK/r2put.sh" "${{ github.run_id }}/plan.json" plan.json
           else
             echo "shards=[]" >> "$GITHUB_OUTPUT"
-            echo "source=$(python3 -c 'import json; print(json.load(open("${{ env.BULK }}/config.json"))["source_run"])')" >> "$GITHUB_OUTPUT"
+            echo "source=$(cfg source_run)" >> "$GITHUB_OUTPUT"
           fi
-      - if: steps.plan.outputs.mode == 'full'
+      - if: steps.plan.outputs.mode != 'analyze'
         uses: actions/upload-artifact@v4
         with:
           name: plan
@@ -60,7 +67,7 @@ jobs:
 
   shard:
     needs: plan
-    if: needs.plan.outputs.mode == 'full'
+    if: needs.plan.outputs.mode == 'full' || needs.plan.outputs.mode == 'parser'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -69,6 +76,12 @@ jobs:
         shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     steps:
       - uses: actions/checkout@v7
+      - name: Check out the parser under test
+        if: needs.plan.outputs.parser_ref != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.parser_ref }}
+          path: under-test
       - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -85,11 +98,18 @@ jobs:
       - name: Build our parser, the oracle and the facts extractor
         run: |
           mkdir -p "$RUNNER_TEMP/bin"
-          (cd parser && go build -o "$RUNNER_TEMP/bin/demo" ./cmd/demo)
+          src=parser
+          [ -d under-test/parser ] && src=under-test/parser
+          echo "parser under test: $src at $(git -C "$(dirname "$src")" rev-parse --short HEAD)"
+          (cd "$src" && go build -o "$RUNNER_TEMP/bin/demo" ./cmd/demo)
           (cd tools/oracle && go build -o "$RUNNER_TEMP/bin/oracle" .)
-          (cd "$BULK/bulkfacts" && go build -o "$RUNNER_TEMP/bin/bulkfacts" .)
+          if [ "${{ needs.plan.outputs.mode }}" = full ]; then
+            (cd "$BULK/bulkfacts" && go build -o "$RUNNER_TEMP/bin/bulkfacts" .)
+          fi
           command -v /usr/bin/time >/dev/null || sudo apt-get install -y -qq time
       - name: Stream the shard's demos
+        env:
+          SKIP_FACTS: ${{ needs.plan.outputs.mode == 'parser' && '1' || '' }}
         run: bash "$BULK/run_shard.sh" "${{ matrix.shard }}" plan.json "$RUNNER_TEMP/bin" out
       - name: Store results in dev R2
         env:
@@ -119,16 +139,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          src="${{ needs.plan.outputs.source }}"
-          mkdir -p in
-          bash "$BULK/r2get.sh" "$src/plan.json" plan.json
-          n=$(python3 -c 'import json; print(json.load(open("plan.json"))["shards"])')
-          for i in $(seq 0 $((n - 1))); do
-            if bash "$BULK/r2get.sh" "$src/shards/$i.tar.gz" "s$i.tar.gz"; then tar -xzf "s$i.tar.gz" -C in; else echo "shard $i missing"; fi
-          done
+        run: bash "$BULK/collect.sh" "${{ needs.plan.outputs.source }}" .
       - name: Analyze
-        run: python3 "$BULK/analyze.py" in plan.json report
+        run: python3 "$BULK/analyze.py" in plan.json report ${{ needs.plan.outputs.mode == 'parser' && '--parser-only' || '' }}
       - name: Store the report in dev R2
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -142,3 +155,37 @@ jobs:
         with:
           name: report
           path: report
+
+  jev:
+    needs: [plan, shard]
+    if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.mode != 'parser' && needs.plan.outputs.jev == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Collect shard results
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bash "$BULK/collect.sh" "${{ needs.plan.outputs.source }}" .
+      - name: Ask Jev about pro rounds
+        env:
+          CLOUDFLARE_JEV: ${{ secrets.CLOUDFLARE_JEV }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 "$BULK/jev_pro.py" in plan.json "$BULK/config.json" jev
+      - name: Store the Jev report in dev R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          bash "$BULK/r2put.sh" "${{ github.run_id }}/jev_report.json" jev/jev_report.json
+          bash "$BULK/r2put.sh" "${{ github.run_id }}/jev.md" jev/jev.md
+          cat jev/jev.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jev
+          path: jev

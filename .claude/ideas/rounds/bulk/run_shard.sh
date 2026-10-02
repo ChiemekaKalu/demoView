@@ -4,6 +4,7 @@
 # delete the demo. Only facts and the parser record are kept.
 #
 # usage: run_shard.sh <shard> <plan.json> <bin dir> <out dir>
+# SKIP_FACTS=1 runs only the parser checks (parser mode).
 set -uo pipefail
 
 shard=$1 plan=$2 bin=$3 out=$4
@@ -40,7 +41,9 @@ while IFS=$'\t' read -r path map size; do
     continue
   fi
   dl=$(python3 -c "import time,sys; print(round(time.time()-float(sys.argv[1]),1))" "$start")
-  timed facts "$bin/bulkfacts" "$work/d.dem" > "$out/facts/$id.json" 2> "$work/facts.err"
+  if [ -z "${SKIP_FACTS:-}" ]; then
+    timed facts "$bin/bulkfacts" "$work/d.dem" > "$out/facts/$id.json" 2> "$work/facts.err"
+  fi
   timed oracle "$bin/oracle" export "$work/d.dem" --out "$work/ref" 2> "$work/oracle.err"
   timed parse "$bin/demo" parse "$work/d.dem" --out "$work/ours" 2> "$work/parse.err"
   if [ -f "$work/ref/match.json" ]; then
