@@ -22,6 +22,7 @@ const PATH: [slug: string, group: string][] = [
   ['schema', 'How it works'],
   ['worker', 'How it works'],
   ['viewer', 'How it works'],
+  ['pulse', 'How it works'],
   ['testing', 'Running it'],
   ['infra', 'Running it'],
   ['maps', 'Operations'],
