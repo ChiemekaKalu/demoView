@@ -1,0 +1,61 @@
+# Scores Jev on the Pulse golden states from the two public fixtures
+# (.claude/ideas/jev/ci-eval.md): on changes to the state builder, the
+# questions or the pulse schema, weekly in case typesafe/jev changes under us,
+# and by hand to re-baseline. About $0.01 a run, on the AI Gateway credit.
+name: pulse eval
+
+on:
+  pull_request:
+    paths:
+      - worker/src/pulse/**
+      - worker/scripts/pulse-*.ts
+      - worker/test/pulse-golden/**
+      - schema/pulse.schema.json
+  push:
+    branches: [main]
+    paths:
+      - worker/src/pulse/**
+      - worker/scripts/pulse-*.ts
+      - worker/test/pulse-golden/**
+      - schema/pulse.schema.json
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pulse-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    name: pulse eval
+    runs-on: ubuntu-24.04
+    env:
+      CLOUDFLARE_JEV: ${{ secrets.CLOUDFLARE_JEV }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            worker/package-lock.json
+            schema/package-lock.json
+      - name: Install the Worker and the schema validator
+        run: |
+          npm ci --prefix worker
+          npm ci --prefix schema
+      # Without the token it skips with a notice and passes.
+      - name: Ask Jev and score the answers
+        working-directory: worker
+        run: npm run pulse:eval
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pulse-eval
+          path: worker/pulse-eval.json
+          if-no-files-found: ignore

@@ -1,0 +1,4975 @@
+{
+ "fixture": "valve_mm_mirage_2024",
+ "state_version": 1,
+ "match": {
+  "schema_version": 1,
+  "parser_version": "0.1.0-oracle+demoinfocs.5.2.0",
+  "match": {
+   "map": "de_mirage",
+   "tick_rate": 64,
+   "demo_sha256": "84a1a4191302bdd2a3bbb5a727842093744b1fb1a228aeec630369e44b622cb2"
+  },
+  "players": [
+   {
+    "idx": 0,
+    "steam_id": "0",
+    "name": "p0",
+    "team": "A"
+   },
+   {
+    "idx": 1,
+    "steam_id": "0",
+    "name": "p1",
+    "team": "A"
+   },
+   {
+    "idx": 2,
+    "steam_id": "0",
+    "name": "p2",
+    "team": "A"
+   },
+   {
+    "idx": 3,
+    "steam_id": "0",
+    "name": "p3",
+    "team": "A"
+   },
+   {
+    "idx": 4,
+    "steam_id": "0",
+    "name": "p4",
+    "team": "A"
+   },
+   {
+    "idx": 5,
+    "steam_id": "0",
+    "name": "p5",
+    "team": "B"
+   },
+   {
+    "idx": 6,
+    "steam_id": "0",
+    "name": "p6",
+    "team": "B"
+   },
+   {
+    "idx": 7,
+    "steam_id": "0",
+    "name": "p7",
+    "team": "B"
+   },
+   {
+    "idx": 8,
+    "steam_id": "0",
+    "name": "p8",
+    "team": "B"
+   },
+   {
+    "idx": 9,
+    "steam_id": "0",
+    "name": "p9",
+    "team": "B"
+   }
+  ],
+  "rounds": [
+   {
+    "n": 1,
+    "start_tick": 67,
+    "freeze_end_tick": 1761,
+    "end_tick": 8971,
+    "winner": "B",
+    "reason": "elimination",
+    "side_a": "CT"
+   },
+   {
+    "n": 2,
+    "start_tick": 9419,
+    "freeze_end_tick": 10699,
+    "end_tick": 15232,
+    "winner": "A",
+    "reason": "bomb_defused",
+    "side_a": "CT"
+   },
+   {
+    "n": 3,
+    "start_tick": 15680,
+    "freeze_end_tick": 16960,
+    "end_tick": 21457,
+    "winner": "B",
+    "reason": "elimination",
+    "side_a": "CT"
+   },
+   {
+    "n": 4,
+    "start_tick": 21905,
+    "freeze_end_tick": 23185,
+    "end_tick": 26064,
+    "winner": "B",
+    "reason": "elimination",
+    "side_a": "CT"
+   },
+   {
+    "n": 5,
+    "start_tick": 26512,
+    "freeze_end_tick": 27792,
+    "end_tick": 31197,
+    "winner": "A",
+    "reason": "elimination",
+    "side_a": "CT"
+   },
+   {
+    "n": 6,
+    "start_tick": 31645,
+    "freeze_end_tick": 32925,
+    "end_tick": 38820,
+    "winner": "B",
+    "reason": "bomb_exploded",
+    "side_a": "CT"
+   },
+   {
+    "n": 7,
+    "start_tick": 39268,
+    "freeze_end_tick": 40548,
+    "end_tick": 45092,
+    "winner": "B",
+    "reason": "elimination",
+    "side_a": "CT"
+   },
+   {
+    "n": 8,
+    "start_tick": 45540,
+    "freeze_end_tick": 46820,
+    "end_tick": 51718,
+    "winner": "B",
+    "reason": "bomb_exploded",
+    "side_a": "CT"
+   },
+   {
+    "n": 9,
+    "start_tick": 52166,
+    "freeze_end_tick": 53446,
+    "end_tick": 55959,
+    "winner": "B",
+    "reason": "elimination",
+    "side_a": "CT"
+   },
+   {
+    "n": 10,
+    "start_tick": 56407,
+    "freeze_end_tick": 56705,
+    "end_tick": 56705,
+    "winner": "B",
+    "reason": "surrender",
+    "side_a": "CT"
+   }
+  ],
+  "kills": [
+   {
+    "round": 1,
+    "tick": 3086,
+    "attacker": 5,
+    "victim": 0,
+    "assister": null,
+    "weapon": "p250",
+    "headshot": true
+   },
+   {
+    "round": 1,
+    "tick": 4285,
+    "attacker": 1,
+    "victim": 5,
+    "assister": null,
+    "weapon": "fiveseven",
+    "headshot": false
+   },
+   {
+    "round": 1,
+    "tick": 4493,
+    "attacker": 7,
+    "victim": 4,
+    "assister": null,
+    "weapon": "glock",
+    "headshot": true
+   },
+   {
+    "round": 1,
+    "tick": 4518,
+    "attacker": 6,
+    "victim": 1,
+    "assister": null,
+    "weapon": "glock",
+    "headshot": true
+   },
+   {
+    "round": 1,
+    "tick": 4876,
+    "attacker": 3,
+    "victim": 8,
+    "assister": 4,
+    "weapon": "hkp2000",
+    "headshot": true
+   },
+   {
+    "round": 1,
+    "tick": 7013,
+    "attacker": 3,
+    "victim": 6,
+    "assister": 1,
+    "weapon": "hkp2000",
+    "headshot": false
+   },
+   {
+    "round": 1,
+    "tick": 7134,
+    "attacker": 9,
+    "victim": 2,
+    "assister": null,
+    "weapon": "deagle",
+    "headshot": true
+   },
+   {
+    "round": 1,
+    "tick": 8971,
+    "attacker": 7,
+    "victim": 3,
+    "assister": 6,
+    "weapon": "glock",
+    "headshot": true
+   },
+   {
+    "round": 2,
+    "tick": 12085,
+    "attacker": 3,
+    "victim": 6,
+    "assister": null,
+    "weapon": "mp9",
+    "headshot": true
+   },
+   {
+    "round": 2,
+    "tick": 12172,
+    "attacker": 4,
+    "victim": 7,
+    "assister": null,
+    "weapon": "usp_silencer",
+    "headshot": true
+   },
+   {
+    "round": 2,
+    "tick": 12308,
+    "attacker": 8,
+    "victim": 4,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 2,
+    "tick": 12481,
+    "attacker": 1,
+    "victim": 8,
+    "assister": 2,
+    "weapon": "usp_silencer",
+    "headshot": false
+   },
+   {
+    "round": 2,
+    "tick": 12509,
+    "attacker": 5,
+    "victim": 0,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 2,
+    "tick": 12837,
+    "attacker": 5,
+    "victim": 3,
+    "assister": 9,
+    "weapon": "ak47",
+    "headshot": false
+   },
+   {
+    "round": 2,
+    "tick": 14454,
+    "attacker": 2,
+    "victim": 5,
+    "assister": null,
+    "weapon": "usp_silencer",
+    "headshot": false
+   },
+   {
+    "round": 2,
+    "tick": 14483,
+    "attacker": 1,
+    "victim": 9,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": false
+   },
+   {
+    "round": 3,
+    "tick": 19429,
+    "attacker": 8,
+    "victim": 1,
+    "assister": null,
+    "weapon": "mac10",
+    "headshot": true
+   },
+   {
+    "round": 3,
+    "tick": 20386,
+    "attacker": 9,
+    "victim": 4,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 3,
+    "tick": 21023,
+    "attacker": 7,
+    "victim": 3,
+    "assister": null,
+    "weapon": "ssg08",
+    "headshot": true
+   },
+   {
+    "round": 3,
+    "tick": 21149,
+    "attacker": 9,
+    "victim": 2,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 3,
+    "tick": 21182,
+    "attacker": 0,
+    "victim": 6,
+    "assister": null,
+    "weapon": "m4a1",
+    "headshot": false
+   },
+   {
+    "round": 3,
+    "tick": 21457,
+    "attacker": 5,
+    "victim": 0,
+    "assister": null,
+    "weapon": "mac10",
+    "headshot": true
+   },
+   {
+    "round": 4,
+    "tick": 24380,
+    "attacker": 5,
+    "victim": 4,
+    "assister": null,
+    "weapon": "mac10",
+    "headshot": false
+   },
+   {
+    "round": 4,
+    "tick": 24730,
+    "attacker": 9,
+    "victim": 1,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 4,
+    "tick": 24835,
+    "attacker": 8,
+    "victim": 2,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": false
+   },
+   {
+    "round": 4,
+    "tick": 25628,
+    "attacker": 9,
+    "victim": 3,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": false
+   },
+   {
+    "round": 4,
+    "tick": 26064,
+    "attacker": 8,
+    "victim": 0,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 5,
+    "tick": 29422,
+    "attacker": 8,
+    "victim": 0,
+    "assister": 5,
+    "weapon": "ak47",
+    "headshot": false
+   },
+   {
+    "round": 5,
+    "tick": 29635,
+    "attacker": 2,
+    "victim": 5,
+    "assister": null,
+    "weapon": "m4a1_silencer",
+    "headshot": false
+   },
+   {
+    "round": 5,
+    "tick": 29827,
+    "attacker": 2,
+    "victim": 6,
+    "assister": 1,
+    "weapon": "m4a1_silencer",
+    "headshot": false
+   },
+   {
+    "round": 5,
+    "tick": 30042,
+    "attacker": 3,
+    "victim": 7,
+    "assister": null,
+    "weapon": "p250",
+    "headshot": false
+   },
+   {
+    "round": 5,
+    "tick": 30139,
+    "attacker": 8,
+    "victim": 4,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 5,
+    "tick": 30359,
+    "attacker": 1,
+    "victim": 8,
+    "assister": 0,
+    "weapon": "m4a1_silencer",
+    "headshot": false
+   },
+   {
+    "round": 5,
+    "tick": 30362,
+    "attacker": 9,
+    "victim": 2,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": false
+   },
+   {
+    "round": 5,
+    "tick": 30843,
+    "attacker": 9,
+    "victim": 3,
+    "assister": 5,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 5,
+    "tick": 31197,
+    "attacker": 1,
+    "victim": 9,
+    "assister": null,
+    "weapon": "m4a1_silencer",
+    "headshot": false
+   },
+   {
+    "round": 6,
+    "tick": 34430,
+    "attacker": 8,
+    "victim": 4,
+    "assister": 6,
+    "weapon": "hegrenade",
+    "headshot": false
+   },
+   {
+    "round": 6,
+    "tick": 34525,
+    "attacker": 5,
+    "victim": 1,
+    "assister": null,
+    "weapon": "awp",
+    "headshot": false
+   },
+   {
+    "round": 6,
+    "tick": 35196,
+    "attacker": 5,
+    "victim": 3,
+    "assister": null,
+    "weapon": "awp",
+    "headshot": false
+   },
+   {
+    "round": 6,
+    "tick": 36522,
+    "attacker": 2,
+    "victim": 6,
+    "assister": null,
+    "weapon": "m4a1_silencer",
+    "headshot": false
+   },
+   {
+    "round": 6,
+    "tick": 36633,
+    "attacker": 2,
+    "victim": 5,
+    "assister": 0,
+    "weapon": "m4a1_silencer",
+    "headshot": false
+   },
+   {
+    "round": 6,
+    "tick": 36871,
+    "attacker": 9,
+    "victim": 2,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 6,
+    "tick": 39019,
+    "attacker": 0,
+    "victim": 8,
+    "assister": null,
+    "weapon": "m4a1_silencer",
+    "headshot": true
+   },
+   {
+    "round": 7,
+    "tick": 41696,
+    "attacker": 8,
+    "victim": 3,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 7,
+    "tick": 42074,
+    "attacker": 2,
+    "victim": 9,
+    "assister": null,
+    "weapon": "m4a1_silencer",
+    "headshot": true
+   },
+   {
+    "round": 7,
+    "tick": 42192,
+    "attacker": 6,
+    "victim": 2,
+    "assister": 5,
+    "weapon": "ak47",
+    "headshot": false
+   },
+   {
+    "round": 7,
+    "tick": 42449,
+    "attacker": 4,
+    "victim": 6,
+    "assister": null,
+    "weapon": "deagle",
+    "headshot": true
+   },
+   {
+    "round": 7,
+    "tick": 42736,
+    "attacker": 5,
+    "victim": 0,
+    "assister": null,
+    "weapon": "awp",
+    "headshot": false
+   },
+   {
+    "round": 7,
+    "tick": 43542,
+    "attacker": 5,
+    "victim": 4,
+    "assister": null,
+    "weapon": "awp",
+    "headshot": false
+   },
+   {
+    "round": 7,
+    "tick": 44515,
+    "attacker": 1,
+    "victim": 8,
+    "assister": 0,
+    "weapon": "famas",
+    "headshot": true
+   },
+   {
+    "round": 7,
+    "tick": 45092,
+    "attacker": 5,
+    "victim": 1,
+    "assister": 8,
+    "weapon": "awp",
+    "headshot": true
+   },
+   {
+    "round": 8,
+    "tick": 47942,
+    "attacker": 9,
+    "victim": 4,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 8,
+    "tick": 48807,
+    "attacker": 5,
+    "victim": 3,
+    "assister": null,
+    "weapon": "awp",
+    "headshot": false
+   },
+   {
+    "round": 8,
+    "tick": 49246,
+    "attacker": 9,
+    "victim": 2,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 8,
+    "tick": 49410,
+    "attacker": 6,
+    "victim": 1,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 8,
+    "tick": 49811,
+    "attacker": 0,
+    "victim": 9,
+    "assister": 4,
+    "weapon": "hkp2000",
+    "headshot": true
+   },
+   {
+    "round": 8,
+    "tick": 51790,
+    "attacker": 8,
+    "victim": 0,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": false
+   },
+   {
+    "round": 9,
+    "tick": 54599,
+    "attacker": 8,
+    "victim": 1,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 9,
+    "tick": 55056,
+    "attacker": 6,
+    "victim": 4,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 9,
+    "tick": 55334,
+    "attacker": 6,
+    "victim": 0,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 9,
+    "tick": 55359,
+    "attacker": 7,
+    "victim": 3,
+    "assister": null,
+    "weapon": "ak47",
+    "headshot": true
+   },
+   {
+    "round": 9,
+    "tick": 55499,
+    "attacker": 2,
+    "victim": 6,
+    "assister": 4,
+    "weapon": "ssg08",
+    "headshot": true
+   },
+   {
+    "round": 9,
+    "tick": 55625,
+    "attacker": 2,
+    "victim": 5,
+    "assister": null,
+    "weapon": "ssg08",
+    "headshot": false
+   },
+   {
+    "round": 9,
+    "tick": 55959,
+    "attacker": 9,
+    "victim": 2,
+    "assister": 5,
+    "weapon": "ak47",
+    "headshot": false
+   }
+  ],
+  "scoreboard": [
+   {
+    "player": 0,
+    "kills": 3,
+    "deaths": 8,
+    "assists": 3,
+    "adr": 52.9,
+    "hs_pct": 66.7
+   },
+   {
+    "player": 1,
+    "kills": 6,
+    "deaths": 7,
+    "assists": 2,
+    "adr": 75.4,
+    "hs_pct": 16.7
+   },
+   {
+    "player": 2,
+    "kills": 8,
+    "deaths": 8,
+    "assists": 1,
+    "adr": 78.3,
+    "hs_pct": 25
+   },
+   {
+    "player": 3,
+    "kills": 4,
+    "deaths": 9,
+    "assists": 0,
+    "adr": 34.4,
+    "hs_pct": 50
+   },
+   {
+    "player": 4,
+    "kills": 2,
+    "deaths": 9,
+    "assists": 3,
+    "adr": 42.7,
+    "hs_pct": 100
+   },
+   {
+    "player": 5,
+    "kills": 11,
+    "deaths": 5,
+    "assists": 4,
+    "adr": 121.9,
+    "hs_pct": 36.4
+   },
+   {
+    "player": 6,
+    "kills": 5,
+    "deaths": 7,
+    "assists": 2,
+    "adr": 57.2,
+    "hs_pct": 80
+   },
+   {
+    "player": 7,
+    "kills": 4,
+    "deaths": 2,
+    "assists": 0,
+    "adr": 31.5,
+    "hs_pct": 100
+   },
+   {
+    "player": 8,
+    "kills": 10,
+    "deaths": 5,
+    "assists": 1,
+    "adr": 95.4,
+    "hs_pct": 60
+   },
+   {
+    "player": 9,
+    "kills": 11,
+    "deaths": 4,
+    "assists": 1,
+    "adr": 116.3,
+    "hs_pct": 72.7
+   }
+  ]
+ },
+ "moments": [
+  {
+   "round": 1,
+   "tick": 1761,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 1,
+   "tick": 3086,
+   "sec": 20.703125,
+   "alive": {
+    "CT": 4,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 94 seconds left in the round",
+     "alive": "4 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 1,
+   "tick": 4285,
+   "sec": 39.4375,
+   "alive": {
+    "CT": 4,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T.",
+     "0:39 p1 (CT) kills p5 (T) (fiveseven). Alive: 4 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 76 seconds left in the round",
+     "alive": "4 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p6 full HP",
+       "p7 full HP",
+       "p8 hurt",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 1,
+   "tick": 4493,
+   "sec": 42.6875,
+   "alive": {
+    "CT": 3,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T.",
+     "0:39 p1 (CT) kills p5 (T) (fiveseven). Alive: 4 CT v 4 T.",
+     "0:42 p7 (T) kills p4 (CT) (glock, headshot). Alive: 3 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 72 seconds left in the round",
+     "alive": "3 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p1 hurt",
+       "p2 full HP",
+       "p3 full HP"
+      ],
+      "T": [
+       "p6 one shot from death",
+       "p7 full HP",
+       "p8 hurt",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 1,
+   "tick": 4518,
+   "sec": 43.078125,
+   "alive": {
+    "CT": 2,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T.",
+     "0:39 p1 (CT) kills p5 (T) (fiveseven). Alive: 4 CT v 4 T.",
+     "0:42 p7 (T) kills p4 (CT) (glock, headshot). Alive: 3 CT v 4 T.",
+     "0:43 p6 (T) kills p1 (CT) (glock, headshot). Alive: 2 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 72 seconds left in the round",
+     "alive": "2 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p2 full HP",
+       "p3 full HP"
+      ],
+      "T": [
+       "p6 one shot from death",
+       "p7 full HP",
+       "p8 hurt",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 1,
+   "tick": 4876,
+   "sec": 48.671875,
+   "alive": {
+    "CT": 2,
+    "T": 3
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T.",
+     "0:39 p1 (CT) kills p5 (T) (fiveseven). Alive: 4 CT v 4 T.",
+     "0:42 p7 (T) kills p4 (CT) (glock, headshot). Alive: 3 CT v 4 T.",
+     "0:43 p6 (T) kills p1 (CT) (glock, headshot). Alive: 2 CT v 4 T.",
+     "0:48 p3 (CT) kills p8 (T) (hkp2000, headshot). Alive: 2 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 66 seconds left in the round",
+     "alive": "2 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p2 full HP",
+       "p3 full HP"
+      ],
+      "T": [
+       "p6 one shot from death",
+       "p7 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 1,
+   "tick": 7013,
+   "sec": 82.0625,
+   "alive": {
+    "CT": 2,
+    "T": 2
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T.",
+     "0:39 p1 (CT) kills p5 (T) (fiveseven). Alive: 4 CT v 4 T.",
+     "0:42 p7 (T) kills p4 (CT) (glock, headshot). Alive: 3 CT v 4 T.",
+     "0:43 p6 (T) kills p1 (CT) (glock, headshot). Alive: 2 CT v 4 T.",
+     "0:48 p3 (CT) kills p8 (T) (hkp2000, headshot). Alive: 2 CT v 3 T.",
+     "1:22 p3 (CT) kills p6 (T) (hkp2000). Alive: 2 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 33 seconds left in the round",
+     "alive": "2 CT v 2 T",
+     "alive_players": {
+      "CT": [
+       "p2 full HP",
+       "p3 one shot from death"
+      ],
+      "T": [
+       "p7 full HP",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 1,
+   "tick": 7134,
+   "sec": 83.953125,
+   "alive": {
+    "CT": 1,
+    "T": 2
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T.",
+     "0:39 p1 (CT) kills p5 (T) (fiveseven). Alive: 4 CT v 4 T.",
+     "0:42 p7 (T) kills p4 (CT) (glock, headshot). Alive: 3 CT v 4 T.",
+     "0:43 p6 (T) kills p1 (CT) (glock, headshot). Alive: 2 CT v 4 T.",
+     "0:48 p3 (CT) kills p8 (T) (hkp2000, headshot). Alive: 2 CT v 3 T.",
+     "1:22 p3 (CT) kills p6 (T) (hkp2000). Alive: 2 CT v 2 T.",
+     "1:23 p9 (T) kills p2 (CT) (deagle, headshot). Alive: 1 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 31 seconds left in the round",
+     "alive": "1 CT v 2 T",
+     "alive_players": {
+      "CT": [
+       "p3 one shot from death"
+      ],
+      "T": [
+       "p7 full HP",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 1,
+   "tick": 8971,
+   "sec": 112.65625,
+   "alive": {
+    "CT": 0,
+    "T": 2
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "1",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T.",
+     "0:39 p1 (CT) kills p5 (T) (fiveseven). Alive: 4 CT v 4 T.",
+     "0:42 p7 (T) kills p4 (CT) (glock, headshot). Alive: 3 CT v 4 T.",
+     "0:43 p6 (T) kills p1 (CT) (glock, headshot). Alive: 2 CT v 4 T.",
+     "0:48 p3 (CT) kills p8 (T) (hkp2000, headshot). Alive: 2 CT v 3 T.",
+     "1:22 p3 (CT) kills p6 (T) (hkp2000). Alive: 2 CT v 2 T.",
+     "1:23 p9 (T) kills p2 (CT) (deagle, headshot). Alive: 1 CT v 2 T.",
+     "1:52 p7 (T) kills p3 (CT) (glock, headshot). Alive: 0 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 2 seconds left in the round",
+     "alive": "0 CT v 2 T",
+     "alive_players": {
+      "CT": [],
+      "T": [
+       "p7 full HP",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 10699,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 12085,
+   "sec": 21.65625,
+   "alive": {
+    "CT": 5,
+    "T": 4
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 93 seconds left in the round",
+     "alive": "5 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 hurt",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 12172,
+   "sec": 23.015625,
+   "alive": {
+    "CT": 5,
+    "T": 3
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T.",
+     "0:23 p4 (CT) kills p7 (T) (usp_silencer, headshot). Alive: 5 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 92 seconds left in the round",
+     "alive": "5 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 low HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 12308,
+   "sec": 25.140625,
+   "alive": {
+    "CT": 4,
+    "T": 3
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T.",
+     "0:23 p4 (CT) kills p7 (T) (usp_silencer, headshot). Alive: 5 CT v 3 T.",
+     "0:25 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 90 seconds left in the round",
+     "alive": "4 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 low HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p8 hurt",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 12481,
+   "sec": 27.84375,
+   "alive": {
+    "CT": 4,
+    "T": 2
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T.",
+     "0:23 p4 (CT) kills p7 (T) (usp_silencer, headshot). Alive: 5 CT v 3 T.",
+     "0:25 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 3 T.",
+     "0:27 p1 (CT) kills p8 (T) (usp_silencer). Alive: 4 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 87 seconds left in the round",
+     "alive": "4 CT v 2 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 low HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 12509,
+   "sec": 28.28125,
+   "alive": {
+    "CT": 3,
+    "T": 2
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T.",
+     "0:23 p4 (CT) kills p7 (T) (usp_silencer, headshot). Alive: 5 CT v 3 T.",
+     "0:25 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 3 T.",
+     "0:27 p1 (CT) kills p8 (T) (usp_silencer). Alive: 4 CT v 2 T.",
+     "0:28 p5 (T) kills p0 (CT) (ak47, headshot). Alive: 3 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 87 seconds left in the round",
+     "alive": "3 CT v 2 T",
+     "alive_players": {
+      "CT": [
+       "p1 full HP",
+       "p2 full HP",
+       "p3 low HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 12837,
+   "sec": 33.40625,
+   "alive": {
+    "CT": 2,
+    "T": 2
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T.",
+     "0:23 p4 (CT) kills p7 (T) (usp_silencer, headshot). Alive: 5 CT v 3 T.",
+     "0:25 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 3 T.",
+     "0:27 p1 (CT) kills p8 (T) (usp_silencer). Alive: 4 CT v 2 T.",
+     "0:28 p5 (T) kills p0 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "0:33 p5 (T) kills p3 (CT) (ak47). Alive: 2 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 82 seconds left in the round",
+     "alive": "2 CT v 2 T",
+     "alive_players": {
+      "CT": [
+       "p1 full HP",
+       "p2 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 14454,
+   "sec": 58.671875,
+   "alive": {
+    "CT": 2,
+    "T": 1
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T.",
+     "0:23 p4 (CT) kills p7 (T) (usp_silencer, headshot). Alive: 5 CT v 3 T.",
+     "0:25 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 3 T.",
+     "0:27 p1 (CT) kills p8 (T) (usp_silencer). Alive: 4 CT v 2 T.",
+     "0:28 p5 (T) kills p0 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "0:33 p5 (T) kills p3 (CT) (ak47). Alive: 2 CT v 2 T.",
+     "0:58 p2 (CT) kills p5 (T) (usp_silencer). Alive: 2 CT v 1 T."
+    ],
+    "now": {
+     "time": "about 56 seconds left in the round",
+     "alive": "2 CT v 1 T",
+     "alive_players": {
+      "CT": [
+       "p1 full HP",
+       "p2 full HP"
+      ],
+      "T": [
+       "p9 hurt"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "tick": 14483,
+   "sec": 59.125,
+   "alive": {
+    "CT": 2,
+    "T": 0
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "2",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T.",
+     "0:23 p4 (CT) kills p7 (T) (usp_silencer, headshot). Alive: 5 CT v 3 T.",
+     "0:25 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 3 T.",
+     "0:27 p1 (CT) kills p8 (T) (usp_silencer). Alive: 4 CT v 2 T.",
+     "0:28 p5 (T) kills p0 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "0:33 p5 (T) kills p3 (CT) (ak47). Alive: 2 CT v 2 T.",
+     "0:58 p2 (CT) kills p5 (T) (usp_silencer). Alive: 2 CT v 1 T.",
+     "0:59 p1 (CT) kills p9 (T) (ak47). Alive: 2 CT v 0 T."
+    ],
+    "now": {
+     "time": "about 56 seconds left in the round",
+     "alive": "2 CT v 0 T",
+     "alive_players": {
+      "CT": [
+       "p1 full HP",
+       "p2 full HP"
+      ],
+      "T": []
+     }
+    }
+   }
+  },
+  {
+   "round": 3,
+   "tick": 16960,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "3",
+    "score_before_round": "CT 1 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 3,
+   "tick": 19429,
+   "sec": 38.578125,
+   "alive": {
+    "CT": 4,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "3",
+    "score_before_round": "CT 1 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:38 p8 (T) kills p1 (CT) (mac10, headshot). Alive: 4 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 76 seconds left in the round",
+     "alive": "4 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 hurt",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 one shot from death",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 3,
+   "tick": 20386,
+   "sec": 53.53125,
+   "alive": {
+    "CT": 3,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "3",
+    "score_before_round": "CT 1 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:38 p8 (T) kills p1 (CT) (mac10, headshot). Alive: 4 CT v 5 T.",
+     "0:53 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 61 seconds left in the round",
+     "alive": "3 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p2 full HP",
+       "p3 low HP"
+      ],
+      "T": [
+       "p5 hurt",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 one shot from death",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 3,
+   "tick": 21023,
+   "sec": 63.484375,
+   "alive": {
+    "CT": 2,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "3",
+    "score_before_round": "CT 1 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:38 p8 (T) kills p1 (CT) (mac10, headshot). Alive: 4 CT v 5 T.",
+     "0:53 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "1:03 p7 (T) kills p3 (CT) (ssg08, headshot). Alive: 2 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 52 seconds left in the round",
+     "alive": "2 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p2 full HP"
+      ],
+      "T": [
+       "p5 hurt",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 one shot from death",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 3,
+   "tick": 21149,
+   "sec": 65.453125,
+   "alive": {
+    "CT": 1,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "3",
+    "score_before_round": "CT 1 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:38 p8 (T) kills p1 (CT) (mac10, headshot). Alive: 4 CT v 5 T.",
+     "0:53 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "1:03 p7 (T) kills p3 (CT) (ssg08, headshot). Alive: 2 CT v 5 T.",
+     "1:05 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 1 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 50 seconds left in the round",
+     "alive": "1 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP"
+      ],
+      "T": [
+       "p5 hurt",
+       "p6 low HP",
+       "p7 full HP",
+       "p8 one shot from death",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 3,
+   "tick": 21182,
+   "sec": 65.96875,
+   "alive": {
+    "CT": 1,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "3",
+    "score_before_round": "CT 1 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:38 p8 (T) kills p1 (CT) (mac10, headshot). Alive: 4 CT v 5 T.",
+     "0:53 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "1:03 p7 (T) kills p3 (CT) (ssg08, headshot). Alive: 2 CT v 5 T.",
+     "1:05 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "1:05 p0 (CT) kills p6 (T) (m4a1). Alive: 1 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 49 seconds left in the round",
+     "alive": "1 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP"
+      ],
+      "T": [
+       "p5 hurt",
+       "p7 full HP",
+       "p8 one shot from death",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 3,
+   "tick": 21457,
+   "sec": 70.265625,
+   "alive": {
+    "CT": 0,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "3",
+    "score_before_round": "CT 1 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:38 p8 (T) kills p1 (CT) (mac10, headshot). Alive: 4 CT v 5 T.",
+     "0:53 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "1:03 p7 (T) kills p3 (CT) (ssg08, headshot). Alive: 2 CT v 5 T.",
+     "1:05 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "1:05 p0 (CT) kills p6 (T) (m4a1). Alive: 1 CT v 4 T.",
+     "1:10 p5 (T) kills p0 (CT) (mac10, headshot). Alive: 0 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 45 seconds left in the round",
+     "alive": "0 CT v 4 T",
+     "alive_players": {
+      "CT": [],
+      "T": [
+       "p5 hurt",
+       "p7 full HP",
+       "p8 one shot from death",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 4,
+   "tick": 23185,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "4",
+    "score_before_round": "CT 1 - T 2",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 4,
+   "tick": 24380,
+   "sec": 18.671875,
+   "alive": {
+    "CT": 4,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "4",
+    "score_before_round": "CT 1 - T 2",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p5 (T) kills p4 (CT) (mac10). Alive: 4 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 96 seconds left in the round",
+     "alive": "4 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 one shot from death",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 4,
+   "tick": 24730,
+   "sec": 24.140625,
+   "alive": {
+    "CT": 3,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "4",
+    "score_before_round": "CT 1 - T 2",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p5 (T) kills p4 (CT) (mac10). Alive: 4 CT v 5 T.",
+     "0:24 p9 (T) kills p1 (CT) (ak47, headshot). Alive: 3 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 91 seconds left in the round",
+     "alive": "3 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p2 full HP",
+       "p3 low HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 one shot from death",
+       "p8 full HP",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 4,
+   "tick": 24835,
+   "sec": 25.78125,
+   "alive": {
+    "CT": 2,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "4",
+    "score_before_round": "CT 1 - T 2",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p5 (T) kills p4 (CT) (mac10). Alive: 4 CT v 5 T.",
+     "0:24 p9 (T) kills p1 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "0:25 p8 (T) kills p2 (CT) (ak47). Alive: 2 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 89 seconds left in the round",
+     "alive": "2 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p3 low HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 one shot from death",
+       "p8 hurt",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 4,
+   "tick": 25628,
+   "sec": 38.171875,
+   "alive": {
+    "CT": 1,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "4",
+    "score_before_round": "CT 1 - T 2",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p5 (T) kills p4 (CT) (mac10). Alive: 4 CT v 5 T.",
+     "0:24 p9 (T) kills p1 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "0:25 p8 (T) kills p2 (CT) (ak47). Alive: 2 CT v 5 T.",
+     "0:38 p9 (T) kills p3 (CT) (ak47). Alive: 1 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 77 seconds left in the round",
+     "alive": "1 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 one shot from death",
+       "p8 hurt",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 4,
+   "tick": 26064,
+   "sec": 44.984375,
+   "alive": {
+    "CT": 0,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "4",
+    "score_before_round": "CT 1 - T 2",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p5 (T) kills p4 (CT) (mac10). Alive: 4 CT v 5 T.",
+     "0:24 p9 (T) kills p1 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "0:25 p8 (T) kills p2 (CT) (ak47). Alive: 2 CT v 5 T.",
+     "0:38 p9 (T) kills p3 (CT) (ak47). Alive: 1 CT v 5 T.",
+     "0:44 p8 (T) kills p0 (CT) (ak47, headshot). Alive: 0 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 70 seconds left in the round",
+     "alive": "0 CT v 5 T",
+     "alive_players": {
+      "CT": [],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 one shot from death",
+       "p8 hurt",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 27792,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 29422,
+   "sec": 25.46875,
+   "alive": {
+    "CT": 4,
+    "T": 5
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 90 seconds left in the round",
+     "alive": "4 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p1 low HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 hurt",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 low HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 29635,
+   "sec": 28.796875,
+   "alive": {
+    "CT": 4,
+    "T": 4
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 86 seconds left in the round",
+     "alive": "4 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p1 low HP",
+       "p2 full HP",
+       "p3 hurt",
+       "p4 full HP"
+      ],
+      "T": [
+       "p6 full HP",
+       "p7 full HP",
+       "p8 low HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 29827,
+   "sec": 31.796875,
+   "alive": {
+    "CT": 4,
+    "T": 3
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T.",
+     "0:31 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 4 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 83 seconds left in the round",
+     "alive": "4 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p1 low HP",
+       "p2 full HP",
+       "p3 hurt",
+       "p4 full HP"
+      ],
+      "T": [
+       "p7 full HP",
+       "p8 low HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 30042,
+   "sec": 35.15625,
+   "alive": {
+    "CT": 4,
+    "T": 2
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T.",
+     "0:31 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 4 CT v 3 T.",
+     "0:35 p3 (CT) kills p7 (T) (p250). Alive: 4 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 80 seconds left in the round",
+     "alive": "4 CT v 2 T",
+     "alive_players": {
+      "CT": [
+       "p1 low HP",
+       "p2 full HP",
+       "p3 hurt",
+       "p4 full HP"
+      ],
+      "T": [
+       "p8 low HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 30139,
+   "sec": 36.671875,
+   "alive": {
+    "CT": 3,
+    "T": 2
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T.",
+     "0:31 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 4 CT v 3 T.",
+     "0:35 p3 (CT) kills p7 (T) (p250). Alive: 4 CT v 2 T.",
+     "0:36 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 78 seconds left in the round",
+     "alive": "3 CT v 2 T",
+     "alive_players": {
+      "CT": [
+       "p1 low HP",
+       "p2 full HP",
+       "p3 hurt"
+      ],
+      "T": [
+       "p8 one shot from death",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 30359,
+   "sec": 40.109375,
+   "alive": {
+    "CT": 3,
+    "T": 1
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T.",
+     "0:31 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 4 CT v 3 T.",
+     "0:35 p3 (CT) kills p7 (T) (p250). Alive: 4 CT v 2 T.",
+     "0:36 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "0:40 p1 (CT) kills p8 (T) (m4a1_silencer). Alive: 3 CT v 1 T."
+    ],
+    "now": {
+     "time": "about 75 seconds left in the round",
+     "alive": "3 CT v 1 T",
+     "alive_players": {
+      "CT": [
+       "p1 low HP",
+       "p2 one shot from death",
+       "p3 hurt"
+      ],
+      "T": [
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 30362,
+   "sec": 40.15625,
+   "alive": {
+    "CT": 2,
+    "T": 1
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T.",
+     "0:31 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 4 CT v 3 T.",
+     "0:35 p3 (CT) kills p7 (T) (p250). Alive: 4 CT v 2 T.",
+     "0:36 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "0:40 p1 (CT) kills p8 (T) (m4a1_silencer). Alive: 3 CT v 1 T.",
+     "0:40 p9 (T) kills p2 (CT) (ak47). Alive: 2 CT v 1 T."
+    ],
+    "now": {
+     "time": "about 75 seconds left in the round",
+     "alive": "2 CT v 1 T",
+     "alive_players": {
+      "CT": [
+       "p1 low HP",
+       "p3 hurt"
+      ],
+      "T": [
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 30843,
+   "sec": 47.671875,
+   "alive": {
+    "CT": 1,
+    "T": 1
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T.",
+     "0:31 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 4 CT v 3 T.",
+     "0:35 p3 (CT) kills p7 (T) (p250). Alive: 4 CT v 2 T.",
+     "0:36 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "0:40 p1 (CT) kills p8 (T) (m4a1_silencer). Alive: 3 CT v 1 T.",
+     "0:40 p9 (T) kills p2 (CT) (ak47). Alive: 2 CT v 1 T.",
+     "0:47 p9 (T) kills p3 (CT) (ak47, headshot). Alive: 1 CT v 1 T."
+    ],
+    "now": {
+     "time": "about 67 seconds left in the round",
+     "alive": "1 CT v 1 T",
+     "alive_players": {
+      "CT": [
+       "p1 low HP"
+      ],
+      "T": [
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 5,
+   "tick": 31197,
+   "sec": 53.203125,
+   "alive": {
+    "CT": 1,
+    "T": 0
+   },
+   "ct_won": true,
+   "state": {
+    "map": "de_mirage",
+    "round": "5",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T.",
+     "0:31 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 4 CT v 3 T.",
+     "0:35 p3 (CT) kills p7 (T) (p250). Alive: 4 CT v 2 T.",
+     "0:36 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "0:40 p1 (CT) kills p8 (T) (m4a1_silencer). Alive: 3 CT v 1 T.",
+     "0:40 p9 (T) kills p2 (CT) (ak47). Alive: 2 CT v 1 T.",
+     "0:47 p9 (T) kills p3 (CT) (ak47, headshot). Alive: 1 CT v 1 T.",
+     "0:53 p1 (CT) kills p9 (T) (m4a1_silencer). Alive: 1 CT v 0 T."
+    ],
+    "now": {
+     "time": "about 62 seconds left in the round",
+     "alive": "1 CT v 0 T",
+     "alive_players": {
+      "CT": [
+       "p1 one shot from death"
+      ],
+      "T": []
+     }
+    }
+   }
+  },
+  {
+   "round": 6,
+   "tick": 32925,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "6",
+    "score_before_round": "CT 2 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 6,
+   "tick": 34430,
+   "sec": 23.515625,
+   "alive": {
+    "CT": 4,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "6",
+    "score_before_round": "CT 2 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:23 p8 (T) kills p4 (CT) (hegrenade). Alive: 4 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 91 seconds left in the round",
+     "alive": "4 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 6,
+   "tick": 34525,
+   "sec": 25,
+   "alive": {
+    "CT": 3,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "6",
+    "score_before_round": "CT 2 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:23 p8 (T) kills p4 (CT) (hegrenade). Alive: 4 CT v 5 T.",
+     "0:25 p5 (T) kills p1 (CT) (awp). Alive: 3 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 90 seconds left in the round",
+     "alive": "3 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p2 full HP",
+       "p3 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 6,
+   "tick": 35196,
+   "sec": 35.484375,
+   "alive": {
+    "CT": 2,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "6",
+    "score_before_round": "CT 2 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:23 p8 (T) kills p4 (CT) (hegrenade). Alive: 4 CT v 5 T.",
+     "0:25 p5 (T) kills p1 (CT) (awp). Alive: 3 CT v 5 T.",
+     "0:35 p5 (T) kills p3 (CT) (awp). Alive: 2 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 80 seconds left in the round",
+     "alive": "2 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p2 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 6,
+   "tick": 36522,
+   "sec": 56.203125,
+   "alive": {
+    "CT": 2,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "6",
+    "score_before_round": "CT 2 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:23 p8 (T) kills p4 (CT) (hegrenade). Alive: 4 CT v 5 T.",
+     "0:25 p5 (T) kills p1 (CT) (awp). Alive: 3 CT v 5 T.",
+     "0:35 p5 (T) kills p3 (CT) (awp). Alive: 2 CT v 5 T.",
+     "0:56 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 2 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 59 seconds left in the round",
+     "alive": "2 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p0 hurt",
+       "p2 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 6,
+   "tick": 36633,
+   "sec": 57.9375,
+   "alive": {
+    "CT": 2,
+    "T": 3
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "6",
+    "score_before_round": "CT 2 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:23 p8 (T) kills p4 (CT) (hegrenade). Alive: 4 CT v 5 T.",
+     "0:25 p5 (T) kills p1 (CT) (awp). Alive: 3 CT v 5 T.",
+     "0:35 p5 (T) kills p3 (CT) (awp). Alive: 2 CT v 5 T.",
+     "0:56 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 2 CT v 4 T.",
+     "0:57 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 2 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 57 seconds left in the round",
+     "alive": "2 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p0 hurt",
+       "p2 full HP"
+      ],
+      "T": [
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 6,
+   "tick": 36871,
+   "sec": 61.65625,
+   "alive": {
+    "CT": 1,
+    "T": 3
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "6",
+    "score_before_round": "CT 2 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:23 p8 (T) kills p4 (CT) (hegrenade). Alive: 4 CT v 5 T.",
+     "0:25 p5 (T) kills p1 (CT) (awp). Alive: 3 CT v 5 T.",
+     "0:35 p5 (T) kills p3 (CT) (awp). Alive: 2 CT v 5 T.",
+     "0:56 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 2 CT v 4 T.",
+     "0:57 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 2 CT v 3 T.",
+     "1:01 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 1 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 53 seconds left in the round",
+     "alive": "1 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p0 hurt"
+      ],
+      "T": [
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 40548,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 41696,
+   "sec": 17.9375,
+   "alive": {
+    "CT": 4,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 97 seconds left in the round",
+     "alive": "4 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 hurt",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 42074,
+   "sec": 23.84375,
+   "alive": {
+    "CT": 4,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:23 p2 (CT) kills p9 (T) (m4a1_silencer, headshot). Alive: 4 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 91 seconds left in the round",
+     "alive": "4 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 low HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 hurt"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 42192,
+   "sec": 25.6875,
+   "alive": {
+    "CT": 3,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:23 p2 (CT) kills p9 (T) (m4a1_silencer, headshot). Alive: 4 CT v 4 T.",
+     "0:25 p6 (T) kills p2 (CT) (ak47). Alive: 3 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 89 seconds left in the round",
+     "alive": "3 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 hurt"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 42449,
+   "sec": 29.703125,
+   "alive": {
+    "CT": 3,
+    "T": 3
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:23 p2 (CT) kills p9 (T) (m4a1_silencer, headshot). Alive: 4 CT v 4 T.",
+     "0:25 p6 (T) kills p2 (CT) (ak47). Alive: 3 CT v 4 T.",
+     "0:29 p4 (CT) kills p6 (T) (deagle, headshot). Alive: 3 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 85 seconds left in the round",
+     "alive": "3 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p7 full HP",
+       "p8 hurt"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 42736,
+   "sec": 34.1875,
+   "alive": {
+    "CT": 2,
+    "T": 3
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:23 p2 (CT) kills p9 (T) (m4a1_silencer, headshot). Alive: 4 CT v 4 T.",
+     "0:25 p6 (T) kills p2 (CT) (ak47). Alive: 3 CT v 4 T.",
+     "0:29 p4 (CT) kills p6 (T) (deagle, headshot). Alive: 3 CT v 3 T.",
+     "0:34 p5 (T) kills p0 (CT) (awp). Alive: 2 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 81 seconds left in the round",
+     "alive": "2 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p1 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 one shot from death",
+       "p7 full HP",
+       "p8 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 43542,
+   "sec": 46.78125,
+   "alive": {
+    "CT": 1,
+    "T": 3
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:23 p2 (CT) kills p9 (T) (m4a1_silencer, headshot). Alive: 4 CT v 4 T.",
+     "0:25 p6 (T) kills p2 (CT) (ak47). Alive: 3 CT v 4 T.",
+     "0:29 p4 (CT) kills p6 (T) (deagle, headshot). Alive: 3 CT v 3 T.",
+     "0:34 p5 (T) kills p0 (CT) (awp). Alive: 2 CT v 3 T.",
+     "0:46 p5 (T) kills p4 (CT) (awp). Alive: 1 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 68 seconds left in the round",
+     "alive": "1 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p1 full HP"
+      ],
+      "T": [
+       "p5 one shot from death",
+       "p7 full HP",
+       "p8 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 44515,
+   "sec": 61.984375,
+   "alive": {
+    "CT": 1,
+    "T": 2
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:23 p2 (CT) kills p9 (T) (m4a1_silencer, headshot). Alive: 4 CT v 4 T.",
+     "0:25 p6 (T) kills p2 (CT) (ak47). Alive: 3 CT v 4 T.",
+     "0:29 p4 (CT) kills p6 (T) (deagle, headshot). Alive: 3 CT v 3 T.",
+     "0:34 p5 (T) kills p0 (CT) (awp). Alive: 2 CT v 3 T.",
+     "0:46 p5 (T) kills p4 (CT) (awp). Alive: 1 CT v 3 T.",
+     "1:01 p1 (CT) kills p8 (T) (famas, headshot). Alive: 1 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 53 seconds left in the round",
+     "alive": "1 CT v 2 T",
+     "alive_players": {
+      "CT": [
+       "p1 hurt"
+      ],
+      "T": [
+       "p5 one shot from death",
+       "p7 hurt"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 7,
+   "tick": 45092,
+   "sec": 71,
+   "alive": {
+    "CT": 0,
+    "T": 2
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "7",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:23 p2 (CT) kills p9 (T) (m4a1_silencer, headshot). Alive: 4 CT v 4 T.",
+     "0:25 p6 (T) kills p2 (CT) (ak47). Alive: 3 CT v 4 T.",
+     "0:29 p4 (CT) kills p6 (T) (deagle, headshot). Alive: 3 CT v 3 T.",
+     "0:34 p5 (T) kills p0 (CT) (awp). Alive: 2 CT v 3 T.",
+     "0:46 p5 (T) kills p4 (CT) (awp). Alive: 1 CT v 3 T.",
+     "1:01 p1 (CT) kills p8 (T) (famas, headshot). Alive: 1 CT v 2 T.",
+     "1:11 p5 (T) kills p1 (CT) (awp, headshot). Alive: 0 CT v 2 T."
+    ],
+    "now": {
+     "time": "about 44 seconds left in the round",
+     "alive": "0 CT v 2 T",
+     "alive_players": {
+      "CT": [],
+      "T": [
+       "p5 one shot from death",
+       "p7 hurt"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 8,
+   "tick": 46820,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "8",
+    "score_before_round": "CT 2 - T 5",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 8,
+   "tick": 47942,
+   "sec": 17.53125,
+   "alive": {
+    "CT": 4,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "8",
+    "score_before_round": "CT 2 - T 5",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 97 seconds left in the round",
+     "alive": "4 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 hurt"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 8,
+   "tick": 48807,
+   "sec": 31.046875,
+   "alive": {
+    "CT": 3,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "8",
+    "score_before_round": "CT 2 - T 5",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:31 p5 (T) kills p3 (CT) (awp). Alive: 3 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 84 seconds left in the round",
+     "alive": "3 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 low HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 hurt"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 8,
+   "tick": 49246,
+   "sec": 37.90625,
+   "alive": {
+    "CT": 2,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "8",
+    "score_before_round": "CT 2 - T 5",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:31 p5 (T) kills p3 (CT) (awp). Alive: 3 CT v 5 T.",
+     "0:37 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 2 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 77 seconds left in the round",
+     "alive": "2 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 hurt"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 8,
+   "tick": 49410,
+   "sec": 40.46875,
+   "alive": {
+    "CT": 1,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "8",
+    "score_before_round": "CT 2 - T 5",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:31 p5 (T) kills p3 (CT) (awp). Alive: 3 CT v 5 T.",
+     "0:37 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 2 CT v 5 T.",
+     "0:40 p6 (T) kills p1 (CT) (ak47, headshot). Alive: 1 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 75 seconds left in the round",
+     "alive": "1 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 low HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 8,
+   "tick": 49811,
+   "sec": 46.734375,
+   "alive": {
+    "CT": 1,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "8",
+    "score_before_round": "CT 2 - T 5",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:17 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:31 p5 (T) kills p3 (CT) (awp). Alive: 3 CT v 5 T.",
+     "0:37 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 2 CT v 5 T.",
+     "0:40 p6 (T) kills p1 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "0:46 p0 (CT) kills p9 (T) (hkp2000, headshot). Alive: 1 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 68 seconds left in the round",
+     "alive": "1 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 9,
+   "tick": 53446,
+   "sec": 0,
+   "alive": {
+    "CT": 5,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "9",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "Freeze time ends."
+    ],
+    "now": {
+     "time": "about 115 seconds left in the round",
+     "alive": "5 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p1 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 9,
+   "tick": 54599,
+   "sec": 18.015625,
+   "alive": {
+    "CT": 4,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "9",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p8 (T) kills p1 (CT) (ak47, headshot). Alive: 4 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 97 seconds left in the round",
+     "alive": "4 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p2 full HP",
+       "p3 full HP",
+       "p4 full HP"
+      ],
+      "T": [
+       "p5 full HP",
+       "p6 full HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 9,
+   "tick": 55056,
+   "sec": 25.15625,
+   "alive": {
+    "CT": 3,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "9",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p8 (T) kills p1 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:25 p6 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 90 seconds left in the round",
+     "alive": "3 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p0 full HP",
+       "p2 full HP",
+       "p3 full HP"
+      ],
+      "T": [
+       "p5 hurt",
+       "p6 low HP",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 9,
+   "tick": 55334,
+   "sec": 29.5,
+   "alive": {
+    "CT": 2,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "9",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p8 (T) kills p1 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:25 p6 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "0:29 p6 (T) kills p0 (CT) (ak47, headshot). Alive: 2 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 86 seconds left in the round",
+     "alive": "2 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p2 hurt",
+       "p3 full HP"
+      ],
+      "T": [
+       "p5 hurt",
+       "p6 one shot from death",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 9,
+   "tick": 55359,
+   "sec": 29.890625,
+   "alive": {
+    "CT": 1,
+    "T": 5
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "9",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p8 (T) kills p1 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:25 p6 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "0:29 p6 (T) kills p0 (CT) (ak47, headshot). Alive: 2 CT v 5 T.",
+     "0:29 p7 (T) kills p3 (CT) (ak47, headshot). Alive: 1 CT v 5 T."
+    ],
+    "now": {
+     "time": "about 85 seconds left in the round",
+     "alive": "1 CT v 5 T",
+     "alive_players": {
+      "CT": [
+       "p2 hurt"
+      ],
+      "T": [
+       "p5 hurt",
+       "p6 one shot from death",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 9,
+   "tick": 55499,
+   "sec": 32.078125,
+   "alive": {
+    "CT": 1,
+    "T": 4
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "9",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p8 (T) kills p1 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:25 p6 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "0:29 p6 (T) kills p0 (CT) (ak47, headshot). Alive: 2 CT v 5 T.",
+     "0:29 p7 (T) kills p3 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "0:32 p2 (CT) kills p6 (T) (ssg08, headshot). Alive: 1 CT v 4 T."
+    ],
+    "now": {
+     "time": "about 83 seconds left in the round",
+     "alive": "1 CT v 4 T",
+     "alive_players": {
+      "CT": [
+       "p2 hurt"
+      ],
+      "T": [
+       "p5 hurt",
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 9,
+   "tick": 55625,
+   "sec": 34.046875,
+   "alive": {
+    "CT": 1,
+    "T": 3
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "9",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p8 (T) kills p1 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:25 p6 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "0:29 p6 (T) kills p0 (CT) (ak47, headshot). Alive: 2 CT v 5 T.",
+     "0:29 p7 (T) kills p3 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "0:32 p2 (CT) kills p6 (T) (ssg08, headshot). Alive: 1 CT v 4 T.",
+     "0:34 p2 (CT) kills p5 (T) (ssg08). Alive: 1 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 81 seconds left in the round",
+     "alive": "1 CT v 3 T",
+     "alive_players": {
+      "CT": [
+       "p2 hurt"
+      ],
+      "T": [
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "round": 9,
+   "tick": 55959,
+   "sec": 39.265625,
+   "alive": {
+    "CT": 0,
+    "T": 3
+   },
+   "ct_won": false,
+   "state": {
+    "map": "de_mirage",
+    "round": "9",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "0:18 p8 (T) kills p1 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "0:25 p6 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "0:29 p6 (T) kills p0 (CT) (ak47, headshot). Alive: 2 CT v 5 T.",
+     "0:29 p7 (T) kills p3 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "0:32 p2 (CT) kills p6 (T) (ssg08, headshot). Alive: 1 CT v 4 T.",
+     "0:34 p2 (CT) kills p5 (T) (ssg08). Alive: 1 CT v 3 T.",
+     "0:39 p9 (T) kills p2 (CT) (ak47). Alive: 0 CT v 3 T."
+    ],
+    "now": {
+     "time": "about 76 seconds left in the round",
+     "alive": "0 CT v 3 T",
+     "alive_players": {
+      "CT": [],
+      "T": [
+       "p7 full HP",
+       "p8 full HP",
+       "p9 full HP"
+      ]
+     }
+    }
+   }
+  }
+ ],
+ "rounds": [
+  {
+   "n": 1,
+   "facts": {
+    "clutch": null,
+    "multikill": 2,
+    "comeback": false,
+    "how_won": "t_before_plant",
+    "flawless": false,
+    "oneVOne": false
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "1 of 10",
+    "score_before_round": "CT 0 - T 0",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:20 p5 (T) kills p0 (CT) (p250, headshot). Alive: 4 CT v 5 T.",
+     "L01 0:39 p1 (CT) kills p5 (T) (fiveseven). Alive: 4 CT v 4 T.",
+     "L02 0:42 p7 (T) kills p4 (CT) (glock, headshot). Alive: 3 CT v 4 T.",
+     "L03 0:43 p6 (T) kills p1 (CT) (glock, headshot). Alive: 2 CT v 4 T.",
+     "L04 0:48 p3 (CT) kills p8 (T) (hkp2000, headshot). Alive: 2 CT v 3 T.",
+     "L05 1:22 p3 (CT) kills p6 (T) (hkp2000). Alive: 2 CT v 2 T.",
+     "L06 1:23 p9 (T) kills p2 (CT) (deagle, headshot). Alive: 1 CT v 2 T.",
+     "L07 1:52 p7 (T) kills p3 (CT) (glock, headshot). Alive: 0 CT v 2 T."
+    ],
+    "result": "T win by elimination"
+   }
+  },
+  {
+   "n": 2,
+   "facts": {
+    "clutch": null,
+    "multikill": 2,
+    "comeback": false,
+    "how_won": "ct_retake",
+    "flawless": false,
+    "oneVOne": false
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "2 of 10",
+    "score_before_round": "CT 0 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:21 p3 (CT) kills p6 (T) (mp9, headshot). Alive: 5 CT v 4 T.",
+     "L01 0:23 p4 (CT) kills p7 (T) (usp_silencer, headshot). Alive: 5 CT v 3 T.",
+     "L02 0:25 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 3 T.",
+     "L03 0:27 p1 (CT) kills p8 (T) (usp_silencer). Alive: 4 CT v 2 T.",
+     "L04 0:28 p5 (T) kills p0 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "L05 0:33 p5 (T) kills p3 (CT) (ak47). Alive: 2 CT v 2 T.",
+     "L06 0:58 p2 (CT) kills p5 (T) (usp_silencer). Alive: 2 CT v 1 T.",
+     "L07 0:59 p1 (CT) kills p9 (T) (ak47). Alive: 2 CT v 0 T."
+    ],
+    "result": "CT win by bomb defused"
+   }
+  },
+  {
+   "n": 3,
+   "facts": {
+    "clutch": null,
+    "multikill": 2,
+    "comeback": false,
+    "how_won": "t_before_plant",
+    "flawless": false,
+    "oneVOne": false
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "3 of 10",
+    "score_before_round": "CT 1 - T 1",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:38 p8 (T) kills p1 (CT) (mac10, headshot). Alive: 4 CT v 5 T.",
+     "L01 0:53 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "L02 1:03 p7 (T) kills p3 (CT) (ssg08, headshot). Alive: 2 CT v 5 T.",
+     "L03 1:05 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "L04 1:05 p0 (CT) kills p6 (T) (m4a1). Alive: 1 CT v 4 T.",
+     "L05 1:10 p5 (T) kills p0 (CT) (mac10, headshot). Alive: 0 CT v 4 T."
+    ],
+    "result": "T win by elimination"
+   }
+  },
+  {
+   "n": 4,
+   "facts": {
+    "clutch": null,
+    "multikill": 2,
+    "comeback": false,
+    "how_won": "t_before_plant",
+    "flawless": true,
+    "oneVOne": false
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "4 of 10",
+    "score_before_round": "CT 1 - T 2",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:18 p5 (T) kills p4 (CT) (mac10). Alive: 4 CT v 5 T.",
+     "L01 0:24 p9 (T) kills p1 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "L02 0:25 p8 (T) kills p2 (CT) (ak47). Alive: 2 CT v 5 T.",
+     "L03 0:38 p9 (T) kills p3 (CT) (ak47). Alive: 1 CT v 5 T.",
+     "L04 0:44 p8 (T) kills p0 (CT) (ak47, headshot). Alive: 0 CT v 5 T."
+    ],
+    "result": "T win by elimination"
+   }
+  },
+  {
+   "n": 5,
+   "facts": {
+    "clutch": "1v1",
+    "multikill": 2,
+    "comeback": false,
+    "how_won": "ct_hold",
+    "flawless": false,
+    "oneVOne": true
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "5 of 10",
+    "score_before_round": "CT 1 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:25 p8 (T) kills p0 (CT) (ak47). Alive: 4 CT v 5 T.",
+     "L01 0:28 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 4 CT v 4 T.",
+     "L02 0:31 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 4 CT v 3 T.",
+     "L03 0:35 p3 (CT) kills p7 (T) (p250). Alive: 4 CT v 2 T.",
+     "L04 0:36 p8 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 2 T.",
+     "L05 0:40 p1 (CT) kills p8 (T) (m4a1_silencer). Alive: 3 CT v 1 T.",
+     "L06 0:40 p9 (T) kills p2 (CT) (ak47). Alive: 2 CT v 1 T.",
+     "L07 0:47 p9 (T) kills p3 (CT) (ak47, headshot). Alive: 1 CT v 1 T.",
+     "L08 0:53 p1 (CT) kills p9 (T) (m4a1_silencer). Alive: 1 CT v 0 T."
+    ],
+    "result": "CT win by elimination"
+   }
+  },
+  {
+   "n": 6,
+   "facts": {
+    "clutch": null,
+    "multikill": 2,
+    "comeback": false,
+    "how_won": "t_post_plant",
+    "flawless": false,
+    "oneVOne": false
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "6 of 10",
+    "score_before_round": "CT 2 - T 3",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:23 p8 (T) kills p4 (CT) (hegrenade). Alive: 4 CT v 5 T.",
+     "L01 0:25 p5 (T) kills p1 (CT) (awp). Alive: 3 CT v 5 T.",
+     "L02 0:35 p5 (T) kills p3 (CT) (awp). Alive: 2 CT v 5 T.",
+     "L03 0:56 p2 (CT) kills p6 (T) (m4a1_silencer). Alive: 2 CT v 4 T.",
+     "L04 0:57 p2 (CT) kills p5 (T) (m4a1_silencer). Alive: 2 CT v 3 T.",
+     "L05 1:01 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 1 CT v 3 T.",
+     "L06 1:35 p0 (CT) kills p8 (T) (m4a1_silencer, headshot). Alive: 1 CT v 3 T. (after the round was decided)"
+    ],
+    "result": "T win by bomb exploded"
+   }
+  },
+  {
+   "n": 7,
+   "facts": {
+    "clutch": null,
+    "multikill": 3,
+    "comeback": false,
+    "how_won": "t_before_plant",
+    "flawless": false,
+    "oneVOne": false
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "7 of 10",
+    "score_before_round": "CT 2 - T 4",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:17 p8 (T) kills p3 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "L01 0:23 p2 (CT) kills p9 (T) (m4a1_silencer, headshot). Alive: 4 CT v 4 T.",
+     "L02 0:25 p6 (T) kills p2 (CT) (ak47). Alive: 3 CT v 4 T.",
+     "L03 0:29 p4 (CT) kills p6 (T) (deagle, headshot). Alive: 3 CT v 3 T.",
+     "L04 0:34 p5 (T) kills p0 (CT) (awp). Alive: 2 CT v 3 T.",
+     "L05 0:46 p5 (T) kills p4 (CT) (awp). Alive: 1 CT v 3 T.",
+     "L06 1:01 p1 (CT) kills p8 (T) (famas, headshot). Alive: 1 CT v 2 T.",
+     "L07 1:11 p5 (T) kills p1 (CT) (awp, headshot). Alive: 0 CT v 2 T."
+    ],
+    "result": "T win by elimination"
+   }
+  },
+  {
+   "n": 8,
+   "facts": {
+    "clutch": null,
+    "multikill": 2,
+    "comeback": false,
+    "how_won": "t_post_plant",
+    "flawless": false,
+    "oneVOne": false
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "8 of 10",
+    "score_before_round": "CT 2 - T 5",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:17 p9 (T) kills p4 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "L01 0:31 p5 (T) kills p3 (CT) (awp). Alive: 3 CT v 5 T.",
+     "L02 0:37 p9 (T) kills p2 (CT) (ak47, headshot). Alive: 2 CT v 5 T.",
+     "L03 0:40 p6 (T) kills p1 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "L04 0:46 p0 (CT) kills p9 (T) (hkp2000, headshot). Alive: 1 CT v 4 T.",
+     "L05 1:17 p8 (T) kills p0 (CT) (ak47). Alive: 1 CT v 4 T. (after the round was decided)"
+    ],
+    "result": "T win by bomb exploded"
+   }
+  },
+  {
+   "n": 9,
+   "facts": {
+    "clutch": null,
+    "multikill": 2,
+    "comeback": false,
+    "how_won": "t_before_plant",
+    "flawless": false,
+    "oneVOne": false
+   },
+   "state": {
+    "map": "de_mirage",
+    "round": "9 of 10",
+    "score_before_round": "CT 2 - T 6",
+    "players": {
+     "CT": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "p4"
+     ],
+     "T": [
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9"
+     ]
+    },
+    "timeline": [
+     "L00 0:18 p8 (T) kills p1 (CT) (ak47, headshot). Alive: 4 CT v 5 T.",
+     "L01 0:25 p6 (T) kills p4 (CT) (ak47, headshot). Alive: 3 CT v 5 T.",
+     "L02 0:29 p6 (T) kills p0 (CT) (ak47, headshot). Alive: 2 CT v 5 T.",
+     "L03 0:29 p7 (T) kills p3 (CT) (ak47, headshot). Alive: 1 CT v 5 T.",
+     "L04 0:32 p2 (CT) kills p6 (T) (ssg08, headshot). Alive: 1 CT v 4 T.",
+     "L05 0:34 p2 (CT) kills p5 (T) (ssg08). Alive: 1 CT v 3 T.",
+     "L06 0:39 p9 (T) kills p2 (CT) (ak47). Alive: 0 CT v 3 T."
+    ],
+    "result": "T win by elimination"
+   }
+  }
+ ]
+}

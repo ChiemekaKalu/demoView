@@ -1,6 +1,10 @@
 node_modules
 .wrangler
 
+# Pulse script builds and eval output
+.pulse
+pulse-eval.json
+
 # Local secrets; only the example is committed
 .dev.vars
 .dev.vars.*
