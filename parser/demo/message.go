@@ -6,13 +6,16 @@ import (
 	"math"
 	"strconv"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/ChiemekaKalu/demoview/parser/bitread"
 	"github.com/ChiemekaKalu/demoview/parser/pb"
 )
 
 // MsgType identifies a message inside a packet. Ids come from several enums
-// in package pb, among them NET_Messages, SVC_Messages and EBaseGameEvents,
-// so compare against those: MsgType(pb.SVC_Messages_svc_PacketEntities).
+// in package pb, among them NET_Messages, SVC_Messages, EBaseGameEvents and
+// ECstrike15UserMessages, so compare against those:
+// MsgType(pb.SVC_Messages_svc_PacketEntities).
 type MsgType uint32
 
 // msgTypeNames are the enums that MsgType.String looks in. Their ids don't
@@ -22,6 +25,7 @@ var msgTypeNames = []map[int32]string{
 	pb.Bidirectional_Messages_name,
 	pb.SVC_Messages_name,
 	pb.EBaseGameEvents_name,
+	pb.ECstrike15UserMessages_name,
 }
 
 // String returns the type's enum name, such as "svc_PacketEntities", or
@@ -41,6 +45,15 @@ func (t MsgType) String() string {
 type Message struct {
 	Type MsgType
 	Body []byte // protobuf-encoded; valid only until the next call to Next
+}
+
+// Unmarshal decodes m's body into v. A malformed body gives an error
+// wrapping ErrBadDemo.
+func (m Message) Unmarshal(v proto.Message) error {
+	if err := unmarshalOpts.Unmarshal(m.Body, v); err != nil {
+		return fmt.Errorf("%w: %s body: %v", ErrBadDemo, m.Type, err)
+	}
+	return nil
 }
 
 // maxPadBits is the most bits a packet may have left after its last message.

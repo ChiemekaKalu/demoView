@@ -357,6 +357,8 @@ func TestMsgTypeString(t *testing.T) {
 		55:        "svc_PacketEntities",
 		205:       "GE_Source1LegacyGameEventList",
 		207:       "GE_Source1LegacyGameEvent",
+		347:       "CS_UM_VotePass",
+		375:       "CS_UM_EndOfMatchAllPlayersData",
 		2:         "MsgType(2)",
 		123:       "MsgType(123)",
 		1<<32 - 1: "MsgType(4294967295)",
@@ -365,6 +367,26 @@ func TestMsgTypeString(t *testing.T) {
 		if got := typ.String(); got != want {
 			t.Errorf("MsgType(%d).String() = %q, want %q", uint32(typ), got, want)
 		}
+	}
+}
+
+func TestMessageUnmarshal(t *testing.T) {
+	body, err := proto.Marshal(&pb.CSVCMsg_ServerInfo{MaxClients: proto.Int32(64)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var info pb.CSVCMsg_ServerInfo
+	if err := (Message{Type: MsgType(pb.SVC_Messages_svc_ServerInfo), Body: body}).Unmarshal(&info); err != nil {
+		t.Fatal(err)
+	}
+	if info.GetMaxClients() != 64 {
+		t.Errorf("MaxClients = %d, want 64", info.GetMaxClients())
+	}
+
+	bad := Message{Type: MsgType(pb.SVC_Messages_svc_ServerInfo), Body: []byte{0x6A, 0x09, 'x'}} // truncated field 13
+	err = bad.Unmarshal(&info)
+	if !errors.Is(err, ErrBadDemo) || !strings.Contains(err.Error(), "svc_ServerInfo") {
+		t.Errorf("error = %v, want ErrBadDemo naming svc_ServerInfo", err)
 	}
 }
 
