@@ -15,7 +15,7 @@
   "vars": {
     "PARSER_URL": "https://demoview-parser-dev.example.run.app",
     "R2_ACCOUNT_ID": "REPLACE_WITH_ACCOUNT_ID",
-    "R2_BUCKET_NAME": "demoview-dev"
+    "R2_BUCKET": "demoview-dev"
   },
   "d1_databases": [
     {
@@ -48,7 +48,7 @@
       "vars": {
         "PARSER_URL": "https://demoview-parser.example.run.app",
         "R2_ACCOUNT_ID": "REPLACE_WITH_ACCOUNT_ID",
-        "R2_BUCKET_NAME": "demoview-prod"
+        "R2_BUCKET": "demoview-prod"
       },
       "d1_databases": [
         {

@@ -45,7 +45,7 @@ A match is `uploaded` from creation until the upload is confirmed. While a retry
 1. `wrangler d1 create demoview-dev` (and `demoview-prod`). Paste each `database_id` into `wrangler.jsonc`.
 2. Create R2 buckets `demoview-dev` and `demoview-prod`. Allow `PUT` from the viewer origin in each bucket's CORS policy, because browsers upload straight to R2.
 3. `wrangler queues create` for `demoview-dev-parse`, `demoview-dev-parse-dlq`, `demoview-prod-parse` and `demoview-prod-parse-dlq`.
-4. Set `R2_ACCOUNT_ID` and `PARSER_URL` in `wrangler.jsonc`.
+4. Set `R2_ACCOUNT_ID` and `PARSER_URL` in `wrangler.jsonc`. `R2_BUCKET` already names each environment's bucket; the parser service reads the same variable.
 5. `wrangler secret put` for `UPLOAD_TOKEN`, `PARSE_SECRET`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`. Repeat with `--env prod` for prod. The R2 keys come from an R2 API token with Object Read & Write on that environment's bucket.
 6. `wrangler d1 migrations apply DB --remote` (and `--env prod`), then `wrangler deploy` (and `--env prod`).
 

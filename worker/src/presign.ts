@@ -13,7 +13,7 @@ export async function presignUpload(env: Env, key: string): Promise<string> {
     region: "auto",
   });
   const url = new URL(
-    `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${env.R2_BUCKET_NAME}/${key}`,
+    `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${env.R2_BUCKET}/${key}`,
   );
   url.searchParams.set("X-Amz-Expires", String(UPLOAD_URL_TTL_SECONDS));
   const signed = await client.sign(new Request(url, { method: "PUT" }), {
