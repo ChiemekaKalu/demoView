@@ -34,7 +34,7 @@
 }
 
 .fx-stats div {
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 0.75rem 0.9rem;
@@ -337,15 +337,15 @@
 }
 
 .fx-cell.ct {
-  background: color-mix(in srgb, var(--ct) var(--lean), var(--panel));
+  background: color-mix(in srgb, var(--ct) var(--lean), var(--surface));
 }
 
 .fx-cell.t {
-  background: color-mix(in srgb, var(--t) var(--lean), var(--panel));
+  background: color-mix(in srgb, var(--t) var(--lean), var(--surface));
 }
 
 .fx-cell.empty {
-  background: var(--panel);
+  background: var(--surface);
 }
 
 @media (max-width: 40rem) {

@@ -25,7 +25,10 @@ export function Home() {
     <main class="page home">
       <header class="topbar">
         <span class="wordmark">demoView</span>
-        <Link href={`/m/${SAMPLE_ID}`}>Sample match</Link>
+        <nav class="topbar-links">
+          <Link href="/findings">What decides a round</Link>
+          <Link href={`/m/${SAMPLE_ID}`}>Sample match</Link>
+        </nav>
       </header>
       <section class="hero">
         <div class="hero-text">

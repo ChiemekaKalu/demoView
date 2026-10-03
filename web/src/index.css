@@ -232,6 +232,13 @@ abbr[title] {
   color: var(--muted);
 }
 
+.topbar-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem 1.25rem;
+}
+
 .wordmark {
   display: inline-flex;
   align-items: center;
