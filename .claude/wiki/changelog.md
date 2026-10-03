@@ -2,6 +2,12 @@
 
 What moved, newest first. This is a digest, so `git log` has the full detail. Each entry says which part of the wiki it touches.
 
+## 2026-10-02, evening: a gallery, a slate theme and the log's key
+
+- **The featured gallery** (`04dcd26`, `57a39ff`): `POST /api/matches/:id/feature` lists a match and `GET /api/gallery` returns up to 24 featured `ready` matches with map, score and date only. Migration `0006` adds `matches.featured_at`, and `feature` joins the pipeline-history event kinds. `/` is now a home page with a hero, the upload card and the gallery. Wiki: [worker](worker.md#the-featured-gallery), [viewer](viewer.md), [decisions](decisions.md).
+- **The slate theme** (`7ce7de0`) and a findings link that moved to the home topbar (`3a49c2b`, `0f75575`). The root README now describes the hosted app (`727124f`). Wiki: [viewer](viewer.md).
+- **The narrative log's key and schema are settled** (`e3ce81b`): `parsed/{id}/{parse_id}/log/`, listed in the manifest, and `schema/log.schema.json` approved. An ADR comparison script may run in the research CI. Wiki: [decisions](decisions.md#narrative-log), [R2 layout](r2-layout.md), [parser](parser.md).
+
 ## 2026-10-02, later: two-floor maps stop looking broken
 
 - **Two-floor maps show their main radar** (`7916919`, `48bdb42`): Nuke, Train and Vertigo used to get a 404 from the maps route and replayed on a plain grid. The route now returns the main radar with `two_floor: true`, and the viewer draws it with a note. Players on the other floor land in the wrong place until v1.2 adds a radar per floor. Wiki: [maps](maps.md), [worker](worker.md), [viewer](viewer.md).

@@ -89,6 +89,7 @@ demos/{match_id}.dem
 parsed/{match_id}/{parse_id}/manifest.json
 parsed/{match_id}/{parse_id}/match.json
 parsed/{match_id}/{parse_id}/rounds/{NN}.json
+parsed/{match_id}/{parse_id}/log/    (narrative log, v1.2, listed in the manifest)
 maps/radars/*  maps/radar_info/*  maps/available.json  maps/manifest.json
 ```
 

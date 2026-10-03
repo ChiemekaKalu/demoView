@@ -13,6 +13,8 @@ Uploads need `Authorization: Bearer <UPLOAD_TOKEN>`. Reads are open. Errors are 
 | `GET /api/matches/:id` | Status, scoreboard and round list from D1, `no-store` | 404 |
 | `GET /api/matches/:id/match.json` | The parser's `match.json` from R2, 5 min cache with ETag | 404 until `ready` |
 | `GET /api/matches/:id/rounds/:n` | A round file from R2. With `?v=<parse_id>` it is that parse's file, immutable. Without it, the live parse's file (`074f5b7`) | 404 |
+| `POST /api/matches/:id/feature` | Body `{ "featured": boolean }`. `true` lists the match in the home page gallery (again, and it moves to the front), `false` unlists it. Returns `{ id, featured }` (`04dcd26`) | 400 bad body, 401, 404, 409 for a failed match |
+| `GET /api/gallery` | Up to 24 featured `ready` matches, most recently featured first, each with only map, score and date. Cached a minute | |
 | `GET /api/matches/:id/events` | The match's pipeline history from D1: every status change, parse attempt (build, parse id, outcome, time), reparse request and cleanup (`1df36df`) | 404 |
 | `GET /api/matches/:id/pulse.json` | The parse's Match Pulse, cached as `match.json` is (`31b2e5f`). See [pulse](pulse.md) | 404 when Pulse is off or not written yet |
 | `POST /api/matches/:id/pulse` | Queue a Pulse for the live parse | 401, 404, 409 |
@@ -69,6 +71,10 @@ flowchart TB
 - The Worker also consumes the DLQ to mark matches failed.
 - The consumer reaches the parser through a `ParserContainer` binding. See [infra](infra.md#parser-runtime).
 
+## The featured gallery
+
+Share links are unlisted, so there is no public list of every match. The home page gallery shows only matches the upload-token holder has **featured**, and only once they are `ready`. Gallery rows carry map, score and date, never names or Steam ids, though the match page they link to shows names. The upload form can feature a match as it uploads, and an unfeature can take up to a minute to leave the cached gallery. Featuring and unfeaturing are recorded as a `feature` event in the match's pipeline history, whose `kind` is now one of `status`, `attempt`, `reparse`, `pulse`, `cleanup` or `feature`. The full route details are in the Worker's own README.
+
 ## Background jobs and limits
 
 Committed in `9d5ead9` and later. **The crons are on in prod** as of `6e305d0`, after the dev exit checks passed: the hourly batch moved all three dev matches, one of them from the v1 layout, onto new parses with nothing run by hand, while a poller made 9,228 requests over 75 minutes and saw no 404 and no mismatch between D1, `match.json` and the round files, and a deliberately failing build (the dev-only `FAULT` flag, `5994791`) left the reparsed matches `ready` on their live parse. CI still refuses to deploy prod with that flag set (`22b3884`).
@@ -87,7 +93,7 @@ Committed in `9d5ead9` and later. **The crons are on in prod** as of `6e305d0`, 
 
 ## Data
 
-D1 holds `matches`, `players`, `rounds` and `kills` (migration `0001_init.sql`), plus `match_events` (a row per status change, parse attempt, reparse request and cleanup, so a match's history outlasts the Worker logs) and `container_usage` (container time per month), from migration `0004`, and the Match Pulse tables from migration `0005`. Timestamps are Unix ms, and 1 GB means 1024³ bytes. The scoreboard score (`score_a`, `score_b`) is computed by counting round winners. Reparse caching is handled in the viewer: URLs carry `?v=<parsed_at>`, so a reparse never serves stale files.
+D1 holds `matches`, `players`, `rounds` and `kills` (migration `0001_init.sql`), plus `featured_at` on `matches` (migration `0006`), plus `match_events` (a row per status change, parse attempt, reparse request and cleanup, so a match's history outlasts the Worker logs) and `container_usage` (container time per month), from migration `0004`, and the Match Pulse tables from migration `0005`. Timestamps are Unix ms, and 1 GB means 1024³ bytes. The scoreboard score (`score_a`, `score_b`) is computed by counting round winners. Reparse caching is handled in the viewer: URLs carry `?v=<parsed_at>`, so a reparse never serves stale files.
 
 ## Environments
 

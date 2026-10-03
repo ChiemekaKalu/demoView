@@ -39,7 +39,7 @@ The order and groups are `PATH` in `site/src/content.ts`. A page not listed ther
 
 ## How current it is
 
-- **Wiki and site are current to repo commit `408fdc7`** (the newest non-wiki commit at the last pass, "add the parser session's pickup prompt"), and the changelog's top entry says what that pass covered. Other sessions now keep their own pickup prompts under `../ideas/` and in `.claude`, which are worth reading alongside this one.
+- **Wiki and site are current to repo commit `727124f`** (the newest non-wiki commit at the last pass, "bring the README up to the hosted app"), and the changelog's top entry says what that pass covered. Other sessions keep their own pickup prompts under `../ideas/` and in `.claude`, which are worth reading alongside this one.
 - **State of the project it describes:** v1 is built. M0 to M4 are done: the schema and fixtures, the v0 parser, the cloud pipeline (dev and prod live), the viewer, and entity decoding with **prod shipping our own round files**. M5 (maps, duplicate reuse, safe reparse, self-recovery) is closed, and M6's parser-side hardening and the dev shadow compare are done.
 - **The last changelog entry** is the one at the top of `changelog.md`. The newest hash named in it is your "last seen" for the next pass.
 
@@ -90,7 +90,7 @@ This is what the recurring job did every 25 minutes. The job lives in a session 
 ## What to update next
 
 1. **Mark v1 done.** The only v1 item left is the user's own desktop scrub check of the viewer. When it passes, update the README's viewer line and the milestone diagram, and remove "on real parses next" from the diagram label.
-2. **The narrative log.** The parser writes it with `demo parse`, but the server doesn't ship it, and its R2 key is undecided (`../logging.md` has the open question). When that is decided, update the decisions page, and write a page for the log's output.
+2. **The narrative log.** Its key and schema are settled and the parser writes it. Left: coded notes, the server writing it to R2, and the story pane. When the server ships it, update the R2 layout page and write a page for the log's output.
 3. **v1.2** is decided: the Valve fetch (not started), two-floor maps with a schema version bump, the narrative log's server side and story pane, and Match Pulse's shelf (the line and kill marks are already in the viewer).
 4. **Open follow-ups:** ADR gaps of 2 to 11% on five full pro recordings, with the cause unknown, and the optional CI fixture-diff requirement, which needs read-only secrets and a repo variable.
 5. **Learning-center gaps worth filling:** quiz questions for the maps, R2 layout, runbook and Pulse pages, a tour step on the reparse and pointer swap, and a lab for the versioned swap (new prefix, manifest last, pointer swap).

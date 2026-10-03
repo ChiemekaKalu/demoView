@@ -21,6 +21,7 @@ Each parse gets its own prefix, and D1 says which one is live.
 parsed/{match_id}/{parse_id}/manifest.json     counts and sha256s, written last
 parsed/{match_id}/{parse_id}/match.json
 parsed/{match_id}/{parse_id}/rounds/{NN}.json
+parsed/{match_id}/{parse_id}/log/              narrative log (v1.2), listed in the manifest
 ```
 
 ```mermaid

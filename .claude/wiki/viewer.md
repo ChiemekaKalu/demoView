@@ -6,7 +6,7 @@
 
 | Route | Shows |
 | ----- | ----- |
-| `/` | Upload form: file picker, token field, progress |
+| `/` | Home page: a hero, the upload form as a card, and a gallery of featured matches. Falls back to the sample match if the gallery is empty or fails |
 | `/m/:id` | Parse status (polled), then map, score, scoreboard and round list |
 | `/m/:id/r/:n` | The 2D replay. `?t=42` opens at 42 seconds. |
 
@@ -62,7 +62,9 @@ Mirage: `pos_x` −3230, `pos_y` 1713, `scale` 5.0, on a 1024×1024 radar. These
 - The kill feed stays in sync with playback. The scrubber marks each kill.
 - Space toggles play, and arrow keys step 5 s. The scrubber works by touch, though v1 now targets desktop browsers (`d56ca5a`), so a phone is no longer part of the done-when.
 - The next round is prefetched in the background.
-- **A findings page** for the pro-round study (`1684173`), linked from the upload page (`752cb25`) and loaded as its own chunk so the replay stays light (`e9bd483`).
+- **The home page gallery** (`57a39ff`): a grid of featured matches from `GET /api/gallery`, each a radar thumbnail with map, score and date. The upload form can feature the match it uploads. See [worker](worker.md).
+- **The slate theme** (`7ce7de0`): charcoal-slate surfaces instead of near-black, colour tokens for every surface, edge and state, more room around pages, scoreboards and the kill feed on cards, and the replay's team colours and dot outlines retuned for the lighter page.
+- **A findings page** for the pro-round study (`1684173`), linked from the home topbar, which stacks its links on narrow screens (`3a49c2b`, `0f75575`) and loaded as its own chunk so the replay stays light (`e9bd483`).
 - **Two-floor maps** are drawn on their main radar with a note (`48bdb42`).
 - **Match Pulse under the scrubber** (`decdbdf`). When the match has a Pulse, the replay shows the CTs' calibrated win chance as a stepped line, sizes each kill mark by how far it moved the odds (with the before and after in its title), and puts a lightning mark on the biggest swing that seeks to it. A fallback file says it was estimated. With no Pulse, a 404 or an unknown version, nothing is shown. The "rounds worth watching" shelf isn't built: it waits for human ratings. See [pulse](pulse.md).
 - Each player's name goes beside its dot on the first side that doesn't cover a name already placed (right, left, above, below), so names no longer run together (`eb51eb1`).

@@ -71,7 +71,7 @@ flowchart LR
 - **Round files:** 64 Hz, every tick, in the spec, the oracle and the samples.
 - **Cloud:** the first green CI deploy put dev and prod live (run `36994672034`), which met M2's exit (`1244395`). The first real end-to-end parse took about 48 s, of which the parse was 31.6 s. See [infra](infra.md).
 - **Entity decoding:** M4 is done. Our own 64 Hz round files match the oracle on all 10 local demos, and the gate on 132 public tournament demos passed (0 blocking, 115 clean). **Prod now ships our own round files** (`93000d4`, deployed in run `37064251547`; prod's manifest shows `match_source=parser`, `round_source=parser`, no fallback), and the hourly reparse moves every match across. The oracle stays as the fallback. With M4 done, everything in v1 is built except the user's own desktop scrub check of the viewer.
-- **Viewer:** upload, match and replay pages run against real parses on dev and prod, with map radars loaded through the API and per-match pipeline history on the match page. The one v1 item left is the user's own desktop scrub check.
+- **Viewer:** a home page with a featured-match gallery, then upload, match and replay pages, all on a slate theme, running against real parses on dev and prod, with map radars loaded through the API and per-match pipeline history on the match page. The one v1 item left is the user's own desktop scrub check.
 - **Fixtures:** the two public demos plus 8 of the user's own MM/Premier demos, one of which has overtime. The shared fixtures bucket holds the two public ones only.
 
 ### Open items worth knowing
@@ -81,7 +81,7 @@ flowchart LR
 - **Fetching your own demos from Valve.** Decided for v1.2, along with two-floor maps (Nuke, Vertigo). The design is in `plan.md`, and nothing is started.
 - **v1.1.** M5 is closed (maps, duplicate reuse, safe reparse, self-recovery) and M6's parser-side hardening and dev shadow compare are done. Details are on [worker](worker.md), [r2-layout](r2-layout.md), [maps](maps.md) and the two runbooks.
 - **ADR on pro demos.** The one follow-up from the tournament sweep: 5 full recordings show 2 to 11% ADR gaps for a few players, cause unknown. It blocks nothing. See [match-logic](match-logic.md#tournament-gotv-demos-the-gate-passed).
-- **Narrative log.** The design is approved in full and the parser writes the log with `demo parse`. Left: coded notes, the server writing it to R2 (the key is undecided), `schema/log.schema.json` for the user to approve, and the story pane.
+- **Narrative log.** Approved in full, with its key settled (`parsed/{id}/{parse_id}/log/`, listed in the manifest) and `schema/log.schema.json` approved. The parser writes it with `demo parse`. Left: coded notes, the server writing it to R2, and the story pane.
 - **Match Pulse.** Approved for v1.2. The back end is built behind a flag on dev, and the replay already draws the win-chance line under the scrubber with kill marks sized by swing. The "rounds worth watching" shelf waits for human ratings. See [pulse](pulse.md).
 
 ## The learning center
