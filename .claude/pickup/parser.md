@@ -29,9 +29,7 @@ Written 2026-10-02, about 17:00 PT, for the next parser session. Read CLAUDE.md,
 
 - Branch `parser/pro-rounds` is at 02dfe09, behind main. It's only a research ref now; push a fresh one when you need a sweep.
 - aiguy's research workflow is on `research/bulk-demos`, and every sweep keeps `inspect --events` timelines.
-- The ADR diagnostic, `tools/adr/adr_rounds.py`, is committed but has never run in CI.
-  - aiguy's permission layer refused to copy it in, and mine refused my message asking aiguy to run it from the ref.
-  - Only the user can start that run.
+- The ADR diagnostic, `tools/adr/adr_rounds.py`, is committed but hasn't run yet. The user has since approved it (see below).
 
 ## Next, in order
 
@@ -39,11 +37,11 @@ Written 2026-10-02, about 17:00 PT, for the next parser session. Read CLAUDE.md,
    - `Result.Notes` must stay byte-identical, since tests compare the strings.
    - Participants become idx in the log. No floats.
    - A subagent was dispatched for this but hit a usage limit before editing anything, so nothing is half-done.
-2. **The log in R2**, once the user picks the key. cloud and I recommend `parsed/{id}/{parse_id}/log/`, listed in that parse's manifest.
-   - Then `cmd/server` sets `parse.Options{Log: true}` and writes the three files before the manifest.
-   - `schema/log.schema.json` (`log_version` 1) needs the user's approval.
-   - Tell pipeline the `round.bomb` shape for Pulse's state_version 2.
-3. **The ADR follow-up**, if the user OKs the run. 5 full recordings have unexplained 2–11% ADR gaps: spirit-vs-faze-m3-vertigo, the-mongolz-vs-vitality-m2-overpass, faze-vs-mouz-m2-overpass, natus-vincere-vs-vitality-m2-anubis and mouz-vs-natus-vincere-m1-dust2.
+2. **The log in R2 and its schema.** Both are decided; see "Decided by the user".
+   - `cmd/server` sets `parse.Options{Log: true}` and writes the three files under `parsed/{id}/{parse_id}/log/` before `manifest.json`, which lists them.
+   - Write `schema/log.schema.json` (`log_version` 1) to the record set in `.claude/logging.md`, with a sample and validator support like pulse's.
+   - Update logging.md's layout section to the per-parse key, and tell pipeline the `round.bomb` shape for Pulse's state_version 2.
+3. **The ADR follow-up.** The run is approved; see "Decided by the user". Push a branch with `tools/adr/adr_rounds.py` (it's on main) and give aiguy the ref. 5 full recordings have unexplained 2–11% ADR gaps: spirit-vs-faze-m3-vertigo, the-mongolz-vs-vitality-m2-overpass, faze-vs-mouz-m2-overpass, natus-vincere-vs-vitality-m2-anubis and mouz-vs-natus-vincere-m1-dust2.
    - The other 6 ADR-only demos are partial or restored recordings, so they're explained.
    - Prod already ships our ADR, so this blocks nothing.
 
@@ -59,8 +57,12 @@ Written 2026-10-02, about 17:00 PT, for the next parser session. Read CLAUDE.md,
 - **`demo diff` shows only the first 40 mismatches,** so sweep kind counts are lower bounds.
 - **Commits:** Conventional Commits, pathspecs, no Co-Authored-By trailer. cloud owns pushes to main; tell it before any branch push.
 
+## Decided by the user (2026-10-02, relayed by cloud)
+
+1. The narrative log goes under the per-parse prefix, `parsed/{id}/{parse_id}/log/`, listed in that parse's manifest. This replaces logging.md's `parsed/{id}/log/{parser_version}/`.
+2. `schema/log.schema.json` is approved, written to the proposed record set at the end of `.claude/logging.md`.
+3. `tools/adr/adr_rounds.py` may run in aiguy's research CI.
+
 ## Needs the user
 
-- The R2 key for the log.
-- Approval of the log's record set and `schema/log.schema.json`.
-- Whether `tools/adr/adr_rounds.py` may run in aiguy's CI.
+- Nothing open from this session.
