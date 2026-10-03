@@ -4,6 +4,10 @@ Running log of decisions, progress and findings. Newest first. Keep entries shor
 
 ## 2026-10-02
 
+- **Narrative log decisions from the user (end of day):**
+  - The log lives under each parse's prefix, `parsed/{id}/{parse_id}/log/`, and is listed in that parse's manifest.
+  - `schema/log.schema.json` is approved. parser writes it to the proposed record set in `logging.md`.
+  - `tools/adr/adr_rounds.py` may run in aiguy's research CI. aiguy's permission check still wants that OK given in its own session.
 - **Match Pulse (Jev), approved by the user for v1.2:**
   - The proposal is in `.claude/ideas/jev/` (158d192).
   - A new `pulse.json` output with its own schema is approved.
