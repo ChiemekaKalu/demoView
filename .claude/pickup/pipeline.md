@@ -2,9 +2,9 @@
 
 To the next pipeline session. You own `worker/` and `web/`, and the CI workflows they touch. Peers: `cloud` holds the credentials, pushes main and runs deploys; `parser` owns `parser/`, `schema/` and the M4 part of the plan; `aiguy` ran the Jev experiments. Read `.claude/plan.md` and `.claude/spec.md` (v1.1 and v1.2 sections) first.
 
-## Where I stopped (2026-10-02, about 21:30 UTC)
+## Where I stopped (2026-10-03, about 00:15 UTC)
 
-v1 and v1.1 are done. M4, M5 and M6 are closed except M6 6.7. Match Pulse v1 is live on dev. The last commit, `decdbdf` (the replay's Pulse strip), is committed but not pushed; cloud pushes it.
+v1 and v1.1 are done. M4, M5 and M6 are closed except M6 6.7. Match Pulse v1 is live on dev, with its strip under the replay's scrubber. Cloud's restyle and gallery branch is merged onto main as cherry-picks (`04dcd26`, `7ce7de0`, `57a39ff`), with two follow-ups of mine (`3a49c2b`, `0f75575`). Those commits wait on cloud's push; the deploy applies migration 0006.
 
 ## What's live
 
@@ -20,24 +20,24 @@ v1 and v1.1 are done. M4, M5 and M6 are closed except M6 6.7. Match Pulse v1 is 
   - All 3 dev matches have real Jev Pulses, at about $0.006 a match.
 - **CI.** `pulse-eval.yml` scores Jev on 225 + 28 golden states (`worker/test/pulse-golden/`), about $0.01 a run. It runs on Pulse changes, weekly and by hand. All bars were green on the last run except the canary, which `6abed7c` fixed; that run follows the push.
 - **Maps.** Every map with a radar is served by `/api/maps/:name`. Two-floor maps (Nuke, Train, Vertigo) get their main radar with `two_floor: true`; the replay notes that both floors share it. The user chose this interim; v1.2 adds a radar per floor.
-- **Findings page.** `/findings` shows the pro-round study, aiguy's aggregate data. It loads as its own chunk.
+- **Findings page.** `/findings` shows the pro-round study, aiguy's aggregate data. It loads as its own chunk, and the home page's topbar links to it.
+- **Home and gallery** (after the push). `/` is a home page on the slate theme: the upload card plus a featured gallery. Featuring is opt-in: a box on the upload card, or `POST /api/matches/:id/feature` with `{"featured": boolean}` behind the upload token. `GET /api/gallery` lists ready, featured matches with map, score and date only. It's cached for a minute. `matches.featured_at` (migration 0006) holds the state, and a feature change adds a `feature` event.
 - **Other.** Uploads and reparses are limited to 10 a minute. A dev-only `FAULT` secret exists, but it's unset now; prod's deploy refuses it. The match page shows the pipeline history (`match_events`).
 
 ## In flight
 
-- `decdbdf` feat(web): the Pulse strip under the scrubber. Verified locally against dev's 3 Pulse matches (line, swing-sized marks, ⚡ seek). After cloud pushes it, look at one replay on dev.
-- **Branch `viewer/restyle-gallery`**, from cloud's design workflow on its own worktree: a lighter theme, an opt-in featured gallery (`POST /api/matches/:id/feature`, `GET /api/gallery`) and a D1 migration. Cloud sends it to you to review and merge after Pulse.
-  - Expect conflicts in `web/src/index.css` and the migration number; ours are up to 0005.
+- **The restyle and gallery merge**, waiting on the push. Checked locally: web 95 tests, worker 190, typecheck, lint and build clean; no overflow at 280px on `/`, a match, a replay and `/findings`. After it deploys, open dev's home page: the gallery shows "No featured matches yet" plus the sample card until something is featured.
+- **Worktrees left for their owners.** `.claude/worktrees/wf_…` (`viewer/restyle-gallery`, cloud's workflow) and `../demoView-findings` (`viewer/findings`) are both merged; their owners remove them.
 - **Branch `research/bulk-demos`** (aiguy, worktree `../demoView-research`): never merges. CI skips `research/**`.
 
 ## Next three steps, in order
 
-1. **Pulse viewer follow-through.** After `decdbdf` deploys, check a dev replay. Then review and merge `viewer/restyle-gallery`. The "rounds worth watching" shelf stays unbuilt until the user rates about 40 rounds (spec: Spearman ρ ≥ 0.6).
+1. **Check the deploy.** Once the merge is live, open dev's home page, feature one dev match and see it in the gallery, then unfeature it. The "rounds worth watching" shelf stays unbuilt until the user rates about 40 rounds (spec: Spearman ρ ≥ 0.6).
 2. **Pulse `state_version` 2,** once parser's narrative log writes the bomb timeline.
    - Add plant, defuse and explosion lines to the states, a `planted` feature in the fallback, and `how_won` from the timeline instead of the round's end reason.
    - Bump `STATE_VERSION`, regenerate the goldens (`npm run pulse:golden -- ../parser/testdata/reference`), and let the eval's headline bar return to 0.75 by itself.
    - Then ask the user and cloud about `PULSE_ENABLED=true` in prod.
-   - The log's R2 key isn't settled. `logging.md` says `parsed/{id}/log/{parser_version}/…`, which predates per-parse prefixes. Code against "the log beside the parse" and settle the key with parser.
+   - The user settled the log's key: `parsed/{id}/{parse_id}/log/`, listed in that parse's manifest, to `schema/log.schema.json`. Read it through the manifest, not a hard-coded key.
 3. **M6 6.7.** When the user has added `FIXTURES_R2_ACCESS_KEY_ID` and `FIXTURES_R2_SECRET_ACCESS_KEY` (a read-only token on `demoview-fixtures`) and cloud has set `REQUIRE_FIXTURE_DIFF=true`, the next deploy runs the diff. 6.7 closes when its "Diff each fixture against the oracle" step runs green.
 
 ## Gotchas
@@ -60,6 +60,7 @@ v1 and v1.1 are done. M4, M5 and M6 are closed except M6 6.7. Match Pulse v1 is 
   - Go is at `/c/Program Files/Go/bin`, not on the bash PATH.
   - npm 10.9 crashes resolving without a lockfile (`npx npm@11 install`).
   - Files are LF in git and may show CRLF on disk; edit with the Edit tool or Python, not multi-line sed.
+  - Put Python edits in a script file, not an inline heredoc string. An inline one once wrote raw NUL bytes into `api.test.ts`, and git showed the file as binary (fixed in `3eedb74`).
 - **Verification tools.** The D1 API rate-limits bursts (code 971), so space your queries. The preview server and headless Edge are in the scratchpad: `shots/serve.mjs <dist> <port> <api base>`, then playwright-core with `channel: "msedge"`.
 
 ## What needs the user
@@ -68,4 +69,3 @@ v1 and v1.1 are done. M4, M5 and M6 are closed except M6 6.7. Match Pulse v1 is 
 - **AI Gateway spend limit:** a limit on `default`, about $5 a month suggested. Nobody can see whether one is set.
 - **The shelf:** rate about 40 rounds 0–4, blind to Jev, before the "rounds worth watching" shelf can ship.
 - **Pulse in prod:** say yes or no once state_version 2 lands.
-- **Narrative log key:** whether the log moves under `{parse_id}`. This is parser's and cloud's call, with the user.
