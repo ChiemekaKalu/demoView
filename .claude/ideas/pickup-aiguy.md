@@ -71,9 +71,14 @@ For a future aiguy session picking this work up. Written 2026-10-02 at a stoppin
 
 ## Open
 
-1. **ADR follow-up.** Parser wants its `adr_rounds.py` run (needs demoparser2) at 6782d49 on the 11 ADR-only demos.
-   - Your permission layer blocked copying the script from parser's scratchpad into the branch. Running it from parser's branch would be the same outcome, so it needs the user's direct OK in your session.
-   - The wiring is uncommitted in the worktree: an `adr` config flag in `pick.py`, an ADR step in `run_shard.sh` (output goes to `out/adr/`, with a Steam-id guard), and a demoparser2 venv step in the workflow. Before it can run, the plan job also needs an `adr` output, and the shard tarball needs `adr` added.
+1. **ADR follow-up.** Parser wants its ADR script, now on main as `tools/adr/adr_rounds.py` (02dfe09; needs demoparser2), run at 6782d49 on the 11 ADR-only demos. Their paths are under `adr_only` in the gate run's report (37062846092).
+   - **The user approved running it in the research CI on 2026-10-02.** They said so in this session ("ok given") and again in `cloud`'s.
+   - The auto-mode permission check still blocked both copying the script and editing the wiring, as "code from external". A typed OK doesn't clear that check. So get a direct confirmation from the user in your session first, and if the check blocks again, ask them to allow it in their settings. Never route it through another session.
+   - The wiring is uncommitted in the worktree: an `adr` config flag in `pick.py`, an ADR step in `run_shard.sh` (output goes to `out/adr/`, with a Steam-id guard), and a demoparser2 venv step in the workflow. Still to do:
+     - The plan job must export an `adr` output.
+     - Point `run_shard.sh` at the script's real path.
+     - Set the config to `parser_sample: "repro"` with the 11 paths and `adr: true`.
+   - **Where the output goes:** each output starts with `== <demo file name>`, which carries team names. Either strip that line and add `adr` to the shard tarball for R2, or leave `adr/` in the Actions artifacts only, like the diffs.
    - Nothing blocks on it: prod already ships our ADR.
 2. **Shelf ratings.** The user rates 40 rounds on the Round Ratings page (1–5, stored in the page's `ratings` collection). Then:
    - export with `ArtifactData` `list` on collection `ratings` with `out_dir`
@@ -101,5 +106,5 @@ For a future aiguy session picking this work up. Written 2026-10-02 at a stoppin
 ## Next 3 steps
 
 1. Score the shelf ratings once the user has rated (step 2 under Open), and update the spec's eval table: ship or hold the "rounds worth watching" shelf.
-2. If the user approves the ADR script directly, commit the wiring plus the script and run it on the 11 ADR-only demos, then send `parser` the stdout per demo.
+2. Confirm the ADR run with the user directly (approved 2026-10-02; step 1 under Open). Then finish and commit the wiring, run it on the 11 ADR-only demos, and send `parser` the output per demo.
 3. Re-run the gate on each new parser build, or when the user adds demos. The gate line is the regression check for prod's round files.
