@@ -13,7 +13,7 @@ const DETAILS: Record<string, Detail> = {
   browser: {
     role: 'A static Vite and Preact single-page app. It uploads a demo, polls for status and draws the replay on one canvas. It performs no analysis of its own.',
     lives: ['web/'],
-    notes: ['Routes: upload `/`, match `/m/:id`, replay `/m/:id/r/:n`.', 'Served by the Worker from the same origin, so the API needs no CORS.', 'Runs against fixtures with no backend (`VITE_FIXTURES=1`).'],
+    notes: ['Routes: home with the featured gallery `/`, match `/m/:id`, replay `/m/:id/r/:n`.', 'Served by the Worker from the same origin, so the API needs no CORS.', 'Runs against fixtures with no backend (`VITE_FIXTURES=1`).'],
     read: [['The viewer', 'viewer']],
   },
   worker: {
