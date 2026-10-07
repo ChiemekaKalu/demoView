@@ -2,6 +2,12 @@
 
 Running log of decisions, progress and findings. Newest first. Keep entries short; move anything settled and permanent into CLAUDE.md or the spec. Checkpoint status lives in `plan.md`, not here.
 
+## 2026-10-07
+
+- **Discord bot scope drafted** in `discord-bot/SCOPE.md`. Nothing is built, and its decisions are open for the user.
+  - Proposed models: `gemini-3.8-flash-lite-tts` for round casts, and `gemini-3.8-live` for spoken Q&A. Translation is a separate model (`gemini-3.5-live-translate-preview`), so it's skipped.
+  - Found: Discord voice can't run on Cloudflare. Voice is UDP, and Containers allow outbound traffic only on ports 80 and 443, plus DNS. DAVE has also been mandatory since 2026-03-01. So the voice process needs a small VM, which departs from the all-Cloudflare setup and needs the user's OK.
+
 ## 2026-10-02
 
 - **Narrative log decisions from the user (end of day):**
